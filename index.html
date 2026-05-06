@@ -1,97 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Camera + Windy Dashboard</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Camera & Windy Dashboard</title>
 
 <style>
-    body {
-        margin: 0;
-        background: #0d0d0d;
-        font-family: Arial, sans-serif;
-        color: #fff;
-        overflow: hidden;
-    }
+  :root{
+    --bg:#05050a;
+    --panel-bg: rgba(22,22,24,0.62);
+    --panel-border: rgba(255,255,255,0.06);
+    --accent: #2dd4bf;
+    --muted: rgba(255,255,255,0.68);
+    --radius: 14px;
+  }
 
-    .container {
-        display: grid;
-        grid-template-columns: 1.6fr 1fr;
-        height: 100vh;
-        gap: 8px;
-        padding: 8px;
-        box-sizing: border-box;
-    }
+  html,body{
+    height:100%;
+    margin:0;
+    background:linear-gradient(180deg,#02020a 0%,var(--bg) 100%);
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+  }
 
-    .panel {
-        background: #1a1a1a;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 0 12px rgba(0,0,0,0.6);
-        display: flex;
-        flex-direction: column;
-    }
+  .app {
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    padding:12px;
+    box-sizing:border-box;
+  }
 
-    .title {
-        padding: 6px 10px;
-        background: #111;
-        font-size: 15px;
-        font-weight: bold;
-        border-bottom: 1px solid #333;
-    }
+  /* Panels */
+  .panel {
+    border-radius:var(--radius);
+    background:var(--panel-bg);
+    border:1px solid var(--panel-border);
+    box-shadow:0 10px 30px rgba(0,0,0,0.55);
+    overflow:hidden;
+    backdrop-filter: blur(10px);
+  }
 
-    iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        flex-grow: 1;
-        background: #000;
-    }
+  .panel-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.12));
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
 
-    .right-side {
-        display: grid;
-        grid-template-rows: 1fr 1fr;
-        gap: 8px;
-    }
+  .h-title { font-weight:700; font-size:15px; }
+  .h-sub { font-size:12px; color:var(--muted); }
+
+  /* iframe styles */
+  iframe.map {
+    width:100%;
+    height:100%;
+    border:0;
+    display:block;
+    background:#000;
+    overflow:hidden;
+    pointer-events:none; /* locked: no pan/zoom/scroll */
+  }
+
+  iframe.camera {
+    width:100%;
+    height:100%;
+    border:0;
+    display:block;
+    background:#000;
+    overflow:hidden;
+    pointer-events:auto; /* camera controls enabled */
+  }
+
+  /* Layout sizes (Safari friendly fixed heights) */
+  /* Camera gets more space */
+  #cameraPanel { height:72vh; }
+  #mapsRow { height:26vh; display:flex; gap:12px; box-sizing:border-box; padding:10px; }
+  .mapBox { flex:1; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+
+  /* responsive */
+  @media (max-width:900px){
+    #cameraPanel { height:68vh; }
+    #mapsRow { height:30vh; flex-direction:row; }
+  }
+  @media (max-width:700px){
+    #cameraPanel { height:62vh; }
+    #mapsRow { height:36vh; flex-direction:column; padding:6px; gap:8px; }
+    .mapBox { height:33vh; }
+  }
 </style>
 </head>
+<body>
+  <div class="app">
 
-<body>A
+    <!-- Camera panel (interaction enabled) -->
+    <div id="cameraPanel" class="panel">
+      <div class="panel-head" aria-hidden="true">
+        <div class="h-title">Camera</div>
+        <div class="h-sub"></div>
+      </div>
 
-<div class="container">
-
-    <!-- LARGE CAMERA PANEL -->
-    <div class="panel">
-        <div class="title">Live Camera – 192.168.1.69</div>
-        <iframe src="http://192.168.1.69/control/userimage.html"></iframe>
+      <!-- camera iframe allows interaction -->
+      <iframe id="camFrame" class="camera" src="http://192.168.1.69/control/userimage.html"></iframe>
     </div>
 
-    <!-- RIGHT SIDE: WINDY STACKED -->
-    <div class="right-side">
-
-        <div class="panel">
-            <div class="title">Windy Satellite View (Your URL)</div>
-            <iframe id="windySat" src="https://embed.windy.com/embed2.html?lat=12.167&lon=-68.998&zoom=9&overlay=satellite"></iframe>
+    <!-- Maps row: Windy Satellite | Windy Radar (side-by-side, equal size) -->
+    <div id="mapsRow" class="panel" style="display:flex;align-items:stretch;">
+      <!-- Windy Satellite (focused on ABC islands) -->
+      <div class="mapBox">
+        <div class="panel-head" style="padding:8px 12px;">
+          <div class="h-title">Windy Satellite</div>
+          <div class="h-sub">ABC islands</div>
         </div>
+        <iframe id="windySat" class="map"
+          src="https://embed.windy.com/embed2.html?lat=12.167&lon=-68.998&zoom=9&overlay=satellite">
+        </iframe>
+      </div>
 
-        <div class="panel">
-            <div class="title">Windy Radar – Zoomed In</div>
-            <iframe id="windyRadar" src="https://embed.windy.com/embed2.html?lat=12.20&lon=-69.05&zoom=9&overlay=radar"></iframe>
+      <!-- Windy Radar (focused on ABC islands) -->
+      <div class="mapBox">
+        <div class="panel-head" style="padding:8px 12px;">
+          <div class="h-title">Windy Radar</div>
+          <div class="h-sub">ABC islands</div>
         </div>
-
+        <iframe id="windyRadar" class="map"
+          src="https://embed.windy.com/embed2.html?lat=12.167&lon=-68.998&zoom=9&overlay=radar">
+        </iframe>
+      </div>
     </div>
 
-</div>
+  </div>
 
-<!-- AUTO-REFRESH SCRIPT -->
 <script>
-    function refreshWindy() {
-        document.getElementById("windySat").src += "";
-        document.getElementById("windyRadar").src += "";
-    }
+  // Auto-refresh Windy panels every 60 seconds (keeps them current)
+  function refreshMaps(){
+    const t = Date.now();
+    const sat = document.getElementById('windySat');
+    const rad = document.getElementById('windyRadar');
 
-    // Refresh every 1 minute (60,000 ms)
-    setInterval(refreshWindy, 60000);
+    if(sat) sat.src = 'https://embed.windy.com/embed2.html?lat=12.167&lon=-68.998&zoom=9&overlay=satellite' + '&_=' + t;
+    if(rad) rad.src = 'https://embed.windy.com/embed2.html?lat=12.167&lon=-68.998&zoom=9&overlay=radar' + '&_=' + t;
+  }
+
+  setInterval(refreshMaps, 60000);
 </script>
-
 </body>
 </html>
