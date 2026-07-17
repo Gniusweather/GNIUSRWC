@@ -1,0 +1,51 @@
+name: Weather alerts push
+
+on:
+  # Schedule paused while the Pages suspension/account flag is reviewed —
+  # a fresh cron POSTing to an external service is a common false-positive
+  # trigger for GitHub's abuse automation. Re-enable after the account is
+  # cleared by uncommenting:
+  # schedule:
+  #   - cron: '0 * * * *'   # hourly
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Send a test notification'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency: wx-alerts
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Restore the last-alert signature so unchanged conditions don't re-notify
+      - name: Restore alert state
+        uses: actions/cache/restore@v4
+        with:
+          path: .wx-state
+          key: wx-state-restore
+          restore-keys: wx-state-
+
+      - name: Check conditions and push via ntfy
+        env:
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+          WX_TEST: ${{ inputs.test && '1' || '' }}
+        run: node scripts/wx-alerts.mjs
+
+      - name: Save alert state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .wx-state
+          key: wx-state-${{ github.run_id }}
