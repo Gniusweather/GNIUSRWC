@@ -10041,7 +10041,24 @@ async function fetchMultiModelForecast(){
     const core = FORECAST_MODELS.filter(m => FORECAST_CORE_KEYS.includes(m.key));
     r = await _fetchForecastAttempt(core);
   }
-  return r || {forecasts:[], daily:null};
+  r = r || {forecasts:[], daily:null};
+
+  // AROME Antilles + KNMI HARMONIE Caribbean are the highest-resolution models
+  // for the ABC islands specifically. The cascade above drops them first (via
+  // the !m.exp filter) whenever ANY model in the big batch is rejected, even
+  // if the rejection had nothing to do with these two — so fetch them in a
+  // dedicated request whenever they didn't already make it into `r`, ensuring
+  // their availability is never held hostage by unrelated models.
+  const haveKeys = new Set(r.forecasts.map(f => f.model.key));
+  const missingExp = FORECAST_MODELS.filter(m => m.exp && !haveKeys.has(m.key));
+  if(missingExp.length){
+    const rExp = await _fetchForecastAttempt(missingExp);
+    if(rExp && rExp.forecasts.length){
+      r.forecasts = r.forecasts.concat(rExp.forecasts);
+      if(!r.daily) r.daily = rExp.daily;
+    }
+  }
+  return r;
 }
 
 /* Saharan dust outlook (CAMS, µg/m³ surface dust) for the 5 forecast days.
