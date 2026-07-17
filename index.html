@@ -5486,9 +5486,9 @@ function renderWrittenForecast(){
   function showerWord(pop){
     if(isPap){
       if(pop < 20) return 'práktikamente sin áwaseru';
-      if(pop < 40) return 'un froiu isolá i kòrtiku';
-      if(pop < 60) return 'algun froiu plamá di áwaseru';
-      return 'periodo ku áwaseru';
+      if(pop < 40) return 'un áwaseru isolá i kòrtiku';
+      if(pop < 60) return 'algun áwaseru lokal plamá';
+      return 'periodo di áwaseru';
     }
     if(pop < 20) return isNL ? 'vrijwel geen neerslag' : 'little or no rainfall';
     if(pop < 40) return isNL ? 'een enkele lokale bui' : 'an isolated brief shower';
@@ -5507,12 +5507,12 @@ function renderWrittenForecast(){
   // ── Synoptic situation ──
   var syn = [];
   if(isPap){
-    syn.push('Un flujo pasat ' + (d0.wind != null && d0.wind >= 20 ? 'basta fuerte' : d0.wind != null && d0.wind >= 13 ? 'moderá' : 'suave') + ' for di direkshon ' + (dirTxt.indexOf('E') >= 0 ? 'oriental' : 'variabel') + ' ta domina e Karibe suriano.');
+    syn.push('Un fluho di bientu pasat ' + (d0.wind != null && d0.wind >= 20 ? 'basta fuerte' : d0.wind != null && d0.wind >= 13 ? 'moderá' : 'suave') + ' for di ' + (dirTxt.indexOf('E') >= 0 ? 'ost' : 'direkshon variabel') + ' ta domina nos region.');
     if(slp) syn.push('Presion atmosferiko na nivel di laman ta rondó di <b>' + slp + ' hPa</b>' + (tend ? ' i ta ' + (TEND_PAP[tend] || tend.toLowerCase()) : '') + '.');
-    if(maxPop >= 40) syn.push('Un mása di airu mas húmedo ta pasa over di e region i ta oumentá e chns di áwaseru.');
-    else if(maxPop >= 20) syn.push('Lokalmente algu di inestabilidat por generá un froiu kòrtiku.');
+    if(maxPop >= 40) syn.push('Un mása di airu mas húmedo ta pasa riba nos region i ta oumentá e posibilidat di áwaseru.');
+    else if(maxPop >= 20) syn.push('Lokalmente algu di inestabilidat por generá un áwaseru kòrtiku.');
     else syn.push('Airu relativamente seku i stabil ta domina.');
-    if(dust != null && dust >= 25) syn.push('Stof di Sahara ta presente (' + Math.round(dust) + ' µg/m³) i por reduzí bishibilidat un tiki.');
+    if(dust != null && dust >= 25) syn.push('Stòf di Sahara ta presente (' + Math.round(dust) + ' µg/m³) i por reduzí bishibilidat un tiki.');
     if(wave != null) syn.push('Haltura di ola na laman habrí ta rondó di <b>' + wave.toFixed(1) + ' m</b>.');
   } else if(isNL){
     syn.push('Een ' + (d0.wind != null && d0.wind >= 20 ? 'vrij krachtige' : d0.wind != null && d0.wind >= 13 ? 'matige' : 'zwakke') + ' passaatstroming uit ' + (dirTxt.indexOf('E') >= 0 ? 'oostelijke' : 'wisselende') + ' richting overheerst het zuidelijk Caribisch gebied.');
@@ -5538,7 +5538,7 @@ function renderWrittenForecast(){
     fcTxt.push(cloudWord(cloud).charAt(0).toUpperCase() + cloudWord(cloud).slice(1) + ' ku ' + showerWord(maxPop) + (maxPop >= 20 ? ', partikularmente durante ' + PART[peakPart] : '') + '.');
     if(tMax != null) fcTxt.push('Temperatura máksimo lo ta rondó di <b>' + tMax + '°C</b>' + (tMin != null ? ', mínimo den anochi rondó di <b>' + tMin + '°C</b>' : '') + '.');
     if(wLo != null) fcTxt.push('Bientu for di ' + dirTxt + ' ku <b>' + wLo + '–' + wHi + ' nudo</b>' + (gust != null && gust >= wHi + 5 ? ', ku ráfaga te <b>' + gust + ' nudo</b>' : '') + '.');
-    if(maxPop >= 20) fcTxt.push('Chns di áwaseru <b>' + maxPop + '%</b>' + (totPrecip >= 0.5 ? ' · kantidat esperá ' + totPrecip.toFixed(1) + ' mm' : '') + '.');
+    if(maxPop >= 20) fcTxt.push('Posibilidat di áwaseru <b>' + maxPop + '%</b>' + (totPrecip >= 0.5 ? ' · kantidat sperá ' + totPrecip.toFixed(1) + ' mm' : '') + '.');
     if(uv != null && uv >= 8) fcTxt.push('Índiko UV ta yega te <b>' + uv + '</b> (masha haltu) — protekshon rekomendá.');
   } else if(isNL){
     fcTxt.push(cloudWord(cloud).charAt(0).toUpperCase() + cloudWord(cloud).slice(1) + ' met ' + showerWord(maxPop) + (maxPop >= 20 ? ', vooral in ' + PART[peakPart] : '') + '.');
@@ -5693,7 +5693,7 @@ function renderMeteoForecast(host, fc){
   var DIR_EN = {N:'Northerly',NNE:'North-northeasterly',NE:'Northeasterly',ENE:'East-northeasterly',E:'Easterly',ESE:'East-southeasterly',SE:'Southeasterly',SSE:'South-southeasterly',S:'Southerly',SSW:'South-southwesterly',SW:'Southwesterly',WSW:'West-southwesterly',W:'Westerly',WNW:'West-northwesterly',NW:'Northwesterly',NNW:'North-northwesterly'};
   var DIR_NL = {N:'Noordelijk',NNE:'Noord-noordoostelijk',NE:'Noordoostelijk',ENE:'Oost-noordoostelijk',E:'Oostelijk',ESE:'Oost-zuidoostelijk',SE:'Zuidoostelijk',SSE:'Zuid-zuidoostelijk',S:'Zuidelijk',SSW:'Zuid-zuidwestelijk',SW:'Zuidwestelijk',WSW:'West-zuidwestelijk',W:'Westelijk',WNW:'West-noordwestelijk',NW:'Noordwestelijk',NNW:'Noord-noordwestelijk'};
   var DIRN_NL = {N:'noord',NNE:'noord-noordoost',NE:'noordoost',ENE:'oost-noordoost',E:'oost',ESE:'oost-zuidoost',SE:'zuidoost',SSE:'zuid-zuidoost',S:'zuid',SSW:'zuid-zuidwest',SW:'zuidwest',WSW:'west-zuidwest',W:'west',WNW:'west-noordwest',NW:'noordwest',NNW:'noord-noordwest'};
-  var DIR_PAP = {N:'nort',NNE:'nort-noreste',NE:'noreste',ENE:'ost-noreste',E:'ost',ESE:'ost-sudeste',SE:'sudeste',SSE:'sur-sudeste',S:'sur',SSW:'sur-sudwest',SW:'sudwest',WSW:'west-sudwest',W:'west',WNW:'west-noroeste',NW:'noroeste',NNW:'nort-noroeste'};
+  var DIR_PAP = {N:'nort',NNE:'nort-nordost',NE:'nordost',ENE:'ost-nordost',E:'ost',ESE:'ost-sudost',SE:'sudost',SSE:'sur-sudost',S:'sur',SSW:'sur-sudwest',SW:'sudwest',WSW:'west-sudwest',W:'west',WNW:'west-nordwest',NW:'nordwest',NNW:'nort-nordwest'};
   var c0 = d0.windDir != null ? COMP[Math.round(d0.windDir/22.5)%16] : 'E';
   var c1 = d1.windDir != null ? COMP[Math.round(d1.windDir/22.5)%16] : c0;
   var kmhLo = BFT[fLo][0], kmhHi = BFT[fHi][1], knLo = BFT[fLo][2], knHi = BFT[fHi][3];
@@ -5726,12 +5726,12 @@ function renderMeteoForecast(host, fc){
   }
   var wxTxt;
   if(isPap){
-    wxTxt = cw(cloud) + (hazy ? ' ku poko velo di stòf' : '') + ' ta e pronóstiko pa awe. ';
-    wxTxt += maxPop < 20 ? 'Kondishonnan di tempu lo keda mayoria seku.'
-      : maxPop < 40 ? 'Aunke no ta eksklui un froiu kòrtiku i isolá, kondishonnan di tempu lo keda mayoria seku.'
-      : maxPop < 60 ? 'Algun froiu lokal ta posibel.'
-      : 'Periodo ku áwaseru ta ser speré.';
-    wxTxt += '<br><br>' + (tMax != null ? 'Temperatura máksimo lo alkansá ' + tMax + '°C i temperatura mínimo lo ta ' + (tMin != null ? tMin : '—') + '°C.' : '');
+    wxTxt = cw(cloud) + (hazy ? ', ku poko velo di stòf,' : '') + ' ta e pronóstiko pa awe. ';
+    wxTxt += maxPop < 20 ? 'Kondishonnan lo keda mayoria seku.'
+      : maxPop < 40 ? 'De bes en kuando algu di áwaseru kòrtiku por kai riba algun área di Kòrsou.'
+      : maxPop < 60 ? 'Algun áwaseru lokal por ocurí durante e dia.'
+      : 'Periodo di áwaseru ta ser sperá.';
+    wxTxt += '<br><br>' + (tMax != null ? 'Temperatura máksimo lo alkansá ' + tMax + '°C i temperatura mínimo ' + (tMin != null ? tMin : '—') + '°C.' : '');
     if(sunrise) wxTxt += '<br>Solo ta sali ' + sunrise + ' i ta baha ' + sunset + ' o.l.';
   } else if(isNL){
     wxTxt = cw(cloud) + (hazy ? ' met lichte heiigheid' : '') + ' wordt vandaag verwacht. ';
@@ -5752,11 +5752,11 @@ function renderMeteoForecast(host, fc){
   var p = (typeof __monLastData==='object' && __monLastData && __monLastData.synopP) ? __monLastData.synopP : {};
   if(isPap){
     synTxt = maxPop >= 40
-      ? 'Un área di nubia i aktividat di áwaseru, relashoná ku humedat residual di un ola tropikal, ta move over di e Karibe suriano. Den e siguiente 24 oranan esaki ta oumentá e chns di áwaseru lokal riba nos isla.'
+      ? 'Un área di nubia i aktividat di áwaseru, relashoná ku humedat residual di un ola tropikal, ta pasa riba nos region. Den e siguiente 24 oranan esaki ta oumentá e posibilidat di áwaseru lokal riba nos isla.'
       : maxPop >= 20
-      ? 'Humedat residual den e region por okashonalmente oumentá nubosidat abou ku un froiu isolá, miéntras un fluho di bientu pasat mayoria stabil ta sigui domina.'
-      : 'Un mása di airu relativamente seku i stabil, guiá pa un fluho di bientu pasat konstante, ta domina e Karibe suriano.';
-    if(hazy) synTxt += ' Ademas, un tandanan di stof fini di Sahara lo tapa nos region durante e siguiente par di dianan.';
+      ? 'Humedat residual den e region por oumentá nubosidat abou di bes en kuando ku un áwaseru isolá, mientras un fluho di bientu pasat mayoria stabil ta sigui domina.'
+      : 'Un mása di airu relativamente seku i stabil, guiá pa un fluho di bientu pasat konstante, ta domina nos region.';
+    if(hazy) synTxt += ' Ademas, un velo di stòf fini di Sahara lo tapa nos region durante e siguiente par di dianan.';
     if(p.slp != null) synTxt += ' Presion atmosferiko na nivel di laman ta rondó di ' + p.slp.toFixed(1) + ' hPa.';
   } else if(isNL){
     synTxt = maxPop >= 40
@@ -5784,9 +5784,9 @@ function renderMeteoForecast(host, fc){
     if(ov.v.wavehi != null) wHiM = Math.max(wLoM + 0.5, ov.v.wavehi);
   }
   function ft(m){ return Math.round(m * 3.28084); }
-  var seaState = wHiM <= 1.5 ? (isPap ? 'Basta trankil' : isNL ? 'Vrij rustig' : 'Fairly calm') : wHiM <= 2.5 ? (isPap ? 'Moderá en general' : isNL ? 'Over het algemeen matig' : 'Moderate in general') : (isPap ? 'Moderá te basta brutu' : isNL ? 'Vrij ruw' : 'Rather rough');
+  var seaState = wHiM <= 1.5 ? (isPap ? 'Basta trankil' : isNL ? 'Vrij rustig' : 'Fairly calm') : wHiM <= 2.5 ? (isPap ? 'Moderá' : isNL ? 'Over het algemeen matig' : 'Moderate in general') : (isPap ? 'Moderá te basta brutu' : isNL ? 'Vrij ruw' : 'Rather rough');
   var seaTxt = isPap
-    ? seaState + ' ku altura di olanan entre ' + String(wLoM) + ' i ' + String(wHiM) + ' meter (' + ft(wLoM) + ' i ' + ft(wHiM) + ' pia). E olanan di mas haltu ta ocurí riba laman habrí i banda di kosta nort.'
+    ? seaState + ' ku altura di olanan entre ' + String(wLoM) + ' i ' + String(wHiM) + ' meter (' + ft(wLoM) + ' i ' + ft(wHiM) + ' pia). E olanan di mas haltu ta situá nort di nos isla.'
     : isNL
     ? seaState + ' met golfhoogtes van ' + String(wLoM).replace('.',',') + ' tot ' + String(wHiM).replace('.',',') + ' meter (' + ft(wLoM) + ' tot ' + ft(wHiM) + ' voet). De hoogste golfactiviteit treedt op boven open zee en langs de noordkust.'
     : seaState + ' with wave heights between ' + wLoM + ' and ' + wHiM + ' meters (' + ft(wLoM) + ' and ' + ft(wHiM) + ' feet). The highest wave activity will occur over the open sea and along the northern seaboard.';
@@ -5795,7 +5795,7 @@ function renderMeteoForecast(host, fc){
   var d2pop = d2.pop != null ? Math.round(d2.pop) : 0;
   var d2cloud = d2.cloud != null ? Math.round(d2.cloud) : 50;
   var outTxt = isPap
-    ? cw(d2cloud) + (d2pop < 30 ? ', gradualmente mas seku' : ', ku chns di algun froiu') + (hazy ? ' i ku poko velo di stòf' : '') + '.'
+    ? cw(d2cloud) + (d2pop < 30 ? ', gradualmente mas seku' : ', ku posibilidat di algun áwaseru') + (hazy ? ' i ku poko velo di stòf' : '') + '.'
     : isNL
     ? cw(d2cloud) + (d2pop < 30 ? ', geleidelijk droger' : ', met kans op enkele buien') + (hazy ? ' met wat heiigheid' : '') + '.'
     : cw(d2cloud) + (d2pop < 30 ? ', mainly dry' : ', with a chance of some showers') + (hazy ? ' and slightly reduced visibility' : '') + '.';
