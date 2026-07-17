@@ -3224,6 +3224,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="wr-lang">
           <button class="wr-lang-btn active" data-wrlang="en" onclick="setWrittenLang('en',this)">&#127468;&#127463; English</button>
           <button class="wr-lang-btn" data-wrlang="nl" onclick="setWrittenLang('nl',this)">&#127475;&#127473; Nederlands</button>
+          <button class="wr-lang-btn" data-wrlang="pap" onclick="setWrittenLang('pap',this)">&#127464;&#127484; Papiamentu</button>
         </div>
       </div>
       <div class="wr-modes">
@@ -5467,8 +5468,15 @@ function renderWrittenForecast(){
   var wave = (window.__marine && window.__marine.wave_height != null) ? window.__marine.wave_height : null;
 
   // Wording helpers per language
-  var isNL = (L === 'nl');
+  var isNL = (L === 'nl'), isPap = (L === 'pap');
   function cloudWord(c){
+    if(isPap){
+      if(c == null) return 'parsialmente nublá';
+      if(c < 25) return 'mayoria soleá';
+      if(c < 50) return 'parsialmente nublá';
+      if(c < 75) return 'parsialmente te mayoria nublá';
+      return 'mayoria nublá';
+    }
     if(c == null) return isNL ? 'wisselend bewolkt' : 'partly cloudy';
     if(c < 25) return isNL ? 'overwegend zonnig' : 'mostly sunny';
     if(c < 50) return isNL ? 'gedeeltelijk bewolkt' : 'partly cloudy';
@@ -5476,22 +5484,37 @@ function renderWrittenForecast(){
     return isNL ? 'overwegend bewolkt' : 'mostly cloudy';
   }
   function showerWord(pop){
+    if(isPap){
+      if(pop < 20) return 'práktikamente sin áwaseru';
+      if(pop < 40) return 'un froiu isolá i kòrtiku';
+      if(pop < 60) return 'algun froiu plamá di áwaseru';
+      return 'periodo ku áwaseru';
+    }
     if(pop < 20) return isNL ? 'vrijwel geen neerslag' : 'little or no rainfall';
     if(pop < 40) return isNL ? 'een enkele lokale bui' : 'an isolated brief shower';
     if(pop < 60) return isNL ? 'enkele verspreide buien' : 'some scattered showers';
     return isNL ? 'perioden met buien' : 'periods of showers';
   }
   var PART = {
-    night:     isNL ? 'de nacht'   : 'the night',
-    morning:   isNL ? 'de ochtend' : 'the morning',
-    afternoon: isNL ? 'de middag'  : 'the afternoon',
-    evening:   isNL ? 'de avond'   : 'the evening'
+    night:     isPap ? 'anochi'      : isNL ? 'de nacht'   : 'the night',
+    morning:   isPap ? 'mainta'      : isNL ? 'de ochtend' : 'the morning',
+    afternoon: isPap ? 'atardi'      : isNL ? 'de middag'  : 'the afternoon',
+    evening:   isPap ? 'anochi tempran' : isNL ? 'de avond'   : 'the evening'
   };
   var TEND_NL = {'Increasing':'stijgend','Inc slowly':'langzaam stijgend','Inc then dec':'stijgend, daarna dalend','Steady→inc':'stabiel, daarna stijgend','Steady':'stabiel','Dec then inc':'dalend, daarna stijgend','Decreasing':'dalend','Dec slowly':'langzaam dalend','Steady→dec':'stabiel, daarna dalend','Rapid dec':'snel dalend'};
+  var TEND_PAP = {'Increasing':'oumentando','Inc slowly':'oumentando poko poko','Inc then dec':'oumentando, despues baháando','Steady→inc':'stabil, despues oumentando','Steady':'stabil','Dec then inc':'baháando, despues oumentando','Decreasing':'baháando','Dec slowly':'baháando poko poko','Steady→dec':'stabil, despues baháando','Rapid dec':'baháando rápido'};
 
   // ── Synoptic situation ──
   var syn = [];
-  if(isNL){
+  if(isPap){
+    syn.push('Un flujo pasat ' + (d0.wind != null && d0.wind >= 20 ? 'basta fuerte' : d0.wind != null && d0.wind >= 13 ? 'moderá' : 'suave') + ' for di direkshon ' + (dirTxt.indexOf('E') >= 0 ? 'oriental' : 'variabel') + ' ta domina e Karibe suriano.');
+    if(slp) syn.push('Presion atmosferiko na nivel di laman ta rondó di <b>' + slp + ' hPa</b>' + (tend ? ' i ta ' + (TEND_PAP[tend] || tend.toLowerCase()) : '') + '.');
+    if(maxPop >= 40) syn.push('Un mása di airu mas húmedo ta pasa over di e region i ta oumentá e chns di áwaseru.');
+    else if(maxPop >= 20) syn.push('Lokalmente algu di inestabilidat por generá un froiu kòrtiku.');
+    else syn.push('Airu relativamente seku i stabil ta domina.');
+    if(dust != null && dust >= 25) syn.push('Stof di Sahara ta presente (' + Math.round(dust) + ' µg/m³) i por reduzí bishibilidat un tiki.');
+    if(wave != null) syn.push('Haltura di ola na laman habrí ta rondó di <b>' + wave.toFixed(1) + ' m</b>.');
+  } else if(isNL){
     syn.push('Een ' + (d0.wind != null && d0.wind >= 20 ? 'vrij krachtige' : d0.wind != null && d0.wind >= 13 ? 'matige' : 'zwakke') + ' passaatstroming uit ' + (dirTxt.indexOf('E') >= 0 ? 'oostelijke' : 'wisselende') + ' richting overheerst het zuidelijk Caribisch gebied.');
     if(slp) syn.push('De luchtdruk op zeeniveau bedraagt omstreeks <b>' + slp + ' hPa</b>' + (tend ? ' en is ' + (TEND_NL[tend] || tend.toLowerCase()) : '') + '.');
     if(maxPop >= 40) syn.push('Een vochtiger luchtmassa trekt over de regio en verhoogt de kans op buien.');
@@ -5511,7 +5534,13 @@ function renderWrittenForecast(){
 
   // ── 24h forecast text ──
   var fcTxt = [];
-  if(isNL){
+  if(isPap){
+    fcTxt.push(cloudWord(cloud).charAt(0).toUpperCase() + cloudWord(cloud).slice(1) + ' ku ' + showerWord(maxPop) + (maxPop >= 20 ? ', partikularmente durante ' + PART[peakPart] : '') + '.');
+    if(tMax != null) fcTxt.push('Temperatura máksimo lo ta rondó di <b>' + tMax + '°C</b>' + (tMin != null ? ', mínimo den anochi rondó di <b>' + tMin + '°C</b>' : '') + '.');
+    if(wLo != null) fcTxt.push('Bientu for di ' + dirTxt + ' ku <b>' + wLo + '–' + wHi + ' nudo</b>' + (gust != null && gust >= wHi + 5 ? ', ku ráfaga te <b>' + gust + ' nudo</b>' : '') + '.');
+    if(maxPop >= 20) fcTxt.push('Chns di áwaseru <b>' + maxPop + '%</b>' + (totPrecip >= 0.5 ? ' · kantidat esperá ' + totPrecip.toFixed(1) + ' mm' : '') + '.');
+    if(uv != null && uv >= 8) fcTxt.push('Índiko UV ta yega te <b>' + uv + '</b> (masha haltu) — protekshon rekomendá.');
+  } else if(isNL){
     fcTxt.push(cloudWord(cloud).charAt(0).toUpperCase() + cloudWord(cloud).slice(1) + ' met ' + showerWord(maxPop) + (maxPop >= 20 ? ', vooral in ' + PART[peakPart] : '') + '.');
     if(tMax != null) fcTxt.push('Maximumtemperatuur rond <b>' + tMax + '°C</b>' + (tMin != null ? ', minimum in de nacht rond <b>' + tMin + '°C</b>' : '') + '.');
     if(wLo != null) fcTxt.push('Wind uit ' + dirTxt + ' met <b>' + wLo + '–' + wHi + ' kt</b>' + (gust != null && gust >= wHi + 5 ? ', uitschieters tot <b>' + gust + ' kt</b>' : '') + '.');
@@ -5528,14 +5557,26 @@ function renderWrittenForecast(){
   // ── Outlook (day 2-3) ──
   var out;
   var d2pop = d2.pop != null ? Math.round(d2.pop) : 0;
-  if(isNL){
+  if(isPap){
+    out = 'Pa e siguiente dianan: ' + cloudWord(d2.cloud) + ' ku ' + showerWord(d2pop) + '; máksimo rondó di ' + (d2.tempHigh != null ? Math.round(d2.tempHigh) : tMax) + '°C.';
+  } else if(isNL){
     out = 'Voor de daaropvolgende dagen: ' + cloudWord(d2.cloud) + ' met ' + showerWord(d2pop) + '; maxima rond ' + (d2.tempHigh != null ? Math.round(d2.tempHigh) : tMax) + '°C.';
   } else {
     out = 'For the following days: ' + cloudWord(d2.cloud) + ' with ' + showerWord(d2pop) + '; highs near ' + (d2.tempHigh != null ? Math.round(d2.tempHigh) : tMax) + '°C.';
   }
 
-  var issued = now.toLocaleString(isNL ? 'nl-NL' : 'en-GB', {weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
-  var T = isNL
+  var issued;
+  if(isPap){
+    var PAP_DAYS_FULL = ['djadumingu','djaluna','djamars','djarason','djaweps','djabierna','djasabra'];
+    var PAP_MON_FULL = ['yanüari','febrüari','mart','aprel','mei','yüni','yüli','ougùstùs','sèptèmber','òktober','novèmber','désèmber'];
+    var _hh = String(now.getHours()).padStart(2,'0'), _mm = String(now.getMinutes()).padStart(2,'0');
+    issued = PAP_DAYS_FULL[now.getDay()] + ', ' + now.getDate() + ' di ' + PAP_MON_FULL[now.getMonth()] + ', ' + _hh + ':' + _mm;
+  } else {
+    issued = now.toLocaleString(isNL ? 'nl-NL' : 'en-GB', {weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+  }
+  var T = isPap
+    ? {ttl:'Pronóstiko Públiko Islanan ABC', issued:'Kompilá', syn:'Situashon General', fc:'Pronóstiko pa e Siguiente 24 Ora', out:'Perspektiva', src:'Generá outomátikamente for di konsenso multi-modelo (GFS · ECMWF · ICON) + observashon en bibo di SYNOP/KNMI'}
+    : isNL
     ? {ttl:'Weerbericht ABC-eilanden', issued:'Uitgegeven', syn:'Synoptische situatie', fc:'Verwachting komende 24 uur', out:'Vooruitzichten', src:'Automatisch gegenereerd uit multi-model consensus (GFS · ECMWF · ICON) + live SYNOP/KNMI-waarnemingen'}
     : {ttl:'Public Forecast ABC Islands', issued:'Issued', syn:'Synoptic Situation', fc:'Forecast Next 24 Hours', out:'Outlook', src:'Auto-generated from multi-model consensus (GFS · ECMWF · ICON) + live SYNOP/KNMI observations'};
 
@@ -5565,7 +5606,7 @@ window.renderWrittenForecast = renderWrittenForecast;
    all text, times and dates are generated daily from live forecast data on the
    official issue schedule (05:00 / 11:00 / 17:00 l.t. = UTC-4). */
 function renderMeteoForecast(host, fc){
-  var isNL = (__wrLang === 'nl');
+  var isNL = (__wrLang === 'nl'), isPap = (__wrLang === 'pap');
   var d0 = fc[0], d1 = fc[1] || d0, d2 = fc[2] || d1;
   var pad2 = function(n){ return (n < 10 ? '0' : '') + n; };
 
@@ -5583,21 +5624,25 @@ function renderMeteoForecast(host, fc){
   var validDay = new Date(issueDay); validDay.setUTCDate(validDay.getUTCDate() + 1);
   var outlookDay = new Date(validDay); outlookDay.setUTCDate(outlookDay.getUTCDate() + 1);
   var PERIODS = [
-    {en:'morning', nl:'ochtend', vt:'06:00'},
-    {en:'midday',  nl:'middag',  vt:'12:00'},
-    {en:'evening', nl:'avond',   vt:'18:00'}
+    {en:'morning', nl:'ochtend', pap:'mainta',  vt:'06:00'},
+    {en:'midday',  nl:'middag',  pap:'merdia',  vt:'12:00'},
+    {en:'evening', nl:'avond',   pap:'atardi',  vt:'18:00'}
   ];
   var per = PERIODS[slot.period];
   var nextSlotLt = slot.lt === 5 ? 11 : slot.lt === 11 ? 17 : 5;
 
   var DAYS_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var DAYS_NL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  var DAYS_PAP = ['djadumingu','djaluna','djamars','djarason','djaweps','djabierna','djasabra'];
   var MON_EN  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   var MON_NL  = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  var MON_PAP = ['yanüari','febrüari','mart','aprel','mei','yüni','yüli','ougùstùs','sèptèmber','òktober','novèmber','désèmber'];
   function dEN(d){ return DAYS_EN[d.getUTCDay()]; }
   function dNL(d){ return DAYS_NL[d.getUTCDay()]; }
+  function dPAP(d){ return DAYS_PAP[d.getUTCDay()]; }
   function dateEN(d){ return MON_EN[d.getUTCMonth()] + ' ' + d.getUTCDate() + ', ' + d.getUTCFullYear(); }
   function dateNL(d){ return d.getUTCDate() + ' ' + MON_NL[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+  function datePAP(d){ return d.getUTCDate() + ' di ' + MON_PAP[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
   var issueLt  = pad2(slot.lt) + ':00';
   var issueUtc = pad2((slot.lt + 4) % 24) + ':00';
   var nextUtc  = pad2((nextSlotLt + 4) % 24) + ':00';
@@ -5643,15 +5688,23 @@ function renderMeteoForecast(host, fc){
   var fG = gust != null ? forceOf(gust) : null;
   var FN_EN = {1:'light',2:'light',3:'gentle',4:'moderate',5:'fresh',6:'strong',7:'near gale',8:'gale'};
   var FN_NL = {1:'zwak',2:'zwak',3:'matig',4:'matig',5:'vrij krachtig',6:'krachtig',7:'hard',8:'stormachtig'};
+  var FN_PAP = {1:'liviano',2:'liviano',3:'suave',4:'moderá',5:'basta fuerte',6:'fuerte',7:'duru',8:'tempestat'};
   var COMP = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   var DIR_EN = {N:'Northerly',NNE:'North-northeasterly',NE:'Northeasterly',ENE:'East-northeasterly',E:'Easterly',ESE:'East-southeasterly',SE:'Southeasterly',SSE:'South-southeasterly',S:'Southerly',SSW:'South-southwesterly',SW:'Southwesterly',WSW:'West-southwesterly',W:'Westerly',WNW:'West-northwesterly',NW:'Northwesterly',NNW:'North-northwesterly'};
   var DIR_NL = {N:'Noordelijk',NNE:'Noord-noordoostelijk',NE:'Noordoostelijk',ENE:'Oost-noordoostelijk',E:'Oostelijk',ESE:'Oost-zuidoostelijk',SE:'Zuidoostelijk',SSE:'Zuid-zuidoostelijk',S:'Zuidelijk',SSW:'Zuid-zuidwestelijk',SW:'Zuidwestelijk',WSW:'West-zuidwestelijk',W:'Westelijk',WNW:'West-noordwestelijk',NW:'Noordwestelijk',NNW:'Noord-noordwestelijk'};
   var DIRN_NL = {N:'noord',NNE:'noord-noordoost',NE:'noordoost',ENE:'oost-noordoost',E:'oost',ESE:'oost-zuidoost',SE:'zuidoost',SSE:'zuid-zuidoost',S:'zuid',SSW:'zuid-zuidwest',SW:'zuidwest',WSW:'west-zuidwest',W:'west',WNW:'west-noordwest',NW:'noordwest',NNW:'noord-noordwest'};
+  var DIR_PAP = {N:'nort',NNE:'nort-noreste',NE:'noreste',ENE:'ost-noreste',E:'ost',ESE:'ost-sudeste',SE:'sudeste',SSE:'sur-sudeste',S:'sur',SSW:'sur-sudwest',SW:'sudwest',WSW:'west-sudwest',W:'west',WNW:'west-noroeste',NW:'noroeste',NNW:'nort-noroeste'};
   var c0 = d0.windDir != null ? COMP[Math.round(d0.windDir/22.5)%16] : 'E';
   var c1 = d1.windDir != null ? COMP[Math.round(d1.windDir/22.5)%16] : c0;
   var kmhLo = BFT[fLo][0], kmhHi = BFT[fHi][1], knLo = BFT[fLo][2], knHi = BFT[fHi][3];
   var windTxt;
-  if(isNL){
+  if(isPap){
+    windTxt = 'Generalmente for di ' + DIR_PAP[c0] + (c1 !== c0 ? ', okashonalmente for di ' + DIR_PAP[c1] : '') +
+      ' i ' + FN_PAP[fLo] + (fHi > fLo ? ' te ' + FN_PAP[fHi] : '') +
+      '; forsa ' + fLo + (fHi > fLo ? ' te ' + fHi : '') +
+      ' (' + kmhLo + ' te ' + kmhHi + ' km/ora, ' + knLo + ' te ' + knHi + ' nudo).';
+    if(fG != null && fG > fHi) windTxt += ' De bes en kuando ' + FN_PAP[fG] + ' den ráfaga; forsa ' + fG + ' (' + BFT[fG][0] + ' te ' + BFT[fG][1] + ' km/ora, ' + BFT[fG][2] + ' te ' + BFT[fG][3] + ' nudo).';
+  } else if(isNL){
     windTxt = DIR_NL[c0] + (c1 !== c0 ? ', soms overgaand naar ' + DIRN_NL[c1] : '') +
       ' en ' + FN_NL[fLo] + (fHi > fLo ? ' tot ' + FN_NL[fHi] : '') +
       '; windkracht ' + fLo + (fHi > fLo ? ' tot ' + fHi : '') +
@@ -5667,11 +5720,20 @@ function renderMeteoForecast(host, fc){
 
   // ── Weather paragraph ──
   function cw(c){ // cloud word
+    if(isPap) return c < 25 ? 'Mayoria soleá' : c < 50 ? 'Parsialmente nublá' : c < 75 ? 'Parsialmente te mayoria nublá' : 'Mayoria nublá';
     if(isNL) return c < 25 ? 'Overwegend zonnig' : c < 50 ? 'Gedeeltelijk bewolkt' : c < 75 ? 'Half tot zwaar bewolkt' : 'Zwaar bewolkt';
     return c < 25 ? 'Mostly sunny' : c < 50 ? 'Partly cloudy' : c < 75 ? 'Partly to mostly cloudy' : 'Mostly cloudy';
   }
   var wxTxt;
-  if(isNL){
+  if(isPap){
+    wxTxt = cw(cloud) + (hazy ? ' ku poko velo di stòf' : '') + ' ta e pronóstiko pa awe. ';
+    wxTxt += maxPop < 20 ? 'Kondishonnan di tempu lo keda mayoria seku.'
+      : maxPop < 40 ? 'Aunke no ta eksklui un froiu kòrtiku i isolá, kondishonnan di tempu lo keda mayoria seku.'
+      : maxPop < 60 ? 'Algun froiu lokal ta posibel.'
+      : 'Periodo ku áwaseru ta ser speré.';
+    wxTxt += '<br><br>' + (tMax != null ? 'Temperatura máksimo lo alkansá ' + tMax + '°C i temperatura mínimo lo ta ' + (tMin != null ? tMin : '—') + '°C.' : '');
+    if(sunrise) wxTxt += '<br>Solo ta sali ' + sunrise + ' i ta baha ' + sunset + ' o.l.';
+  } else if(isNL){
     wxTxt = cw(cloud) + (hazy ? ' met lichte heiigheid' : '') + ' wordt vandaag verwacht. ';
     wxTxt += maxPop < 20 ? 'De weersomstandigheden blijven overwegend droog.'
       : maxPop < 40 ? 'Hoewel een korte, geïsoleerde bui niet volledig kan worden uitgesloten, blijven de weersomstandigheden overwegend droog.'
@@ -5688,7 +5750,15 @@ function renderMeteoForecast(host, fc){
   // ── Synopsis ──
   var synTxt;
   var p = (typeof __monLastData==='object' && __monLastData && __monLastData.synopP) ? __monLastData.synopP : {};
-  if(isNL){
+  if(isPap){
+    synTxt = maxPop >= 40
+      ? 'Un área di nubia i aktividat di áwaseru, relashoná ku humedat residual di un ola tropikal, ta move over di e Karibe suriano. Den e siguiente 24 oranan esaki ta oumentá e chns di áwaseru lokal riba nos isla.'
+      : maxPop >= 20
+      ? 'Humedat residual den e region por okashonalmente oumentá nubosidat abou ku un froiu isolá, miéntras un fluho di bientu pasat mayoria stabil ta sigui domina.'
+      : 'Un mása di airu relativamente seku i stabil, guiá pa un fluho di bientu pasat konstante, ta domina e Karibe suriano.';
+    if(hazy) synTxt += ' Ademas, un tandanan di stof fini di Sahara lo tapa nos region durante e siguiente par di dianan.';
+    if(p.slp != null) synTxt += ' Presion atmosferiko na nivel di laman ta rondó di ' + p.slp.toFixed(1) + ' hPa.';
+  } else if(isNL){
     synTxt = maxPop >= 40
       ? 'Een gebied met bewolking en buienactiviteit, behorend bij restvocht van een tropische golf, beweegt over het zuidelijk Caribïsch gebied. In de komende 24 uur wordt daardoor een verhoogde kans op plaatselijke buien op ons eiland verwacht.'
       : maxPop >= 20
@@ -5714,25 +5784,30 @@ function renderMeteoForecast(host, fc){
     if(ov.v.wavehi != null) wHiM = Math.max(wLoM + 0.5, ov.v.wavehi);
   }
   function ft(m){ return Math.round(m * 3.28084); }
-  var seaState = wHiM <= 1.5 ? (isNL ? 'Vrij rustig' : 'Fairly calm') : wHiM <= 2.5 ? (isNL ? 'Over het algemeen matig' : 'Moderate in general') : (isNL ? 'Vrij ruw' : 'Rather rough');
-  var seaTxt = isNL
+  var seaState = wHiM <= 1.5 ? (isPap ? 'Basta trankil' : isNL ? 'Vrij rustig' : 'Fairly calm') : wHiM <= 2.5 ? (isPap ? 'Moderá en general' : isNL ? 'Over het algemeen matig' : 'Moderate in general') : (isPap ? 'Moderá te basta brutu' : isNL ? 'Vrij ruw' : 'Rather rough');
+  var seaTxt = isPap
+    ? seaState + ' ku altura di olanan entre ' + String(wLoM) + ' i ' + String(wHiM) + ' meter (' + ft(wLoM) + ' i ' + ft(wHiM) + ' pia). E olanan di mas haltu ta ocurí riba laman habrí i banda di kosta nort.'
+    : isNL
     ? seaState + ' met golfhoogtes van ' + String(wLoM).replace('.',',') + ' tot ' + String(wHiM).replace('.',',') + ' meter (' + ft(wLoM) + ' tot ' + ft(wHiM) + ' voet). De hoogste golfactiviteit treedt op boven open zee en langs de noordkust.'
     : seaState + ' with wave heights between ' + wLoM + ' and ' + wHiM + ' meters (' + ft(wLoM) + ' and ' + ft(wHiM) + ' feet). The highest wave activity will occur over the open sea and along the northern seaboard.';
 
   // ── Outlook ──
   var d2pop = d2.pop != null ? Math.round(d2.pop) : 0;
   var d2cloud = d2.cloud != null ? Math.round(d2.cloud) : 50;
-  var outTxt = isNL
+  var outTxt = isPap
+    ? cw(d2cloud) + (d2pop < 30 ? ', gradualmente mas seku' : ', ku chns di algun froiu') + (hazy ? ' i ku poko velo di stòf' : '') + '.'
+    : isNL
     ? cw(d2cloud) + (d2pop < 30 ? ', geleidelijk droger' : ', met kans op enkele buien') + (hazy ? ' met wat heiigheid' : '') + '.'
     : cw(d2cloud) + (d2pop < 30 ? ', mainly dry' : ', with a chance of some showers') + (hazy ? ' and slightly reduced visibility' : '') + '.';
 
   // ── Special features ──
   var special = hazy
-    ? (isNL ? 'Enigszins verminderd zicht door Saharastof.' : 'Slightly reduced visibility due to Saharan dust.')
-    : (isNL ? 'Geen.' : 'None.');
+    ? (isPap ? 'Bishibilidat un tiki reducí pa motibu di stof di Sahara.' : isNL ? 'Enigszins verminderd zicht door Saharastof.' : 'Slightly reduced visibility due to Saharan dust.')
+    : (isPap ? 'Ningun.' : isNL ? 'Geen.' : 'None.');
 
   // ── Apply free-text overrides (per language) + forecaster name ──
-  var otxt = (ov && ov.t && ov.t[isNL ? 'nl' : 'en']) || {};
+  var langKey = isPap ? 'pap' : isNL ? 'nl' : 'en';
+  var otxt = (ov && ov.t && ov.t[langKey]) || {};
   if(otxt.weather) wxTxt   = otxt.weather;
   if(otxt.wind)    windTxt = otxt.wind;
   if(otxt.syn)     synTxt  = otxt.syn;
@@ -5755,7 +5830,20 @@ function renderMeteoForecast(host, fc){
   var secs = [];
   function sec(h, t){ secs.push('<div><div class="meteo-sec-h">' + h + '</div><div class="meteo-sec-t">' + t + '</div></div>'); }
   var lead, issued, bar;
-  if(isNL){
+  if(isPap){
+    bar = 'Pronóstiko';
+    lead = 'Pronóstiko di tempu pa Kòrsou i bisindario bálido te ' + dPAP(validDay) + ' ' + per.pap + ' ' + per.vt + ' o.l., ' + datePAP(validDay) + '.';
+    sec('Kompilá:', dPAP(issueDay) + ' ' + datePAP(issueDay) + ', ' + issueLt + ' o.l. (' + issueUtc + ' UTC).');
+    sec('Tempu:', wxTxt);
+    sec('Bientu:', windTxt);
+    sec('Situashon general:', synTxt);
+    sec('Kondishon di laman:', seaTxt);
+    sec('Sistemanan signifikante di wer tropikal:', 'Ningun.');
+    sec('Fenómeno spesial:', special);
+    sec('Perspektiva te ' + dPAP(outlookDay) + ' ' + per.pap + ':', outTxt);
+    sec('Meteorólogo:', fcName);
+    issued = 'E próksimo boletin di tempu lo wòrdu publiká ' + dPAP(slot.lt === 17 ? validDay : issueDay) + ' ' + pad2(nextSlotLt) + ':00 o.l. (' + nextUtc + ' UTC).' + (ov ? ' · Ahustá manualmente.' : '');
+  } else if(isNL){
     bar = 'Verwachting';
     lead = 'Weersverwachting voor Curaçao en omgeving geldig tot ' + dNL(validDay) + per.nl + ' ' + per.vt + ' uur, ' + dateNL(validDay) + '.';
     sec('Opgesteld op:', dNL(issueDay) + ' ' + dateNL(issueDay) + ', ' + issueLt + ' uur l.t. (' + issueUtc + ' UTC).');
@@ -5783,7 +5871,7 @@ function renderMeteoForecast(host, fc){
   }
 
   host.innerHTML =
-    (window.__meteoEditOpen ? meteoEditFormHtml(isNL) : '') +
+    (window.__meteoEditOpen ? meteoEditFormHtml(langKey) : '') +
     '<div class="meteo-card">' +
       '<div class="meteo-bar">' + bar + '</div>' +
       '<div class="meteo-body">' +
@@ -5796,17 +5884,24 @@ function renderMeteoForecast(host, fc){
 window.renderMeteoForecast = renderMeteoForecast;
 
 /* ─── Meteo bulletin edit mode: forecaster fills in data, then generates ─── */
-function meteoEditFormHtml(isNL){
+function meteoEditFormHtml(lang){
+  var isNL = (lang === 'nl'), isPap = (lang === 'pap');
+  var langKey = isPap ? 'pap' : isNL ? 'nl' : 'en';
   var L = window.__meteoLast || {};
-  var t = (L.t && L.t[isNL ? 'nl' : 'en']) || {};
+  var t = (L.t && L.t[langKey]) || {};
   function esc(v){ return v == null ? '' : String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
   function inp(id, lbl, val, ph){
     return '<label class="me-f"><span>' + lbl + '</span><input id="' + id + '" value="' + esc(val) + '" placeholder="' + (ph||'') + '"></label>';
   }
   function ta(id, lbl, val){
-    return '<label class="me-f me-wide"><span>' + lbl + ' <small>(' + (isNL ? 'leeg = automatisch' : 'empty = auto') + ')</small></span><textarea id="' + id + '" rows="2">' + esc(val) + '</textarea></label>';
+    return '<label class="me-f me-wide"><span>' + lbl + ' <small>(' + (isPap ? 'vazio = outomátiko' : isNL ? 'leeg = automatisch' : 'empty = auto') + ')</small></span><textarea id="' + id + '" rows="2">' + esc(val) + '</textarea></label>';
   }
-  var T = isNL
+  var T = isPap
+    ? {ttl:'Editá boletin', gen:'Generá pronóstiko', auto:'Outomátiko (kita)', close:'Sera',
+       tmax:'Máks °C', tmin:'Mín °C', pop:'Chns di áwaseru %', sr:'Solo ta sali', ss:'Solo ta baha',
+       wlo:'Bientu for di (kt)', whi:'Bientu te (kt)', gust:'Ráfaga (kt)', wvl:'Ola for di (m)', wvh:'Ola te (m)', fc:'Meteorólogo',
+       wx:'Tempu', wnd:'Bientu', syn:'Situashon general', sea:'Kondishon di laman', spc:'Fenómeno spesial', out:'Perspektiva'}
+    : isNL
     ? {ttl:'Bulletin bewerken', gen:'Genereer verwachting', auto:'Automatisch (wis)', close:'Sluiten',
        tmax:'Max °C', tmin:'Min °C', pop:'Neerslagkans %', sr:'Zonsopgang', ss:'Zonsondergang',
        wlo:'Wind van (kt)', whi:'Wind tot (kt)', gust:'Uitschieters (kt)', wvl:'Golf van (m)', wvh:'Golf tot (m)', fc:'Meteoroloog',
@@ -5851,8 +5946,8 @@ function meteoApplyEdit(){
   ov.v.sunset  = /^\d{1,2}:\d{2}$/.test(ss) ? ss : null;
   var fcv = txt('me_fcaster');
   ov.v.fcaster = fcv && fcv !== 'RWC AutoMet.' ? fcv : null;
-  // Free texts stored per active language; the other language keeps its own.
-  var lang = (__wrLang === 'nl') ? 'nl' : 'en';
+  // Free texts stored per active language; the other languages keep their own.
+  var lang = (__wrLang === 'nl') ? 'nl' : (__wrLang === 'pap') ? 'pap' : 'en';
   ov.t[lang] = {
     weather: txt('me_weather') || null, wind: txt('me_wind') || null, syn: txt('me_syn') || null,
     sea: txt('me_sea') || null, special: txt('me_special') || null, outlook: txt('me_outlook') || null
@@ -9946,7 +10041,24 @@ async function fetchMultiModelForecast(){
     const core = FORECAST_MODELS.filter(m => FORECAST_CORE_KEYS.includes(m.key));
     r = await _fetchForecastAttempt(core);
   }
-  return r || {forecasts:[], daily:null};
+  r = r || {forecasts:[], daily:null};
+
+  // AROME Antilles + KNMI HARMONIE Caribbean are the highest-resolution models
+  // for the ABC islands specifically. The cascade above drops them first (via
+  // the !m.exp filter) whenever ANY model in the big batch is rejected, even
+  // if the rejection had nothing to do with these two — so fetch them in a
+  // dedicated request whenever they didn't already make it into `r`, ensuring
+  // their availability is never held hostage by unrelated models.
+  const haveKeys = new Set(r.forecasts.map(f => f.model.key));
+  const missingExp = FORECAST_MODELS.filter(m => m.exp && !haveKeys.has(m.key));
+  if(missingExp.length){
+    const rExp = await _fetchForecastAttempt(missingExp);
+    if(rExp && rExp.forecasts.length){
+      r.forecasts = r.forecasts.concat(rExp.forecasts);
+      if(!r.daily) r.daily = rExp.daily;
+    }
+  }
+  return r;
 }
 
 /* Saharan dust outlook (CAMS, µg/m³ surface dust) for the 5 forecast days.
