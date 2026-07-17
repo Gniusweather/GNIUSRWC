@@ -1,12 +1,12 @@
 name: Weather alerts push
 
 on:
-  # Schedule paused while the Pages suspension/account flag is reviewed —
-  # a fresh cron POSTing to an external service is a common false-positive
-  # trigger for GitHub's abuse automation. Re-enable after the account is
-  # cleared by uncommenting:
-  # schedule:
-  #   - cron: '0 * * * *'   # hourly
+  # Runs every 30 minutes to match the in-app alert copy ("checks every
+  # 30 min"). Deduped via actions/cache so unchanged conditions don't
+  # re-notify. If GitHub's abuse automation flags the cron again, comment
+  # the schedule block back out — workflow_dispatch still works manually.
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes
   workflow_dispatch:
     inputs:
       test:
