@@ -370,7 +370,7 @@ tr:last-child td{border-bottom:none;}
 .adsb-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:linear-gradient(90deg,rgba(26,111,255,0.11),transparent);border-bottom:1px solid var(--bdr);gap:7px;flex-wrap:wrap;}
 .adsb-ttl{font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:1.5px;color:var(--acc);text-transform:uppercase;display:flex;align-items:center;gap:6px;}
 .adsbdot{width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:pok 2s infinite;flex-shrink:0;}
-.adsb-wrap{position:relative;height:510px;overflow:hidden;}
+.adsb-wrap{position:relative;height:min(74vh,820px);min-height:420px;overflow:hidden;}
 .adsb-wrap iframe{width:100%;height:100%;border:none;display:block;}
 .adsb-blocker{position:absolute;inset:0;z-index:9;background:transparent;pointer-events:auto;touch-action:none;}
 .adsb-blocker.unlocked{pointer-events:none;}
@@ -425,10 +425,10 @@ tr:last-child td{border-bottom:none;}
    dashboard's max-width:760px single-column rule wins regardless of order. */
 .atc-windy-section .dash-windy-maps{margin-top:0;grid-template-columns:1fr 1fr;gap:8px;}
 .atc-windy-section .dash-windy-hd{font-size:12px;padding:5px 8px;gap:4px;}
-.atc-windy-section .dash-windy-frame-wrap{height:150px;}
+.atc-windy-section .dash-windy-frame-wrap{height:min(40vh,420px);min-height:220px;}
 .atc-windy-section .dash-windy-ext{width:24px;height:24px;font-size:14px;}
 @media(min-width:700px){
-  .atc-windy-section .dash-windy-frame-wrap{height:220px;}
+  .atc-windy-section .dash-windy-frame-wrap{height:min(48vh,540px);min-height:300px;}
   .atc-windy-section .dash-windy-hd{font-size:14px;}
 }
 
@@ -961,7 +961,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
   .tab{padding:12px 6px;font-size:14px;letter-spacing:.9px;min-height:46px;}
   .clks{gap:8px;}
   .clk-t{font-size:19.5px;}
-  .adsb-wrap{height:360px;}
+  .adsb-wrap{height:min(64vh,640px);min-height:380px;}
 }
 @media(max-width:700px){
   .page{padding:8px 8px;}
@@ -991,7 +991,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
   .sybody{padding:7px 10px;gap:5px;}
   .stn-card{padding:9px;}
   .srow{padding:9px;}
-  .adsb-wrap{height:300px;}
+  .adsb-wrap{height:min(58vh,560px);min-height:340px;}
   .adsb-lock{min-width:48px;height:36px;padding:0 12px;font-size:14px;}
   .adsb-lock-icon{font-size:16px;}
   .atccard{padding:8px;}
@@ -1010,7 +1010,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 }
 @media(max-width:420px){
   .tab span:not(.tab-i){font-size:15px;}
-  .adsb-wrap{height:260px;}
+  .adsb-wrap{height:min(52vh,480px);min-height:300px;}
   .mapwrap{height:48vh;}
 }
 
@@ -3376,7 +3376,7 @@ html,body{max-width:100%;overflow-x:hidden;}
       </div>
       <div class="adsbcard">
         <div class="adsb-hd">
-          <div class="adsb-ttl"><span class="adsbdot"></span>&#9992; Live Traffic &mdash; ADS-B Exchange</div>
+          <div class="adsb-ttl"><span class="adsbdot"></span>&#9992; Live Traffic &mdash; Airplanes.live</div>
           <span style="font-family:var(--mono);font-size:14px;color:var(--muted);letter-spacing:1px;">Cura&ccedil;ao &middot; Aruba &middot; Bonaire FIR</span>
         </div>
         <div class="adsb-wrap" id="adsbWrap">
@@ -3385,7 +3385,7 @@ html,body{max-width:100%;overflow-x:hidden;}
             <span class="adsb-lock-label">LOCKED</span>
           </button>
           <div class="adsb-blocker" id="adsbBlocker"></div>
-          <iframe id="adsbFrame" src="https://globe.adsbexchange.com/?zoom=8&lat=12.3&lon=-69.1" title="ADS-B Exchange" loading="lazy" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+          <iframe id="adsbFrame" src="https://globe.airplanes.live/?zoom=8&lat=12.3&lon=-69.1" title="Live Air Traffic" loading="lazy" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
         </div>
       </div>
       <div class="atc-windy-section">
