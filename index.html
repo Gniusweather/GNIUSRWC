@@ -12207,6 +12207,12 @@ byId('mapSearch').addEventListener('input', e => addMapMarkers(e.target.value));
    - No crossOrigin: LiveATC sends no CORS headers, so anonymous mode made the
      media fetch fail outright on several browsers (stuck on "Connecting").
    - Auto-reconnect with backoff on error/stall/end so a dropped stream recovers.
+   - Stall watchdog: a stream that connects but never starts (or buffers
+     forever after a network switch) fires no error event at all — if we're
+     not actually live within 12 s, tear the element down and reconnect.
+   - Stale-element guard: every handler checks it belongs to the CURRENT
+     audio element, so the error fired by clearing an old element's src can't
+     eat the retry budget.
    - Media Session API so playback continues in the background / lock screen
      and shows channel info with play/pause controls. */
 document.querySelectorAll('.atcplayer').forEach(player => {
@@ -12217,7 +12223,7 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   const volSlider = player.querySelector('.atcvol-s');
   const lblEl = player.querySelector('.atclbl');
   const chName = lblEl ? lblEl.textContent.trim() : 'ATC';
-  let audio = null, want = false, retries = 0, retryTimer = null;
+  let audio = null, want = false, retries = 0, retryTimer = null, watchdog = null;
   function setState(state){
     player.classList.remove('loading','playing','error');
     if(state) player.classList.add(state);
@@ -12235,42 +12241,68 @@ document.querySelectorAll('.atcplayer').forEach(player => {
       try{ navigator.mediaSession.setActionHandler('stop', stopStream); }catch(e){}
     }catch(e){}
   }
+  function clearWatchdog(){ if(watchdog){ clearTimeout(watchdog); watchdog = null; } }
+  function armWatchdog(){
+    clearWatchdog();
+    watchdog = setTimeout(() => {
+      watchdog = null;
+      if(!want || player.classList.contains('playing')) return;
+      scheduleRetry();   // stuck connecting/buffering — rebuild the connection
+    }, 12000);
+  }
+  function killAudio(){
+    if(!audio) return;
+    const a = audio;
+    audio = null;               // handlers on `a` now see a !== audio and bail
+    try{ a.pause(); a.removeAttribute('src'); a.load(); }catch(e){}
+  }
   function stopStream(){
     want = false; retries = 0;
     if(retryTimer){ clearTimeout(retryTimer); retryTimer = null; }
-    if(audio){ try{ audio.pause(); audio.src=''; }catch(e){} audio = null; }
+    clearWatchdog();
+    killAudio();
     player.__audio = null;
     setState(null);
   }
   function scheduleRetry(){
     if(!want || retryTimer) return;
-    if(retries >= 6){ setState('error'); want = false; return; }
+    clearWatchdog();
+    killAudio();
+    if(retries >= 8){ setState('error'); want = false; return; }
     setState('loading');
-    const delay = Math.min(16000, 2000 * Math.pow(2, retries));
+    const delay = Math.min(15000, 1500 * Math.pow(2, retries));
     retries++;
     retryTimer = setTimeout(() => { retryTimer = null; if(want) startStream(); }, delay);
   }
   function startStream(){
     want = true;
     setState('loading');
-    if(audio){ try{ audio.pause(); audio.src=''; }catch(e){} }
-    audio = new Audio();
-    audio.preload = 'none';
-    audio.volume = (volSlider ? volSlider.value : 80) / 100;
-    audio.src = streamUrl + '?nocache=' + Date.now();
-    player.__audio = audio;
-    audio.addEventListener('playing', () => { retries = 0; setState('playing'); });
-    audio.addEventListener('waiting', () => setState('loading'));
-    audio.addEventListener('stalled', () => setState('loading'));
-    audio.addEventListener('error',   scheduleRetry);
-    audio.addEventListener('ended',   scheduleRetry);   // live streams never end - reconnect
+    killAudio();
+    const a = new Audio();
+    audio = a;
+    a.preload = 'none';
+    a.volume = (volSlider ? volSlider.value : 80) / 100;
+    a.src = streamUrl + '?nocache=' + Date.now();
+    player.__audio = a;
+    a.addEventListener('playing', () => { if(a !== audio) return; retries = 0; clearWatchdog(); setState('playing'); });
+    a.addEventListener('waiting', () => { if(a !== audio) return; setState('loading'); armWatchdog(); });
+    a.addEventListener('stalled', () => { if(a !== audio) return; setState('loading'); armWatchdog(); });
+    a.addEventListener('error',   () => { if(a !== audio) return; scheduleRetry(); });
+    a.addEventListener('ended',   () => { if(a !== audio) return; scheduleRetry(); });   // live streams never end - reconnect
     // iOS pauses audio on interruptions (calls, Siri); resume if still wanted.
-    audio.addEventListener('pause', () => {
-      if(!want || !audio) return;
-      setTimeout(() => { if(want && audio && audio.paused){ audio.play().catch(scheduleRetry); } }, 1200);
+    a.addEventListener('pause', () => {
+      if(a !== audio || !want) return;
+      setTimeout(() => {
+        if(want && a === audio && a.paused){ a.play().catch(() => { if(a === audio) scheduleRetry(); }); }
+      }, 1200);
     });
-    audio.play().then(mediaSession).catch(scheduleRetry);
+    armWatchdog();   // if not live within 12 s, rebuild
+    a.play().then(() => { if(a === audio) mediaSession(); }).catch(() => { if(a === audio) scheduleRetry(); });
   }
+  // Reconnect immediately when connectivity returns (wifi/cell handoff).
+  window.addEventListener('online', () => {
+    if(want && !player.classList.contains('playing')){ retries = 0; startStream(); }
+  });
   btn.addEventListener('click', () => { (want || (audio && !audio.paused)) ? stopStream() : startStream(); });
   if(volSlider){ volSlider.addEventListener('input', () => { if(audio) audio.volume = volSlider.value/100; }); }
 });
