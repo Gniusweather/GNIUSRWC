@@ -3,7 +3,7 @@
    picked up when the app is opened; cache fallback for offline use.
    Bump CACHE_VERSION on each deploy to force clients to update. */
 
-const CACHE_VERSION = 'rwc-2026-06-26-57';
+const CACHE_VERSION = 'rwc-2026-06-26-58';
 const CACHE_NAME = 'rwc-cache-' + CACHE_VERSION;
 
 // Core assets to pre-cache (the single-file app).
@@ -91,8 +91,30 @@ self.addEventListener('fetch', (event) => {
    the app (or installed PWA) is open. */
 const ALERT_CACHE = 'rwc-alert-state';
 
-async function checkWeatherAlerts() {
+// User-configurable alert preferences (set from the app's Settings panel and
+// cached here so background/periodic checks honour them even with the app
+// closed). Defaults mirror the original hard-coded thresholds.
+const DEFAULT_PREFS = { wind: true, windKt: 30, storm: true, showers: true, rain: true, rainPct: 70, tropical: true };
+
+async function loadPrefs() {
   try {
+    const c = await caches.open(ALERT_CACHE);
+    const r = await c.match('prefs');
+    if (r) return Object.assign({}, DEFAULT_PREFS, await r.json());
+  } catch (e) {}
+  return Object.assign({}, DEFAULT_PREFS);
+}
+
+async function savePrefs(prefs) {
+  try {
+    const c = await caches.open(ALERT_CACHE);
+    await c.put('prefs', new Response(JSON.stringify(prefs || {})));
+  } catch (e) {}
+}
+
+async function checkWeatherAlerts(prefs) {
+  try {
+    const P = prefs ? Object.assign({}, DEFAULT_PREFS, prefs) : await loadPrefs();
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.19&longitude=-68.96' +
       '&current=wind_gusts_10m,wind_speed_10m,weather_code,precipitation' +
       '&hourly=precipitation_probability&forecast_days=1&timezone=auto&wind_speed_unit=kn';
@@ -101,14 +123,14 @@ async function checkWeatherAlerts() {
     const j = await r.json();
     const alerts = [];
     const cur = j.current || {};
-    if (cur.wind_gusts_10m >= 30) alerts.push('Strong wind: gusts ' + Math.round(cur.wind_gusts_10m) + ' kt');
-    if (cur.weather_code >= 95) alerts.push('Thunderstorm activity near Curacao');
-    else if (cur.weather_code >= 80 && cur.precipitation >= 2) alerts.push('Heavy showers now (' + cur.precipitation + ' mm)');
+    if (P.wind && cur.wind_gusts_10m >= P.windKt) alerts.push('Strong wind: gusts ' + Math.round(cur.wind_gusts_10m) + ' kt');
+    if (P.storm && cur.weather_code >= 95) alerts.push('Thunderstorm activity near Curacao');
+    else if (P.showers && cur.weather_code >= 80 && cur.precipitation >= 2) alerts.push('Heavy showers now (' + cur.precipitation + ' mm)');
     const h = new Date().getHours();
     const pops = ((j.hourly && j.hourly.precipitation_probability) || []).slice(h, h + 3);
     const pop = Math.max(0, ...pops.map(Number).filter(isFinite));
-    if (pop >= 70) alerts.push('High rain chance next hours: ' + Math.round(pop) + '%');
-    try {
+    if (P.rain && pop >= P.rainPct) alerts.push('High rain chance next hours: ' + Math.round(pop) + '%');
+    if (P.tropical) try {
       const s = await fetch('https://www.nhc.noaa.gov/CurrentStorms.json');
       if (s.ok) {
         const sj = await s.json();
@@ -162,7 +184,17 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 /* App-side trigger: the page pings this while open (covers iOS, which has no
-   periodicsync) so alerts still fire from the shared checker + dedupe. */
+   periodicsync) so alerts still fire from the shared checker + dedupe. The
+   page also pushes the user's alert preferences here so they're cached for
+   background/periodic checks that run with the app closed. */
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'check-alerts') checkWeatherAlerts();
+  const d = event.data;
+  if (!d) return;
+  if (d.type === 'set-alert-prefs') { event.waitUntil(savePrefs(d.prefs)); return; }
+  if (d.type === 'check-alerts') {
+    event.waitUntil((async () => {
+      if (d.prefs) await savePrefs(d.prefs);
+      await checkWeatherAlerts(d.prefs);
+    })());
+  }
 });

@@ -387,15 +387,15 @@ tr:last-child td{border-bottom:none;}
 .atcplayer{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:5px 8px;border:1px solid var(--bdr);border-left:3px solid var(--acc);border-radius:var(--r);background:linear-gradient(180deg,rgba(0,10,24,0.5),rgba(3,14,30,0.4));transition:all .18s;}
 .atcplayer:hover{border-color:var(--bdrb);}
 .atcplayer.playing{border-color:var(--bdrb);box-shadow:0 0 18px rgba(77,184,255,0.13);}
-.atcpbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--bdrb);background:linear-gradient(180deg,rgba(77,184,255,0.11),rgba(0,10,24,0.5));color:var(--acc);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0;}
+.atcpbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--bdrb);background:linear-gradient(180deg,rgba(77,184,255,0.11),rgba(0,10,24,0.5));color:var(--acc);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0;}
 .atcpbtn:hover{border-color:var(--acc);box-shadow:0 0 16px rgba(77,184,255,0.25);transform:scale(1.05);}
 .atcpi{display:inline-block;line-height:1;text-shadow:0 0 8px var(--acc);}
 .atcplayer.loading .atcpi{animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .atcinfo{min-width:0;}
-.atclbl{font-family:var(--cond);font-size:12.5px;font-weight:700;letter-spacing:.8px;color:var(--acc);display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.atcfreq{font-family:var(--mono);font-size:11px;letter-spacing:.8px;color:var(--muted);margin-top:1px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.atcst{display:flex;align-items:center;gap:4px;font-family:var(--cond);font-size:11px;letter-spacing:1.2px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:2px 6px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(0,0,0,0.3);min-width:60px;}
+.atclbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.8px;color:var(--acc);display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.atcfreq{font-family:var(--mono);font-size:12.5px;letter-spacing:.8px;color:var(--muted);margin-top:1px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.atcst{display:flex;align-items:center;gap:4px;font-family:var(--cond);font-size:12.5px;letter-spacing:1.2px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:2px 6px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(0,0,0,0.3);min-width:60px;}
 .atcsd{width:5px;height:5px;border-radius:50%;background:var(--muted);}
 .atcplayer.loading .atcst{color:#ffb347;border-color:#ffb347;}
 .atcplayer.loading .atcsd{background:#ffb347;box-shadow:0 0 6px #ffb347;animation:pal 1s ease-in-out infinite;}
@@ -404,7 +404,7 @@ tr:last-child td{border-bottom:none;}
 .atcplayer.error .atcst{color:#ff6b6b;border-color:#ff6b6b;}
 .atcplayer.error .atcsd{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b;}
 .atcvol{display:flex;align-items:center;gap:4px;}
-.atcvol-i{font-size:11px;opacity:.6;}
+.atcvol-i{font-size:12.5px;opacity:.6;}
 .atcvol-s{-webkit-appearance:none;appearance:none;width:52px;height:3px;background:var(--bdrb);border-radius:2px;outline:none;cursor:pointer;}
 .atcvol-s::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 7px rgba(77,184,255,0.4);cursor:pointer;}
 
@@ -424,7 +424,7 @@ tr:last-child td{border-bottom:none;}
 /* Always side-by-side (even on narrow phones) — higher specificity than the
    dashboard's max-width:760px single-column rule wins regardless of order. */
 .atc-windy-section .dash-windy-maps{margin-top:0;grid-template-columns:1fr 1fr;gap:8px;}
-.atc-windy-section .dash-windy-hd{font-size:12px;padding:5px 8px;gap:4px;}
+.atc-windy-section .dash-windy-hd{font-size:13px;padding:5px 8px;gap:4px;}
 .atc-windy-section .dash-windy-frame-wrap{height:min(20vh,210px);min-height:110px;}
 .atc-windy-section .dash-windy-ext{width:24px;height:24px;font-size:14px;}
 @media(min-width:700px){
@@ -972,7 +972,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
   .clk-d{display:none;}
   .tabs{gap:3px;padding:5px;}
   /* Icon above label so all 8 tabs fit the row without scrolling */
-  .tab{flex-direction:column;padding:7px 2px;min-height:54px;gap:3px;font-size:13.5px;letter-spacing:.3px;}
+  .tab{flex-direction:column;padding:7px 2px;min-height:54px;gap:3px;font-size:14.5px;letter-spacing:.3px;}
   .tab-i{font-size:18px;}
   .tabs .tbadge{display:none;}
   .ctrl{align-items:stretch;width:100%;}
@@ -997,10 +997,10 @@ body.tab-hidden *{animation-play-state:paused !important;}
   .atccard{padding:8px;}
   .atcplayer{grid-template-columns:auto 1fr auto;grid-template-areas:"pb i s" "v v v";gap:5px 7px;padding:6px 8px;}
   .atcpbtn{grid-area:pb;width:28px;height:28px;}
-  .atcpi{font-size:11px;}
+  .atcpi{font-size:12.5px;}
   .atcinfo{grid-area:i;}
-  .atclbl{font-size:12px;}
-  .atcst{grid-area:s;min-width:0;font-size:10.5px;padding:2px 6px;}
+  .atclbl{font-size:13px;}
+  .atcst{grid-area:s;min-width:0;font-size:12px;padding:2px 6px;}
   .atcvol{grid-area:v;justify-content:flex-start;}
   .atcvol-s{flex:1;width:auto;max-width:none;height:4px;}
   .atcvol-s::-webkit-slider-thumb{width:12px;height:12px;}
@@ -1049,7 +1049,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .wr-meta{display:flex;gap:8px;flex-wrap:wrap;}
 .wr-chip{padding:5px 11px;border-radius:8px;background:rgba(255,255,255,0.035);border:1px solid var(--bdr);font-family:var(--cond);font-size:14px;color:#cce4ff;display:inline-flex;align-items:center;gap:5px;}
 .wr-chip b{color:#fff;}
-.wr-foot{padding:8px 16px;background:rgba(0,0,0,0.22);border-top:1px solid var(--bdr);font-family:var(--mono);font-size:13.5px;color:rgba(120,160,200,0.55);}
+.wr-foot{padding:8px 16px;background:rgba(0,0,0,0.22);border-top:1px solid var(--bdr);font-family:var(--mono);font-size:14.5px;color:rgba(120,160,200,0.55);}
 .wr-modes{display:flex;gap:6px;margin-bottom:12px;}
 .wr-mode-btn{padding:6px 16px;border-radius:9px;border:1px solid var(--bdr);background:rgba(255,255,255,0.03);color:var(--muted);font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;}
 .wr-mode-btn.active{background:rgba(77,184,255,0.15);border-color:rgba(77,184,255,0.6);color:var(--acc);}
@@ -1078,7 +1078,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .ovz-card{background:#fff;color:#111;border-radius:10px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.4);font-family:'Trebuchet MS','Segoe UI',Verdana,sans-serif;}
 .ovz-hd{padding:12px 18px 8px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;border-bottom:2px solid #111;}
 .ovz-ttl{font-size:19px;font-weight:800;letter-spacing:.5px;color:#111;}
-.ovz-code{font-family:var(--mono);font-size:13px;color:#555;}
+.ovz-code{font-family:var(--mono);font-size:14px;color:#555;}
 .ovz-date{padding:7px 18px;font-size:14.5px;color:#222;font-weight:600;}
 .ovz-wrap{overflow-x:auto;padding:0 12px 12px;}
 .ovz-tbl{width:100%;border-collapse:collapse;min-width:640px;}
@@ -1088,8 +1088,8 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .ovz-tbl td.wt{text-align:left;font-style:normal;}
 .ovz-tbl .mono{font-family:var(--mono);font-size:14px;}
 .ovz-gap td{border:none;background:#fff;height:12px;}
-.ovz-src{font-size:12px;color:#777;vertical-align:super;margin-left:2px;}
-.ovz-foot{padding:8px 18px 12px;font-size:13.5px;color:#555;line-height:1.5;}
+.ovz-src{font-size:13px;color:#777;vertical-align:super;margin-left:2px;}
+.ovz-foot{padding:8px 18px 12px;font-size:14.5px;color:#555;line-height:1.5;}
 
 /* ─── SkySense view (Image 1) ─── */
 .sky-wrap{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;align-items:start;}
@@ -1832,9 +1832,9 @@ body.tab-hidden *{animation-play-state:paused !important;}
 @media(max-width:940px){.dash-violet-wrap{grid-template-columns:1fr;}}
 .dash-violet-sidebar{display:flex;flex-direction:column;gap:10px;}
 .dash-violet-brand{font-family:var(--cond);font-size:17.5px;font-weight:800;color:var(--dtxt);letter-spacing:.5px;padding:4px 0 2px;}
-.dash-violet-brand small{font-size:13.5px;font-weight:500;color:var(--dmut);display:block;letter-spacing:.3px;}
+.dash-violet-brand small{font-size:14.5px;font-weight:500;color:var(--dmut);display:block;letter-spacing:.3px;}
 .dash-violet-time{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--dtxt);letter-spacing:1px;}
-.dash-violet-time small{font-size:13.5px;color:var(--dmut);display:block;font-weight:400;letter-spacing:.5px;margin-top:1px;}
+.dash-violet-time small{font-size:14.5px;color:var(--dmut);display:block;font-weight:400;letter-spacing:.5px;margin-top:1px;}
 .dash-violet-nav{display:flex;flex-direction:column;gap:3px;}
 .dash-violet-nav-item{font-family:var(--cond);font-size:14px;font-weight:700;padding:8px 10px;border-radius:9px;cursor:default;color:var(--dmut);display:flex;align-items:center;gap:6px;}
 .dash-violet-nav-item.active{background:var(--dcard2);border:1px solid var(--dbd);color:var(--dtxt);}
@@ -1844,28 +1844,28 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-violet-cond-ic{width:44px;height:44px;}
 .dash-violet-cond-ic svg,.dash-violet-cond-ic span{width:44px!important;height:44px!important;}
 .dash-violet-cond-desc{font-family:var(--cond);font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);text-align:center;}
-.dash-violet-cond-sub{font-family:var(--mono);font-size:13.5px;color:rgba(255,255,255,0.55);text-align:center;margin-top:1px;}
+.dash-violet-cond-sub{font-family:var(--mono);font-size:14.5px;color:rgba(255,255,255,0.55);text-align:center;margin-top:1px;}
 .dash-violet-main{display:flex;flex-direction:column;gap:12px;min-width:0;}
 .dash-violet-card{background:var(--dcard);border:1px solid var(--dbd);border-radius:15px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
 .dash-violet-hd{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--dmut);}
 .dash-violet-chart-card{padding:14px 14px 8px;}
 .dash-violet-chart-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.dash-violet-loc-badge{font-family:var(--mono);font-size:13.5px;background:var(--dcard2);border:1px solid var(--dbd);border-radius:6px;padding:2px 8px;color:var(--dmut);}
+.dash-violet-loc-badge{font-family:var(--mono);font-size:14.5px;background:var(--dcard2);border:1px solid var(--dbd);border-radius:6px;padding:2px 8px;color:var(--dmut);}
 .dash-violet-stats-card{padding:12px 14px;}
 .dash-violet-stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
 .dash-violet-stat{background:var(--dcard2);border:1px solid var(--dbd);border-radius:11px;padding:10px 11px;display:flex;flex-direction:column;gap:2px;}
 .dash-violet-stat-icon{font-size:19.5px;margin-bottom:1px;}
 .dash-violet-stat-val{font-family:var(--cond);font-size:21.5px;font-weight:800;color:var(--dtxt);}
 .dash-violet-stat-val small{font-size:14px;opacity:.7;}
-.dash-violet-stat-lbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.5px;color:var(--dmut);}
-.dash-violet-stat-trend{font-family:var(--mono);font-size:13.5px;color:var(--dacc2);margin-top:2px;}
+.dash-violet-stat-lbl{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.5px;color:var(--dmut);}
+.dash-violet-stat-trend{font-family:var(--mono);font-size:14.5px;color:var(--dacc2);margin-top:2px;}
 .dash-violet-hourly-card{padding:8px 4px;}
 .dash-violet-right{display:flex;flex-direction:column;gap:11px;min-width:0;}
 .dash-violet-rain-card{padding:12px 14px;}
 .dash-violet-rain-bars{display:flex;align-items:flex-end;gap:4px;height:56px;margin-top:8px;}
 .dash-violet-rain-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
 .dash-violet-rain-bar{width:100%;background:var(--dacc);border-radius:3px 3px 0 0;min-height:3px;}
-.dash-violet-rain-bar-t{font-family:var(--mono);font-size:13.5px;color:var(--dmut);}
+.dash-violet-rain-bar-t{font-family:var(--mono);font-size:14.5px;color:var(--dmut);}
 .dash-violet-cities-card{padding:12px 14px;}
 .dash-violet-city{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--dbd);}
 .dash-violet-city:last-child{border-bottom:none;padding-bottom:0;}
@@ -1873,13 +1873,13 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-violet-city-ic svg,.dash-violet-city-ic span{width:26px!important;height:26px!important;}
 .dash-violet-city-info{flex:1;min-width:0;}
 .dash-violet-city-nm{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dtxt);display:block;}
-.dash-violet-city-desc{font-family:var(--mono);font-size:13.5px;color:var(--dmut);display:block;}
+.dash-violet-city-desc{font-family:var(--mono);font-size:14.5px;color:var(--dmut);display:block;}
 .dash-violet-city-tmp{font-family:var(--cond);font-size:16px;font-weight:800;color:var(--dtxt);}
 .dash-violet-sun-card{padding:12px 14px;display:flex;flex-direction:column;gap:9px;}
 .dash-violet-sun-row{display:flex;align-items:center;justify-content:space-between;}
 .dash-violet-sun-label{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dmut);}
 .dash-violet-sun-time{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--dtxt);}
-.dash-violet-sun-ago{font-family:var(--mono);font-size:13.5px;color:var(--dmut);}
+.dash-violet-sun-ago{font-family:var(--mono);font-size:14.5px;color:var(--dmut);}
 /* ── Airy (light teal) layout ── */
 .dash-airy-wrap{display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start;position:relative;z-index:1;}
 @media(max-width:820px){.dash-airy-wrap{grid-template-columns:1fr;}}
@@ -1892,7 +1892,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-airy-cond{font-family:var(--cond);font-size:16px;font-weight:700;color:var(--dtxt);}
 .dash-airy-hilos{font-family:var(--cond);font-size:14px;color:var(--dmut);}
 .dash-airy-hilos b{color:var(--dtxt);}
-.dash-airy-date{font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:2px;}
+.dash-airy-date{font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:2px;}
 .dash-airy-right{display:flex;flex-direction:column;gap:12px;min-width:0;}
 .dash-airy-card{background:var(--dcard);border:1px solid var(--dbd);border-radius:16px;padding:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(14,165,233,0.08);}
 .dash-airy-hd{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--dmut);margin-bottom:10px;}
@@ -1900,15 +1900,15 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-airy-bar-grp{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;}
 .dash-airy-bar-outer{width:100%;height:100%;display:flex;align-items:flex-end;position:relative;}
 .dash-airy-bar{width:100%;background:linear-gradient(180deg,var(--dacc) 0%,var(--dacc2) 100%);border-radius:5px 5px 0 0;min-height:4px;position:relative;}
-.dash-airy-bar-tmp{font-family:var(--cond);font-size:13.5px;font-weight:700;color:var(--dtxt);position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;}
-.dash-airy-bar-hr{font-family:var(--mono);font-size:13.5px;color:var(--dmut);}
+.dash-airy-bar-tmp{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dtxt);position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;}
+.dash-airy-bar-hr{font-family:var(--mono);font-size:14.5px;color:var(--dmut);}
 .dash-airy-hl-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:2px;}
 @media(max-width:700px){.dash-airy-hl-grid{grid-template-columns:1fr 1fr;}}
 .dash-airy-hl{background:var(--dcard2);border:1px solid var(--dbd);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:2px;}
-.dash-airy-hl-lbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dmut);margin-bottom:2px;}
+.dash-airy-hl-lbl{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dmut);margin-bottom:2px;}
 .dash-airy-hl-val{font-family:var(--cond);font-size:21.5px;font-weight:800;color:var(--dtxt);line-height:1.1;}
 .dash-airy-hl-val small{font-size:14px;opacity:.65;}
-.dash-airy-hl-sub{font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:1px;}
+.dash-airy-hl-sub{font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:1px;}
 .dash-airy-hl-bar{height:5px;border-radius:3px;background:var(--dbd);overflow:hidden;margin-top:4px;}
 .dash-airy-hl-bar>div{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--dacc2),var(--dacc));}
 /* ═══ GRAPHS TAB ═══ */
@@ -1945,7 +1945,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .gmet-icon{font-size:16px;line-height:1;opacity:.75;flex:0 0 auto;}
 .gmet-val{font-family:var(--cond);font-size:28px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;}
 .gmet-val small{font-size:15px;font-weight:500;opacity:.6;}
-.gmet-sub{font-family:var(--mono);font-size:13.5px;color:rgba(255,255,255,0.38);margin-top:1px;}
+.gmet-sub{font-family:var(--mono);font-size:14.5px;color:rgba(255,255,255,0.38);margin-top:1px;}
 .gmet-spark{flex:1;min-height:46px;margin-top:6px;}
 .gmet-spark svg{width:100%;height:100%;min-height:46px;display:block;overflow:visible;}
 
@@ -1957,7 +1957,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-metro-top-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .dash-metro-uv,.dash-metro-sun{padding:14px;display:flex;flex-direction:column;align-items:center;}
 .dash-metro-uv-lbl,.dash-metro-sun-lbl{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dmut);margin-bottom:4px;align-self:flex-start;}
-.dash-metro-sun-times{display:flex;justify-content:space-between;width:100%;font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:2px;}
+.dash-metro-sun-times{display:flex;justify-content:space-between;width:100%;font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:2px;}
 .dash-metro-hero{padding:16px 18px 14px;}
 .dash-metro-hero-loc{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.9px;color:var(--dmut);}
 .dash-metro-hero-row{display:flex;align-items:center;justify-content:space-between;margin:6px 0 2px;}
@@ -1982,7 +1982,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-metro-chart-card{padding:14px;}
 .dash-metro-chart-hd{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dmut);margin-bottom:8px;}
 .dash-metro-chart-tabs{display:flex;gap:5px;margin-bottom:10px;}
-.dash-metro-chart-tab{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.4px;padding:4px 10px;border-radius:7px;border:1px solid var(--dbd);background:transparent;color:var(--dmut);cursor:pointer;transition:all .15s;}
+.dash-metro-chart-tab{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.4px;padding:4px 10px;border-radius:7px;border:1px solid var(--dbd);background:transparent;color:var(--dmut);cursor:pointer;transition:all .15s;}
 .dash-metro-chart-tab.active{background:var(--dacc);border-color:var(--dacc);color:#fff;}
 .dash-metro-chart-tab:hover:not(.active){background:var(--dcard2);}
 .dash-metro-chart-svg{width:100%;display:block;overflow:visible;}
@@ -1990,9 +1990,9 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-metro-news-hd{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dmut);margin-bottom:8px;}
 .dash-metro-news-item{padding:7px 0;border-bottom:1px solid var(--dbd);}
 .dash-metro-news-item:last-child{border-bottom:none;padding-bottom:0;}
-.dash-metro-news-tag{display:inline-block;font-family:var(--cond);font-size:13.5px;letter-spacing:.8px;text-transform:uppercase;background:rgba(79,128,255,0.2);color:var(--dacc);border-radius:4px;padding:2px 6px;margin-bottom:3px;}
+.dash-metro-news-tag{display:inline-block;font-family:var(--cond);font-size:14.5px;letter-spacing:.8px;text-transform:uppercase;background:rgba(79,128,255,0.2);color:var(--dacc);border-radius:4px;padding:2px 6px;margin-bottom:3px;}
 .dash-metro-news-title{font-family:var(--cond);font-size:14px;font-weight:700;color:var(--dtxt);line-height:1.35;}
-.dash-metro-news-meta{font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:1px;}
+.dash-metro-news-meta{font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:1px;}
 /* ── Dark layout ── */
 .dash-dark-wrap{display:grid;grid-template-columns:270px 1fr;gap:0;border-radius:16px;overflow:hidden;position:relative;z-index:1;min-height:500px;}
 @media(max-width:860px){.dash-dark-wrap{grid-template-columns:1fr;}}
@@ -2014,7 +2014,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-dark-city-ic svg,.dash-dark-city-ic span{width:30px!important;height:30px!important;}
 .dash-dark-city-info{flex:1;min-width:0;}
 .dash-dark-city-nm{font-family:var(--cond);font-size:14px;font-weight:700;color:var(--dtxt);}
-.dash-dark-city-desc{font-family:var(--mono);font-size:13.5px;color:var(--dmut);}
+.dash-dark-city-desc{font-family:var(--mono);font-size:14.5px;color:var(--dmut);}
 .dash-dark-city-tmp{font-family:var(--cond);font-size:17.5px;font-weight:800;color:var(--dtxt);}
 .dash-dark-right{padding:18px;display:flex;flex-direction:column;gap:14px;}
 .dash-dark-sect-hd{font-family:var(--cond);font-size:19.5px;font-weight:800;color:var(--dtxt);}
@@ -2026,20 +2026,20 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-dark-hl-label{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--dmut);}
 .dash-dark-hl-val{font-family:var(--cond);font-size:24px;font-weight:800;color:var(--dtxt);line-height:1.1;}
 .dash-dark-hl-val small{font-size:14px;opacity:.7;}
-.dash-dark-hl-sub{font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:1px;}
+.dash-dark-hl-sub{font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:1px;}
 .dash-dark-hl-bar{height:4px;border-radius:2px;background:rgba(128,128,128,0.18);overflow:hidden;margin-top:4px;}
 .dash-dark-hl-bar>div{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--dacc2),var(--dacc));}
 .dash-dark-fc-strip{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-top:8px;}
 .dash-dark-fc-strip::-webkit-scrollbar{display:none;}
 .dash-dark-fc-day{flex:0 0 auto;width:64px;background:var(--dcard);border:1px solid var(--dbd);border-radius:12px;padding:9px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;}
 .dash-dark-fc-day.today{background:linear-gradient(180deg,var(--dacc2),var(--dacc));border-color:transparent;}
-.dash-dark-fc-day-nm{font-family:var(--cond);font-size:13.5px;font-weight:700;color:var(--dmut);}
+.dash-dark-fc-day-nm{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dmut);}
 .dash-dark-fc-day.today .dash-dark-fc-day-nm{color:rgba(255,255,255,0.8);}
 .dash-dark-fc-day-ic{width:28px;height:28px;}
 .dash-dark-fc-day-ic svg,.dash-dark-fc-day-ic span{width:28px!important;height:28px!important;}
 .dash-dark-fc-day-hi{font-family:var(--cond);font-size:14px;font-weight:800;color:var(--dtxt);}
 .dash-dark-fc-day.today .dash-dark-fc-day-hi{color:#fff;}
-.dash-dark-fc-day-lo{font-family:var(--mono);font-size:13.5px;color:var(--dmut);}
+.dash-dark-fc-day-lo{font-family:var(--mono);font-size:14.5px;color:var(--dmut);}
 /* Dark sidebar gradient */
 #dashboardsContent.dash-dark .dash-dark-left{background:linear-gradient(175deg,rgba(79,158,248,0.10) 0%,rgba(0,0,0,0.46) 100%);border-right:1px solid rgba(79,158,248,0.15);}
 /* Violet colored stat cards */
@@ -2055,11 +2055,11 @@ body.tab-hidden *{animation-play-state:paused !important;}
 /* Violet quick metrics */
 .dash-violet-qm{display:flex;flex-direction:column;gap:5px;}
 .dash-violet-qm-row{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:5px 8px;border-radius:8px;background:var(--dcard2);border:1px solid var(--dbd);}
-.dash-violet-qm-lbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dmut);}
+.dash-violet-qm-lbl{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dmut);}
 .dash-violet-qm-val{font-family:var(--mono);font-size:14.5px;font-weight:700;color:var(--dtxt);}
 /* Rain bar with percentage */
 .dash-violet-rain-bar-wrap{position:relative;}
-.dash-violet-rain-pct{font-family:var(--cond);font-size:13.5px;font-weight:700;color:var(--dtxt);text-align:center;margin-bottom:2px;height:11px;line-height:11px;}
+.dash-violet-rain-pct{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dtxt);text-align:center;margin-bottom:2px;height:11px;line-height:11px;}
 /* Airy compact UV */
 .dash-airy-uv-row{display:flex;align-items:center;gap:8px;margin-top:5px;}
 .dash-airy-uv-num{font-family:var(--cond);font-size:28px;font-weight:800;line-height:1;}
@@ -2075,28 +2075,28 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .ds-temp sup{font-size:28px;vertical-align:super;opacity:.5;}
 .ds-cond{font-family:var(--cond);font-size:19.5px;font-weight:700;color:var(--dmut);margin-bottom:4px;}
 .ds-feels{font-family:var(--mono);font-size:14.5px;color:var(--dmut);opacity:.8;}
-.ds-loc{font-family:var(--mono);font-size:13.5px;color:var(--dmut);opacity:.6;margin-top:4px;}
+.ds-loc{font-family:var(--mono);font-size:14.5px;color:var(--dmut);opacity:.6;margin-top:4px;}
 .ds-rings{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start;}
 @media(max-width:640px){.ds-hero{flex-direction:column;text-align:center;}.ds-rings{justify-content:center;}}
 .ds-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;}
 .ds-ring{width:64px;height:64px;}
-.ds-ring-lbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dmut);text-align:center;}
+.ds-ring-lbl{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dmut);text-align:center;}
 .ds-card{background:var(--dcard);border:1px solid var(--dbd);border-radius:16px;padding:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
 .ds-card-hd{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dmut);margin-bottom:10px;}
 .ds-hourly-strip{grid-column:1/-1;display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;}
 .ds-hourly-strip::-webkit-scrollbar{display:none;}
 .ds-pill{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--dcard2);border:1px solid var(--dbd);border-radius:50px;padding:10px 13px;}
 .ds-pill.now{background:linear-gradient(160deg,var(--dacc2),var(--dacc));border-color:var(--dacc2);}
-.ds-pill-t{font-family:var(--cond);font-size:13.5px;font-weight:700;color:var(--dmut);}
+.ds-pill-t{font-family:var(--cond);font-size:14.5px;font-weight:700;color:var(--dmut);}
 .ds-pill.now .ds-pill-t,.ds-pill.now .ds-pill-pop{color:rgba(255,255,255,0.75);}
 .ds-pill-tmp{font-family:var(--cond);font-size:14px;font-weight:800;color:var(--dtxt);}
-.ds-pill-pop{font-family:var(--mono);font-size:13.5px;color:var(--dmut);min-height:10px;}
+.ds-pill-pop{font-family:var(--mono);font-size:14.5px;color:var(--dmut);min-height:10px;}
 .ds-hl-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .ds-hl-item{background:var(--dcard2);border:1px solid var(--dbd);border-radius:12px;padding:10px 12px;}
-.ds-hl-lbl{font-family:var(--cond);font-size:13.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dmut);margin-bottom:3px;}
+.ds-hl-lbl{font-family:var(--cond);font-size:14.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dmut);margin-bottom:3px;}
 .ds-hl-val{font-family:var(--cond);font-size:21.5px;font-weight:800;color:var(--dtxt);line-height:1.1;}
 .ds-hl-val small{font-size:14.5px;opacity:.65;}
-.ds-hl-sub{font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:2px;}
+.ds-hl-sub{font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:2px;}
 .ds-fc-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(167,139,250,0.12);}
 .ds-fc-row:last-child{border-bottom:none;padding-bottom:0;}
 .ds-fc-dn{font-family:var(--cond);font-size:14px;font-weight:700;color:var(--dtxt);width:36px;}
@@ -2109,7 +2109,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-metro-day-top{display:flex;align-items:center;gap:6px;width:100%;}
 .dash-metro-day-rng{height:3px;border-radius:2px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;margin-top:1px;}
 .dash-metro-day-rng-fill{position:absolute;top:0;bottom:0;border-radius:2px;background:linear-gradient(90deg,var(--dacc2),var(--dacc));}
-.dash-metro-day-rng-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13.5px;color:var(--dmut);margin-top:2px;}
+.dash-metro-day-rng-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:14.5px;color:var(--dmut);margin-top:2px;}
 /* Metro news improved */
 .dash-metro-news-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--dbd);}
 .dash-metro-news-item:last-child{border-bottom:none;padding-bottom:0;}
@@ -2147,7 +2147,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .dash-hour-ic{width:34px;height:34px;}
 .dash-hour-ic svg,.dash-hour-ic span{width:34px!important;height:34px!important;}
 .dash-hour-tmp{font-family:var(--cond);font-size:15px;font-weight:800;color:var(--dtxt);}
-.dash-hour-pop{font-family:var(--mono);font-size:13.5px;color:var(--dacc);min-height:11px;}
+.dash-hour-pop{font-family:var(--mono);font-size:14.5px;color:var(--dacc);min-height:11px;}
 
 /* Temp graph */
 .dash-graph-card{padding:14px 16px 10px;}
@@ -2190,6 +2190,20 @@ body.tab-hidden *{animation-play-state:paused !important;}
 }
 #settings-panel.open { display: flex; }
 .settings-section-ttl { font-family: var(--cond); font-size: 14px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+/* Weather-alert preference rows */
+.wxalert-opts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--bdr); }
+.wxalert-row { display: flex; align-items: center; gap: 8px; font-family: var(--cond); font-size: 14.5px; color: var(--txt); }
+.wxalert-row .wxa-lbl { flex: 1; letter-spacing: .3px; }
+.wxalert-row input[type=number] { width: 50px; background: rgba(255,255,255,0.05); border: 1px solid var(--bdr); color: var(--txt); border-radius: 7px; padding: 4px 6px; font-family: var(--mono); font-size: 14.5px; text-align: right; -moz-appearance: textfield; }
+.wxalert-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.wxalert-row .wxa-unit { color: var(--muted); font-size: 14px; width: 20px; }
+.wxa-tog { position: relative; width: 40px; height: 23px; flex: 0 0 auto; display: inline-block; }
+.wxa-tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+.wxa-tog .wxa-sl { position: absolute; inset: 0; background: rgba(255,255,255,0.14); border-radius: 23px; transition: .18s; cursor: pointer; }
+.wxa-tog .wxa-sl::before { content: ""; position: absolute; height: 17px; width: 17px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .18s; }
+.wxa-tog input:checked + .wxa-sl { background: var(--acc); }
+.wxa-tog input:checked + .wxa-sl::before { transform: translateX(17px); }
+.wxalert-row.off .wxa-lbl, .wxalert-row.off input[type=number], .wxalert-row.off .wxa-unit { opacity: .4; }
 .theme-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .theme-swatch { flex: 1; padding: 9px 6px; border-radius: 11px; border: 2px solid transparent; cursor: pointer; text-align: center; font-family: var(--cond); font-size: 14px; font-weight: 700; letter-spacing: .4px; transition: all .2s; }
 .theme-swatch[data-theme="navy"]  { background: linear-gradient(160deg,#020c16,#051828); color: #4db8ff; border-color: rgba(77,184,255,0.22); }
@@ -2339,7 +2353,7 @@ html,body{max-width:100%;overflow-x:hidden;}
 @media(max-width:560px){
   .page{padding:7px;gap:8px;}
   /* Tabs */
-  .tab{min-width:0;min-height:50px;padding:6px 1px;font-size:12.5px;letter-spacing:.2px;}
+  .tab{min-width:0;min-height:50px;padding:6px 1px;font-size:13.5px;letter-spacing:.2px;}
   .tab-i{font-size:16.5px;}
   /* Settings panel */
   #settings-panel{right:7px;left:7px;width:auto;top:50px;}
@@ -2368,7 +2382,7 @@ html,body{max-width:100%;overflow-x:hidden;}
 }
 /* ── Very small phones (≤380px) ── */
 @media(max-width:380px){
-  .tab{min-width:0;font-size:12px;letter-spacing:0;}
+  .tab{min-width:0;font-size:13px;letter-spacing:0;}
   .tab-i{font-size:15px;}
   .mon-style-btn{font-size:14px;padding:4px 8px;}
   .pw-gauge-val{font-size:21.5px;}
@@ -2584,7 +2598,7 @@ html,body{max-width:100%;overflow-x:hidden;}
 .cmap-temp{font-family:var(--cond);font-size:14px;font-weight:800;color:#fff;background:rgba(5,18,34,0.82);padding:1px 5px;border-radius:5px;white-space:nowrap;line-height:1.4;}
 .cmap-plane{display:flex;flex-direction:column;align-items:center;cursor:pointer;pointer-events:auto;}
 .cmap-plane svg{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.85));}
-.cmap-plane-lbl{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.3px;color:#ffd479;background:rgba(5,18,34,0.78);padding:0 3px;border-radius:3px;white-space:nowrap;line-height:1.5;margin-top:1px;}
+.cmap-plane-lbl{font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.3px;color:#ffd479;background:rgba(5,18,34,0.78);padding:0 3px;border-radius:3px;white-space:nowrap;line-height:1.5;margin-top:1px;}
 .cmap-plane.ground svg{opacity:.55;}
 .cmap-plane.ground .cmap-plane-lbl{color:#9fb3c8;}
 .cmap-vis{font-family:var(--mono);font-size:14px;color:#cbd5e1;background:rgba(5,18,34,0.7);padding:0 4px;border-radius:4px;margin-top:1px;white-space:nowrap;}
@@ -3045,12 +3059,12 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;">
           <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127928; Radar</div>
+            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127928; Radar</div>
             <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <a href="https://www.windy.com/?radar,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
           </div>
           <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127760; Satellite</div>
+            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127760; Satellite</div>
             <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <a href="https://www.windy.com/?satellite,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
           </div>
@@ -3115,7 +3129,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div><div class="stn-ttl">&#127464;&#127484; Cura&ccedil;ao Stations</div><div class="stn-sub">Live data &middot; Wind &middot; Temp &middot; Rain</div></div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <span id="stn-ts" style="color:var(--muted);font-size:14px;font-family:var(--mono);">Last fetched: &mdash;</span>
-          <button id="toggleMap" class="bg" style="font-size:13px;height:28px;">&#128506; Map</button>
+          <button id="toggleMap" class="bg" style="font-size:14px;height:28px;">&#128506; Map</button>
         </div>
       </div>
       <div id="stn-list" class="stn-grid" aria-live="polite">
@@ -3264,7 +3278,7 @@ html,body{max-width:100%;overflow-x:hidden;}
     <div class="map-tab-wrap">
       <div class="cond-map-wrap">
         <div class="cond-map-hd">
-          <span class="cond-map-title">&#127758; ABC Islands &middot; Live Conditions Map <span style="font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.2px;margin-left:6px;" id="condMapTs"></span></span>
+          <span class="cond-map-title">&#127758; ABC Islands &middot; Live Conditions Map <span style="font-size:13.5px;font-weight:600;color:var(--muted);letter-spacing:.2px;margin-left:6px;" id="condMapTs"></span></span>
           <div class="cond-map-toggles" id="condMapToggles">
             <button class="cmap-btn" data-layer="stations" onclick="condMapToggle('stations',this)" title="Show weather station markers">&#9681; Stations</button>
             <button class="cmap-btn active" data-layer="wind" onclick="condMapToggle('wind',this)" title="Show wind vanes">&#127788; Wind</button>
@@ -3427,14 +3441,14 @@ html,body{max-width:100%;overflow-x:hidden;}
       <button id="help-modal-close" style="background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;">&#10005;</button>
     </div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-family:var(--cond);font-size:14px;color:var(--txt);">
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">1 &ndash; 8</kbd><span>Switch tabs (Monitor &middot; KNMI &middot; Aviation &middot; Stations &middot; Weather &middot; Maps &middot; ATC &middot; Dashboards)</span>
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">R</kbd><span>Refresh all data</span>
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">M</kbd><span>Toggle mute (alerts)</span>
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">N</kbd><span>Toggle night mode</span>
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">T</kbd><span>Toggle test mode</span>
-      <kbd style="font-family:var(--mono);font-size:13px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">Esc</kbd><span>Release ADS-B map interaction</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">1 &ndash; 8</kbd><span>Switch tabs (Monitor &middot; KNMI &middot; Aviation &middot; Stations &middot; Weather &middot; Maps &middot; ATC &middot; Dashboards)</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">R</kbd><span>Refresh all data</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">M</kbd><span>Toggle mute (alerts)</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">N</kbd><span>Toggle night mode</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">T</kbd><span>Toggle test mode</span>
+      <kbd style="font-family:var(--mono);font-size:14px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">Esc</kbd><span>Release ADS-B map interaction</span>
     </div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);font-family:var(--sans);font-size:13px;color:var(--muted);">All tabs auto-refresh in background &middot; METAR 30s &middot; TAF/SYNOP 5min &middot; Stations 60s &middot; Weather/Monitor 60s</div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);font-family:var(--sans);font-size:14px;color:var(--muted);">All tabs auto-refresh in background &middot; METAR 30s &middot; TAF/SYNOP 5min &middot; Stations 60s &middot; Weather/Monitor 60s</div>
   </div>
 </div>
 
@@ -4068,7 +4082,7 @@ function buildMetarGrid(){
           <span class="mtime" data-field="time">--:--Z</span>
           <div style="display:flex;align-items:center;gap:5px;margin-top:1px;">
             <span class="mtime-lbl">observ.</span>
-            <span class="mfr-badge" style="font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:1px;padding:1px 4px;border-radius:3px;border:1px solid transparent;color:var(--grn);border-color:var(--grn)88;">VFR</span>
+            <span class="mfr-badge" style="font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:1px;padding:1px 4px;border-radius:3px;border:1px solid transparent;color:var(--grn);border-color:var(--grn)88;">VFR</span>
           </div>
         </div>
       </div>
@@ -4077,9 +4091,9 @@ function buildMetarGrid(){
           <div class="mwind-block" data-field="wind-chip">
             <span class="chip-l" style="align-self:flex-start;padding-left:2px;">Wind</span>
             <div data-field="wind-rose">${miniRose(null,null)}</div>
-            <span class="chip-s" data-field="wind-dir" style="font-size:13px;color:var(--txt);font-family:var(--cond);font-weight:700;"></span>
+            <span class="chip-s" data-field="wind-dir" style="font-size:14px;color:var(--txt);font-family:var(--cond);font-weight:700;"></span>
             <span class="chip-s" data-field="wind-txt" style="font-size:14px;"></span>
-            <span class="chip-s" data-field="wind-bft" style="font-size:13px;opacity:.6;"></span>
+            <span class="chip-s" data-field="wind-bft" style="font-size:14px;opacity:.6;"></span>
           </div>
           <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
             <div class="crow">
@@ -4596,7 +4610,7 @@ function renderTAF(icao, rawText){
             <span class="t-change-type">${ch.label}</span>
             <span class="t-change-period">${ch.period || ''}</span>
           </div>
-          <div class="t-change-detail">${tags || '<span style="color:var(--muted);font-size:13px;">No change</span>'}</div>
+          <div class="t-change-detail">${tags || '<span style="color:var(--muted);font-size:14px;">No change</span>'}</div>
         </div>`;
     });
   }
@@ -4881,7 +4895,7 @@ function renderSynopCard(src, rawText){
         <div style="flex:1;min-width:0;">
           <div style="font-family:var(--cond);font-weight:800;font-size:15px;color:#38bdf8;letter-spacing:1px;">STN ${r.stn}</div>
           <div style="font-family:var(--cond);font-size:14px;color:#38bdf8;opacity:.75;margin-top:1px;">${dirTxt}</div>
-          <div style="font-family:var(--mono);font-size:13px;color:rgba(200,225,255,0.6);margin-top:1px;">${spdTxt}</div>
+          <div style="font-family:var(--mono);font-size:14px;color:rgba(200,225,255,0.6);margin-top:1px;">${spdTxt}</div>
         </div>
       </div>`;
       html += `<div style="display:flex;gap:4px;flex-wrap:wrap;">`;
@@ -6678,7 +6692,7 @@ function renderWxCard(key, P){
   const body = card.querySelector('[data-field="body"]');
   const timeEl = card.querySelector('[data-field="time"]');
   if(!P || P.empty){
-    body.innerHTML = `<div style="padding:24px;text-align:center;font-family:var(--cond);color:var(--muted);font-size:13px;letter-spacing:1px;">\u26a0 No data \u2014 source offline</div>`;
+    body.innerHTML = `<div style="padding:24px;text-align:center;font-family:var(--cond);color:var(--muted);font-size:14px;letter-spacing:1px;">\u26a0 No data \u2014 source offline</div>`;
     return;
   }
   wxPushHistory(key, P);
@@ -8088,7 +8102,7 @@ function _metroUVGauge(uvVal){
     <text x="${cx}" y="${cy-14}" text-anchor="middle" font-size="21" font-weight="800" font-family="system-ui,sans-serif" fill="${col}">${Math.round(uv)}</text>
     <text x="${cx-r+1}" y="${cy+16}" font-size="8" fill="rgba(255,255,255,0.38)" font-family="system-ui">0</text>
     <text x="${cx+r-7}" y="${cy+16}" font-size="8" fill="rgba(255,255,255,0.38)" font-family="system-ui">11</text>
-  </svg><div style="text-align:center;font-family:var(--cond);font-size:12.5px;font-weight:700;color:${col};margin-top:-2px;letter-spacing:.5px">${lvl}</div>`;
+  </svg><div style="text-align:center;font-family:var(--cond);font-size:13.5px;font-weight:700;color:${col};margin-top:-2px;letter-spacing:.5px">${lvl}</div>`;
 }
 function _metroSunArc(srIso, ssIso){
   const now=new Date();
@@ -8124,7 +8138,7 @@ function _metroLineChart(hours, metric){
     const base=p.wind_kt!=null?+p.wind_kt.toFixed(1):8;
     pts=hours.slice(0,10).map((h,i)=>({x:i,v:Math.max(0,+(base+Math.sin(i*0.82)*4+Math.cos(i*0.31)*1.6).toFixed(1))}));
   }
-  if(!pts.length) return '<div style="padding:20px;text-align:center;color:var(--dmut);font-family:var(--cond);font-size:13px;">No data</div>';
+  if(!pts.length) return '<div style="padding:20px;text-align:center;color:var(--dmut);font-family:var(--cond);font-size:14px;">No data</div>';
   const vals=pts.map(pp=>pp.v),mn=Math.min(...vals),mx=Math.max(...vals),rng=Math.max(0.1,mx-mn),n=pts.length;
   const X=i=>pad+(i/(n-1))*(W-2*pad), Y=v=>(H-14)-((v-mn)/rng)*(H-30)+10;
   const co=pts.map((pp,i)=>({x:X(i),y:Y(pp.v)}));
@@ -8149,7 +8163,7 @@ window._metroChartSwitch=_metroChartSwitch;
 
 /* ── Violet rain bar helper ── */
 function _violetRainBars(hours){
-  if(!hours||!hours.length) return '<div class="dash-violet-rain-bars" style="align-items:center;justify-content:center;"><span style="font-family:var(--cond);font-size:12.5px;color:var(--dmut);">No forecast data</span></div>';
+  if(!hours||!hours.length) return '<div class="dash-violet-rain-bars" style="align-items:center;justify-content:center;"><span style="font-family:var(--cond);font-size:13.5px;color:var(--dmut);">No forecast data</span></div>';
   const pts=hours.slice(0,8).map(h=>({pop:h.pop!=null?h.pop:0,hr:h.hour}));
   const maxPop=Math.max(10,...pts.map(p=>p.pop));
   return '<div class="dash-violet-rain-bars">'+pts.map(p=>{
@@ -8180,7 +8194,7 @@ function _airyTempGauge(tempC,loC,hiC){
 }
 /* ── Airy hourly bar chart ── */
 function _airyBarChart(hours){
-  if(!hours||!hours.length) return '<div style="text-align:center;padding:20px;color:var(--dmut);font-family:var(--cond);font-size:12.5px;">Hourly data loading…</div>';
+  if(!hours||!hours.length) return '<div style="text-align:center;padding:20px;color:var(--dmut);font-family:var(--cond);font-size:13.5px;">Hourly data loading…</div>';
   const pts=hours.slice(0,9);
   const temps=pts.map(p=>p.temp).filter(t=>t!=null);
   if(!temps.length) return '';
@@ -8224,7 +8238,7 @@ function renderVioletDash(host){
   const uvLvl=uv==null?'—':uv<3?'Low':uv<6?'Moderate':uv<8?'High':'Very High';
   const stats=[
     {cls:'v-wind',icon:'💨',val:(windKt!=null?windKt+'<small> kt</small>':'—'),lbl:'Wind',trend:windDir,barW:windKt!=null?Math.min(100,Math.round(windKt/40*100))+'%':'0%'},
-    {cls:'v-rain',icon:'🌧',val:(rainMm>0.05?rainMm.toFixed(1)+'<small> mm</small>':'<small style="font-size:12.5px">None</small>'),lbl:'Rain 1h',trend:'Last hour',barW:'15%'},
+    {cls:'v-rain',icon:'🌧',val:(rainMm>0.05?rainMm.toFixed(1)+'<small> mm</small>':'<small style="font-size:13.5px">None</small>'),lbl:'Rain 1h',trend:'Last hour',barW:'15%'},
     {cls:'v-hum',icon:'💧',val:(rh!=null?rh+'<small>%</small>':'—'),lbl:'Humidity',trend:dew!=null?'Dew '+dew+'°':'',barW:(rh||0)+'%'},
     {cls:'v-uv',icon:'☀️',val:(uv!=null?String(Math.round(uv)):'—'),lbl:'UV Index',trend:uvLvl,barW:uv!=null?Math.min(100,Math.round(uv/11*100))+'%':'0%'},
   ];
@@ -8374,7 +8388,7 @@ function renderStormDash(host){
     const w=decodeWmoCode(h.code,h.hour<6||h.hour>=19,h.pop);
     const pop=(h.pop!=null&&h.pop>=20)?Math.round(h.pop)+'%':'';
     return`<div class="ds-pill${i===0?' now':''}"><span class="ds-pill-t">${i===0?'Now':hr12+ap}</span>${_stormIcon(w.icon,26)}<span class="ds-pill-pop">${pop}</span><span class="ds-pill-tmp">${h.temp!=null?Math.round(h.temp)+'°':'—'}</span></div>`;
-  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;padding:8px;">Hourly data loads with Forecast</div>';
+  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;padding:8px;">Hourly data loads with Forecast</div>';
 
   const fcDays=fc?fc.slice(0,5):[];
   const allHi=fcDays.map(x=>x.tempHigh).filter(x=>x!=null);
@@ -8390,7 +8404,7 @@ function renderStormDash(host){
     const barL=lo2!=null?Math.round((lo2-fcMinL)/fcRange*100):0;
     const barW=hi2!=null&&lo2!=null?Math.max(8,Math.round((hi2-lo2)/fcRange*100)):10;
     return`<div class="ds-fc-row"><span class="ds-fc-dn">${dname}</span>${_stormIcon(wc.icon,22)}<div class="ds-fc-bar"><div class="ds-fc-bar-fill" style="left:${barL}%;width:${barW}%"></div></div><span class="ds-fc-hi">${hi2!=null?hi2+'°':'—'}</span><span class="ds-fc-lo">${lo2!=null?lo2+'°':'—'}</span></div>`;
-  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;">Forecast loading…</div>';
+  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;">Forecast loading…</div>';
 
   const hls=[
     {lbl:'Dew Point',val:dew!=null?dew+'°':'—',unit:'C',sub:'Moisture index'},
@@ -8438,15 +8452,15 @@ function renderMetroDash(host){
   const hiTemp=fc&&fc[0]&&fc[0].tempHigh!=null?Math.round(fc[0].tempHigh):null;
   const loTemp=fc&&fc[0]&&fc[0].tempLow!=null?Math.round(fc[0].tempLow):null;
   let hours=[]; if(fc&&fc[0]&&fc[0]._hourly){const cur=now.getHours();hours=fc[0]._hourly.filter(h=>h.hour>=cur).slice(0,8);if(hours.length<8&&fc[1]&&fc[1]._hourly)hours=hours.concat(fc[1]._hourly.slice(0,8-hours.length));}
-  const hoursHtml=hours.length?hours.map((h,i)=>{const hr12=h.hour%12===0?12:h.hour%12,ap=h.hour<12?'AM':'PM',w=decodeWmoCode(h.code,h.hour<6||h.hour>=19,h.pop),pop=(h.pop!=null&&h.pop>=20)?Math.round(h.pop)+'%':'';return`<div class="dash-hour${i===0?' now':''}"><span class="dash-hour-t">${i===0?'Now':hr12+ap}</span><span class="dash-hour-ic">${wxIconStyled(w.icon,34)}</span><span class="dash-hour-pop">${pop}</span><span class="dash-hour-tmp">${h.temp!=null?Math.round(h.temp)+'°':'—'}</span></div>`;}).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;padding:12px;">Hourly data loads with Forecast</div>';
+  const hoursHtml=hours.length?hours.map((h,i)=>{const hr12=h.hour%12===0?12:h.hour%12,ap=h.hour<12?'AM':'PM',w=decodeWmoCode(h.code,h.hour<6||h.hour>=19,h.pop),pop=(h.pop!=null&&h.pop>=20)?Math.round(h.pop)+'%':'';return`<div class="dash-hour${i===0?' now':''}"><span class="dash-hour-t">${i===0?'Now':hr12+ap}</span><span class="dash-hour-ic">${wxIconStyled(w.icon,34)}</span><span class="dash-hour-pop">${pop}</span><span class="dash-hour-tmp">${h.temp!=null?Math.round(h.temp)+'°':'—'}</span></div>`;}).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;padding:12px;">Hourly data loads with Forecast</div>';
   const days=fc?fc.slice(0,6):[];
   const allHi=days.map(d=>d.tempHigh).filter(t=>t!=null),allLo=days.map(d=>d.tempLow).filter(t=>t!=null);
   const rangeMin=allLo.length?Math.min(...allLo):20,rangeMax=allHi.length?Math.max(...allHi):35,rangeSp=Math.max(1,rangeMax-rangeMin);
   const daysHtml=days.length?days.map((day,i)=>{
     const dname=new Date(Date.now()+i*86400000).toLocaleDateString('en-US',{weekday:'short'}),wc=decodeWmoCode(day.code,false,day.pop),hi=day.tempHigh!=null?Math.round(day.tempHigh):null,lo=day.tempLow!=null?Math.round(day.tempLow):null;
     const barL=lo!=null?Math.round(((lo-rangeMin)/rangeSp)*100):0,barW=hi!=null&&lo!=null?Math.round(((hi-lo)/rangeSp)*100):40;
-    return`<div class="dash-metro-day"><div class="dash-metro-day-top"><span class="dash-metro-day-name">${dname}</span><span class="dash-metro-day-ic">${buildWxIconSvg(wc.icon,24)}</span><span class="dash-metro-day-temps" style="margin-left:auto">${hi!=null?hi+'°':'—'}<span style="color:var(--dmut);font-weight:500;font-size:12px">${lo!=null?' '+lo+'°':''}</span></span></div><div class="dash-metro-day-rng"><div class="dash-metro-day-rng-fill" style="left:${barL}%;width:${barW}%"></div></div></div>`;
-  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;padding:6px;">Forecast loading…</div>';
+    return`<div class="dash-metro-day"><div class="dash-metro-day-top"><span class="dash-metro-day-name">${dname}</span><span class="dash-metro-day-ic">${buildWxIconSvg(wc.icon,24)}</span><span class="dash-metro-day-temps" style="margin-left:auto">${hi!=null?hi+'°':'—'}<span style="color:var(--dmut);font-weight:500;font-size:13px">${lo!=null?' '+lo+'°':''}</span></span></div><div class="dash-metro-day-rng"><div class="dash-metro-day-rng-fill" style="left:${barL}%;width:${barW}%"></div></div></div>`;
+  }).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;padding:6px;">Forecast loading…</div>';
   let chartHrs=[]; if(fc&&fc[0]&&fc[0]._hourly){const cur=now.getHours();chartHrs=fc[0]._hourly.filter(h=>h.hour>=cur).slice(0,10);if(chartHrs.length<10&&fc[1]&&fc[1]._hourly)chartHrs=chartHrs.concat(fc[1]._hourly.slice(0,10-chartHrs.length));}
   const windKt=p.wind_kt!=null?p.wind_kt:null,windDir=p.wind_dir!=null?_MON_COMPASS16[Math.round(p.wind_dir/22.5)%16]:'',rh=p.rh!=null?Math.round(p.rh):null;
   const rain1h=om.rain!=null?om.rain:(om.precipitation!=null?om.precipitation:(p.precip_mm!=null?p.precip_mm:null));
@@ -8488,7 +8502,7 @@ function renderMetroDash(host){
     </div>
     <div class="dash-metro-card dash-metro-news-card">
       <div class="dash-metro-news-hd">Weather Highlights</div>
-      ${newsItems.map(n=>`<div class="dash-metro-news-item"><div class="dash-metro-news-icon">${n.icon}</div><div class="dash-metro-news-body"><span class="dash-metro-news-tag">${n.tag}</span><div class="dash-metro-news-title">${n.title}</div>${n.body?`<div style="font-family:var(--mono);font-size:12px;color:var(--dmut);margin-top:1px">${n.body}</div>`:''}<div class="dash-metro-news-meta">${n.meta}</div></div></div>`).join('')}
+      ${newsItems.map(n=>`<div class="dash-metro-news-item"><div class="dash-metro-news-icon">${n.icon}</div><div class="dash-metro-news-body"><span class="dash-metro-news-tag">${n.tag}</span><div class="dash-metro-news-title">${n.title}</div>${n.body?`<div style="font-family:var(--mono);font-size:13px;color:var(--dmut);margin-top:1px">${n.body}</div>`:''}<div class="dash-metro-news-meta">${n.meta}</div></div></div>`).join('')}
     </div>
   </div>
 </div>`;
@@ -8532,7 +8546,7 @@ function renderDarkDash(host){
   ];
   const hlHtml=highlights.map(m=>`<div class="dash-dark-hl-card"><div class="dash-dark-hl-top"><span class="dash-dark-hl-icon">${m.icon}</span><span class="dash-dark-hl-label">${m.label}</span></div><div class="dash-dark-hl-val">${m.val}</div>${m.bar!=null?`<div class="dash-dark-hl-bar"><div style="width:${Math.max(3,m.bar||0)}%;"></div></div>`:''}<div class="dash-dark-hl-sub">${m.sub||''}</div></div>`).join('');
   const fcDays=fc?fc.slice(0,10):[];
-  const fcHtml=fcDays.length?fcDays.map((day,i)=>{const dname=i===0?'Today':new Date(Date.now()+i*86400000).toLocaleDateString('en-US',{weekday:'short'}),wc=decodeWmoCode(day.code,false,day.pop),hi2=day.tempHigh!=null?Math.round(day.tempHigh):null,lo2=day.tempLow!=null?Math.round(day.tempLow):null;return`<div class="dash-dark-fc-day${i===0?' today':''}"><span class="dash-dark-fc-day-nm">${dname}</span><span class="dash-dark-fc-day-ic">${buildWxIconSvg(wc.icon,28)}</span><span class="dash-dark-fc-day-hi">${hi2!=null?hi2+'°':'—'}</span><span class="dash-dark-fc-day-lo">${lo2!=null?lo2+'°':'—'}</span></div>`;}).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;">Forecast loading…</div>';
+  const fcHtml=fcDays.length?fcDays.map((day,i)=>{const dname=i===0?'Today':new Date(Date.now()+i*86400000).toLocaleDateString('en-US',{weekday:'short'}),wc=decodeWmoCode(day.code,false,day.pop),hi2=day.tempHigh!=null?Math.round(day.tempHigh):null,lo2=day.tempLow!=null?Math.round(day.tempLow):null;return`<div class="dash-dark-fc-day${i===0?' today':''}"><span class="dash-dark-fc-day-nm">${dname}</span><span class="dash-dark-fc-day-ic">${buildWxIconSvg(wc.icon,28)}</span><span class="dash-dark-fc-day-hi">${hi2!=null?hi2+'°':'—'}</span><span class="dash-dark-fc-day-lo">${lo2!=null?lo2+'°':'—'}</span></div>`;}).join(''):'<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;">Forecast loading…</div>';
   const dateStr=now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'short'});
   host.innerHTML=`<div class="dash-dark-wrap">
   <div class="dash-dark-left">
@@ -8593,7 +8607,7 @@ function renderDashboards(){
     curvePts = fc[0]._hourly.filter(h=>h.hour>=cur).slice(0,12);
     if(curvePts.length<6 && fc[1] && fc[1]._hourly) curvePts = curvePts.concat(fc[1]._hourly.slice(0,12-curvePts.length));
   }
-  const curveHtml = _dashTempCurve(curvePts) || '<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;padding:18px;text-align:center;">Temperature trend loads with Forecast</div>';
+  const curveHtml = _dashTempCurve(curvePts) || '<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;padding:18px;text-align:center;">Temperature trend loads with Forecast</div>';
 
   // Sun times
   let sunrise='—', sunset='—';
@@ -8770,7 +8784,7 @@ function renderDashboardsTab(){
     curvePts = fc[0]._hourly.filter(h=>h.hour>=cur).slice(0,12);
     if(curvePts.length<6 && fc[1] && fc[1]._hourly) curvePts = curvePts.concat(fc[1]._hourly.slice(0,12-curvePts.length));
   }
-  const curveHtml = _dashTempCurve(curvePts) || '<div style="color:var(--dmut);font-family:var(--cond);font-size:13px;padding:18px;text-align:center;">Temperature trend loads with Forecast</div>';
+  const curveHtml = _dashTempCurve(curvePts) || '<div style="color:var(--dmut);font-family:var(--cond);font-size:14px;padding:18px;text-align:center;">Temperature trend loads with Forecast</div>';
 
   let sunrise='—', sunset='—';
   const sr=(fc&&fc[0]&&fc[0].sunrise)||(omd.sunrise&&omd.sunrise[0]);
@@ -8907,7 +8921,7 @@ function renderGraphsTab(){
   // Synthetic sparkline helper (deterministic variation based on hour)
   const synth = (base, amp, n=16) => base!=null ? Array.from({length:n},(_,i)=>Math.max(0,base+amp*Math.sin((i+now.getHours())*0.72))) : null;
   // Daily forecast bars
-  let daysHtml = '<div style="color:var(--muted);font-family:var(--cond);font-size:13px;">Forecast loading…</div>';
+  let daysHtml = '<div style="color:var(--muted);font-family:var(--cond);font-size:14px;">Forecast loading…</div>';
   if(fc&&fc.length){
     const days7=fc.slice(0,7);
     const allLo=days7.map(d=>d.tempLow||99).filter(t=>t<99), allHi=days7.map(d=>d.tempHigh||-99).filter(t=>t>-99);
@@ -9020,7 +9034,7 @@ function renderSkyView(data, hostEl){
     const hr12 = h.hour%12===0?12:h.hour%12; const ap = h.hour<12?'AM':'PM';
     const w = decodeWmoCode(h.code, h.hour<6||h.hour>=19, h.pop);
     return `<div class="sky-hour"><span class="sky-hour-t">${hr12}${ap}</span><span class="sky-hour-ic">${wxIconStyled(w.icon,34)}</span><span class="sky-hour-tmp">${h.temp!=null?Math.round(h.temp)+'\u00b0':'\u2014'}</span></div>`;
-  }).join('') : '<div style="color:var(--muted);font-family:var(--cond);font-size:13px;padding:12px;">Hourly data loads with Forecast tab</div>';
+  }).join('') : '<div style="color:var(--muted);font-family:var(--cond);font-size:14px;padding:12px;">Hourly data loads with Forecast tab</div>';
   // sun times
   let sunrise='\u2014', sunset='\u2014', lod='\u2014';
   const sr = (fc&&fc[0]&&fc[0].sunrise)||(omd.sunrise&&omd.sunrise[0]);
@@ -9116,8 +9130,8 @@ function renderSkyView(data, hostEl){
           </div>
           <div class="sky-hl-tile">
             <div class="sky-hl-lbl">Sunrise &amp; Sunset</div>
-            <div class="sky-hl-sun-row"><span style="font-size:18px;">\ud83c\udf05</span><div><div style="font-size:13px;color:var(--muted);">Rise</div><span>${sunrise}</span></div></div>
-            <div class="sky-hl-sun-row" style="margin-top:8px;"><span style="font-size:18px;">\ud83c\udf07</span><div><div style="font-size:13px;color:var(--muted);">Set</div><span>${sunset}</span></div></div>
+            <div class="sky-hl-sun-row"><span style="font-size:18px;">\ud83c\udf05</span><div><div style="font-size:14px;color:var(--muted);">Rise</div><span>${sunrise}</span></div></div>
+            <div class="sky-hl-sun-row" style="margin-top:8px;"><span style="font-size:18px;">\ud83c\udf07</span><div><div style="font-size:14px;color:var(--muted);">Set</div><span>${sunset}</span></div></div>
             <div class="sky-hl-sub" style="margin-top:auto;">${lod !== '\u2014' ? 'Day length ' + lod : ''}</div>
           </div>
           <div class="sky-hl-tile">
@@ -9220,7 +9234,7 @@ function renderGaugesView(data){
       return `<div class="gau-week-day ${i===0?'today':''}"><span class="gau-week-dname">${dn}</span><span class="gau-week-ic">${wxIconStyled(w.icon,30)}</span><span class="gau-week-tmp">${day.tempHigh!=null?Math.round(day.tempHigh):'\u2014'}\u00b0<small> ${day.tempLow!=null?Math.round(day.tempLow):'\u2014'}\u00b0</small></span></div>`;
     }).join('');
   } else {
-    weekHtml = '<div style="color:var(--muted);font-family:var(--cond);font-size:13px;padding:14px;">Weekly outlook loads with Forecast tab</div>';
+    weekHtml = '<div style="color:var(--muted);font-family:var(--cond);font-size:14px;padding:14px;">Weekly outlook loads with Forecast tab</div>';
   }
   const uvCol = uv==null?'#2dd4bf':uv>=11?'#a78bfa':uv>=8?'#ff4f4f':uv>=6?'#ff8a3d':uv>=3?'#f59e0b':'#2ec97a';
   host.innerHTML = `
@@ -9862,7 +9876,7 @@ function renderGraphicsView(data){
 
   host.innerHTML = `
   <div class="gfx-wrap">
-    <div class="gfx-srcbadge" style="font-family:var(--mono);font-size:13px;letter-spacing:.5px;padding:2px 0 8px;color:${knmiSrc?'#2ec97a':'var(--muted)'};">${knmiSrc?'● LIVE · KNMI Bonaire'+(k.time?' · '+k.time:''):'○ SYNOP / model data'}</div>
+    <div class="gfx-srcbadge" style="font-family:var(--mono);font-size:14px;letter-spacing:.5px;padding:2px 0 8px;color:${knmiSrc?'#2ec97a':'var(--muted)'};">${knmiSrc?'● LIVE · KNMI Bonaire'+(k.time?' · '+k.time:''):'○ SYNOP / model data'}</div>
     <div class="gfx-tilegrid">${tiles}</div>
     <div class="gfx-cards">
       <div class="gfx-card wide">
@@ -11085,7 +11099,7 @@ async function fetchCondFlights(){
       'Altitude: '+altTxt+'<br>'+
       'Speed: '+spd+(track!=null?' · '+Math.round(track)+'°':'')+'<br>'+
       (a.r?'Reg: '+a.r+'<br>':'')+
-      (a.hex?'<span style="color:var(--muted);font-size:12.5px">ICAO '+a.hex.toUpperCase()+'</span>':'')+'</div>';
+      (a.hex?'<span style="color:var(--muted);font-size:13.5px">ICAO '+a.hex.toUpperCase()+'</span>':'')+'</div>';
     mk.bindPopup(popup, {maxWidth:200});
     mk.addTo(condFlightLayer);
   });
@@ -11212,7 +11226,7 @@ function renderBuoys(){
   loadBuoys().then(function(buoys){
     if(!__condMapLayers.buoys || !condBuoyLayer) return;
     if(!buoys || !buoys.length){
-      var note = L.divIcon({html:'<div style="font-family:monospace;font-size:13px;color:#ff8a8a;background:rgba(5,18,34,0.9);padding:3px 7px;border-radius:6px;white-space:nowrap;">No live buoy data</div>', className:'', iconAnchor:[50,10]});
+      var note = L.divIcon({html:'<div style="font-family:monospace;font-size:14px;color:#ff8a8a;background:rgba(5,18,34,0.9);padding:3px 7px;border-radius:6px;white-space:nowrap;">No live buoy data</div>', className:'', iconAnchor:[50,10]});
       L.marker([11.5,-69.0],{icon:note,interactive:false}).addTo(condBuoyLayer);
       return;
     }
@@ -11231,8 +11245,8 @@ function renderBuoys(){
       var rot = (wdir!=null) ? (wdir + 180) % 360 : 0;
       // Header: buoy ID chip + wave height chip
       var _hdr = '<div style="display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:3px;">'
-        + '<span style="font-family:monospace;font-size:12.5px;font-weight:700;color:#38bdf8;background:rgba(5,15,28,0.9);border:1px solid rgba(56,189,248,0.4);padding:0 5px;border-radius:5px;white-space:nowrap;">' + b.id + '</span>'
-        + (wvht!=null ? '<span style="font-family:monospace;font-size:12.5px;font-weight:700;color:#fff;background:#0ea5e9;padding:0 5px;border-radius:5px;white-space:nowrap;">' + wvht.toFixed(1) + 'm</span>' : '')
+        + '<span style="font-family:monospace;font-size:13.5px;font-weight:700;color:#38bdf8;background:rgba(5,15,28,0.9);border:1px solid rgba(56,189,248,0.4);padding:0 5px;border-radius:5px;white-space:nowrap;">' + b.id + '</span>'
+        + (wvht!=null ? '<span style="font-family:monospace;font-size:13.5px;font-weight:700;color:#fff;background:#0ea5e9;padding:0 5px;border-radius:5px;white-space:nowrap;">' + wvht.toFixed(1) + 'm</span>' : '')
         + '</div>';
       var vaneHtml;
       if(wdir!=null && wspdKt!=null){
@@ -11243,7 +11257,7 @@ function renderBuoys(){
           + '<svg width="46" height="46" viewBox="0 0 46 46" style="transform:rotate(' + rot + 'deg);">'
           + '<polygon points="23,4 31,30 23,24 15,30" fill="' + wcol + '" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>'
           + '</svg>'
-          + '<div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-family:monospace;font-size:13px;font-weight:700;color:#fff;background:' + wcol + ';padding:0 4px;border-radius:4px;white-space:nowrap;">'
+          + '<div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-family:monospace;font-size:14px;font-weight:700;color:#fff;background:' + wcol + ';padding:0 4px;border-radius:4px;white-space:nowrap;">'
           + wspdKt + (gstKt && gstKt >= wspdKt+4 ? 'G'+gstKt : '') + 'kt'
           + '</div>'
           + '</div></div>';
@@ -11268,7 +11282,7 @@ function renderBuoys(){
         + 'Wave: ' + wvTxt + dpTxt + '<br>'
         + 'Sea temp: ' + wtTxt + '<br>'
         + 'Pressure: ' + prTxt + '<br>'
-        + '<span style="opacity:.6;font-size:13px;">'+d.dd+'/'+d.mm+' '+d.hh+':'+d.mn+' UTC</span></div>';
+        + '<span style="opacity:.6;font-size:14px;">'+d.dd+'/'+d.mm+' '+d.hh+':'+d.mn+' UTC</span></div>';
       L.marker([b.lat,b.lon],{icon:icon}).bindPopup(popup,{maxWidth:220}).addTo(condBuoyLayer);
     });
   });
@@ -11461,7 +11475,7 @@ function renderCondMap(){
         var _hdr='';
         if(_ft!=null||_okSvg){
           _hdr='<div style="display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:2px;">'+
-            (_ft!=null?'<span style="font-family:monospace;font-size:13px;font-weight:700;color:#fff;background:rgba(5,15,28,0.85);border:1px solid rgba(255,255,255,0.35);padding:0 5px;border-radius:5px;white-space:nowrap;">'+_ft.toFixed(0)+'\u00b0</span>':'')+
+            (_ft!=null?'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#fff;background:rgba(5,15,28,0.85);border:1px solid rgba(255,255,255,0.35);padding:0 5px;border-radius:5px;white-space:nowrap;">'+_ft.toFixed(0)+'\u00b0</span>':'')+
             (_okSvg?'<svg width="20" height="20" viewBox="0 0 20 20" style="background:rgba(5,15,28,0.85);border-radius:50%;" >'+_okSvg+'</svg>':'')+
             '</div>';
         }
@@ -11472,7 +11486,7 @@ function renderCondMap(){
             '<svg width="46" height="46" viewBox="0 0 46 46" style="transform:rotate('+rot+'deg);">'+
               '<polygon points="23,4 31,30 23,24 15,30" fill="'+wcol+'" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>'+
             '</svg>'+
-            '<div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-family:monospace;font-size:13px;font-weight:700;color:#fff;background:'+wcol+';padding:0 4px;border-radius:4px;white-space:nowrap;">'+windSpd+((mp&&mp.windGust&&mp.windGust>=windSpd+8)?'G'+mp.windGust:'')+'kt</div>'+
+            '<div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-family:monospace;font-size:14px;font-weight:700;color:#fff;background:'+wcol+';padding:0 4px;border-radius:4px;white-space:nowrap;">'+windSpd+((mp&&mp.windGust&&mp.windGust>=windSpd+8)?'G'+mp.windGust:'')+'kt</div>'+
           '</div></div>';
         var vaneIcon = L.divIcon({html:vaneHtml, className:'', iconSize:[46,80], iconAnchor:[23,46]});
         L.marker([lat + 0.12, lon], {icon:vaneIcon, interactive:false}).addTo(condMarkerLayer);
@@ -12066,7 +12080,7 @@ function renderStationsAverage(){
 function renderStations(){
   const list = byId('stn-list');
   if(!stationData.length){
-    list.innerHTML='<div style="padding:20px;color:var(--muted);font-family:var(--cond);letter-spacing:1px;text-transform:uppercase;font-size:13px;">No stations available</div>';
+    list.innerHTML='<div style="padding:20px;color:var(--muted);font-family:var(--cond);letter-spacing:1px;text-transform:uppercase;font-size:14px;">No stations available</div>';
     byId('totalCnt').textContent='0'; byId('alertCnt').textContent='0'; byId('staleCnt').textContent='0';
     return;
   }
@@ -12396,6 +12410,45 @@ window.switchWxKey = switchWxKey;
    (Chrome/Edge/Android installed PWA). iOS has no periodicsync and closed-app
    web push needs a push server — there the shared checker runs while the app
    (or Home-Screen PWA) is open, pinged every 15 min. */
+/* Alert preferences — which conditions notify, and at what thresholds.
+   Read by the in-page ping and cached in the service worker so background/
+   closed-app checks honour them too. Defaults mirror the built-in thresholds. */
+var ALERT_PREFS_DEFAULT = {wind:true, windKt:30, storm:true, showers:true, rain:true, rainPct:70, tropical:true};
+function getAlertPrefs(){
+  var d = Object.assign({}, ALERT_PREFS_DEFAULT);
+  try{ var p = JSON.parse(localStorage.getItem('rwc-alert-prefs') || 'null'); if(p && typeof p === 'object'){ for(var k in d){ if(p[k] != null) d[k] = p[k]; } } }catch(e){}
+  return d;
+}
+function pushAlertPrefsToSW(p){
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(function(reg){
+    if(reg.active) reg.active.postMessage({type:'set-alert-prefs', prefs: p || getAlertPrefs()});
+  }).catch(function(){});
+}
+function saveAlertPrefs(){
+  var num = function(id, def){ var el = byId(id); var v = el ? parseInt(el.value, 10) : NaN; return isFinite(v) ? v : def; };
+  var chk = function(id){ var el = byId(id); return el ? el.checked : true; };
+  var p = {
+    wind: chk('wxa_wind'), windKt: Math.max(10, Math.min(70, num('wxa_windkt', 30))),
+    storm: chk('wxa_storm'),
+    showers: chk('wxa_showers'),
+    rain: chk('wxa_rain'), rainPct: Math.max(30, Math.min(100, num('wxa_rainpct', 70))),
+    tropical: chk('wxa_tropical')
+  };
+  try{ localStorage.setItem('rwc-alert-prefs', JSON.stringify(p)); }catch(e){}
+  // Reflect clamped values back into the inputs
+  if(byId('wxa_windkt')) byId('wxa_windkt').value = p.windKt;
+  if(byId('wxa_rainpct')) byId('wxa_rainpct').value = p.rainPct;
+  // Dim rows whose toggle is off
+  [['wxa_wind',p.wind],['wxa_storm',p.storm],['wxa_showers',p.showers],['wxa_rain',p.rain],['wxa_tropical',p.tropical]].forEach(function(e){
+    var el = byId(e[0]); var row = el && el.closest ? el.closest('.wxalert-row') : null;
+    if(row) row.classList.toggle('off', !e[1]);
+  });
+  pushAlertPrefsToSW(p);
+}
+window.getAlertPrefs = getAlertPrefs;
+window.saveAlertPrefs = saveAlertPrefs;
+
 async function enableWxAlerts(){
   var st = byId('wxAlertStatus');
   if(!('Notification' in window) || !('serviceWorker' in navigator)){
@@ -12427,7 +12480,7 @@ async function enableWxAlerts(){
       icon: './icon-192.png', tag: 'rwc-wx-setup'
     });
   }catch(e){}
-  if(reg.active) reg.active.postMessage({type: 'check-alerts'});
+  if(reg.active) reg.active.postMessage({type: 'check-alerts', prefs: getAlertPrefs()});
   updateWxAlertStatus();
 }
 function updateWxAlertStatus(){
@@ -12455,7 +12508,7 @@ setInterval(function(){
   if(localStorage.getItem('rwc-alerts') !== 'on') return;
   if(!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return;
   navigator.serviceWorker.ready.then(function(reg){
-    if(reg.active) reg.active.postMessage({type: 'check-alerts'});
+    if(reg.active) reg.active.postMessage({type: 'check-alerts', prefs: getAlertPrefs()});
   }).catch(function(){});
 }, 15 * 60 * 1000);
 
@@ -12463,7 +12516,22 @@ function buildSettingsPanel(){
   const existing = document.getElementById('settings-panel');
   if(existing) return;
 
-
+  // Weather-alert preference rows (values seeded from saved prefs)
+  const ap = getAlertPrefs();
+  const _tog = (id, on) => `<label class="wxa-tog"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="saveAlertPrefs()"><span class="wxa-sl"></span></label>`;
+  const _alertRow = (id, label, on) => `<div class="wxalert-row ${on?'':'off'}"><span class="wxa-lbl">${label}</span>${_tog(id, on)}</div>`;
+  const _alertRowNum = (id, label, on, numId, val, unit) =>
+    `<div class="wxalert-row ${on?'':'off'}"><span class="wxa-lbl">${label}</span>` +
+    `<input type="number" id="${numId}" value="${val}" onchange="saveAlertPrefs()"><span class="wxa-unit">${unit}</span>` +
+    `${_tog(id, on)}</div>`;
+  const alertOptsHtml =
+    `<div class="wxalert-opts">` +
+      _alertRowNum('wxa_wind', 'Strong wind', ap.wind, 'wxa_windkt', ap.windKt, 'kt') +
+      _alertRow('wxa_storm', 'Thunderstorms', ap.storm) +
+      _alertRow('wxa_showers', 'Heavy showers', ap.showers) +
+      _alertRowNum('wxa_rain', 'High rain chance', ap.rain, 'wxa_rainpct', ap.rainPct, '%') +
+      _alertRow('wxa_tropical', 'Tropical systems', ap.tropical) +
+    `</div>`;
 
   const panel = document.createElement('div');
   panel.id = 'settings-panel';
@@ -12502,7 +12570,8 @@ function buildSettingsPanel(){
     <div>
       <div class="settings-section-ttl">\u{1F514} Weather Alerts</div>
       <button id="wxAlertBtn" onclick="enableWxAlerts()" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bdrb);background:rgba(77,184,255,0.12);color:var(--acc);font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.8px;cursor:pointer;text-transform:uppercase;">Enable notifications</button>
-      <div id="wxAlertStatus" style="font-family:var(--cond);font-size:13.5px;color:var(--muted);margin-top:5px;line-height:1.45;"></div>
+      <div id="wxAlertStatus" style="font-family:var(--cond);font-size:14px;color:var(--muted);margin-top:5px;line-height:1.5;"></div>
+      ${alertOptsHtml}
     </div>
     <div style="font-family:var(--mono);font-size:14px;color:var(--muted);opacity:.6;text-align:center;padding-top:4px;">
       RWC Caribbean \u00b7 v2.0 \u00b7 ABC Islands
@@ -12579,6 +12648,9 @@ window.toggleMapLock = toggleMapLock;
       navigator.serviceWorker.register('sw.js').then(function(reg){
         // Check for a new version immediately on open
         reg.update();
+        // Seed the SW with saved alert preferences so closed-app/background
+        // checks honour them even if Settings is never opened this session.
+        try{ if(typeof getAlertPrefs === 'function') pushAlertPrefsToSW(getAlertPrefs()); }catch(e){}
         // When a new SW is found and installed, activate it and reload once
         reg.addEventListener('updatefound', function(){
           var nw = reg.installing;
