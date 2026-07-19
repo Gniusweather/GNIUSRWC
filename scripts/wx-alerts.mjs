@@ -2,17 +2,33 @@
    Checks live Curaçao conditions + NHC tropical activity and sends a push
    notification through ntfy.sh, so phones get alerts even with the app
    fully closed (subscribe to the topic in the ntfy app).
-   Mirrors the in-app service-worker checker (sw.js checkWeatherAlerts). */
+   Mirrors the in-app service-worker checker (sw.js checkWeatherAlerts).
+   Toggles/thresholds come from wx-alerts.config.json at the repo root, so
+   the server cron can be tuned to match the in-app alert settings. */
 
 const TOPIC   = process.env.NTFY_TOPIC || 'rwc-abc-wx-gnius21-4q7kp2';
-const APP_URL = 'https://gnius21.github.io/RWC/';
+const APP_URL = 'https://curcams.generast.workers.dev/';
 const TEST    = process.env.WX_TEST === '1';
 
 import fs from 'node:fs';
 const stateDir = '.wx-state';
 const stateFile = stateDir + '/last.txt';
 
+// Alert preferences — defaults mirror the in-app ones (sw.js DEFAULT_PREFS);
+// wx-alerts.config.json overrides them when present.
+const DEFAULTS = { wind: true, windKt: 30, storm: true, showers: true, rain: true, rainPct: 70, tropical: true };
+function loadConfig(){
+  const cfg = { ...DEFAULTS };
+  try{
+    const raw = JSON.parse(fs.readFileSync('wx-alerts.config.json', 'utf8'));
+    for(const k of Object.keys(DEFAULTS)) if(raw[k] != null) cfg[k] = raw[k];
+  }catch(e){ console.log('No wx-alerts.config.json — using defaults.'); }
+  return cfg;
+}
+
 async function main(){
+  const P = loadConfig();
+  console.log('Alert config:', JSON.stringify(P));
   const alerts = [];
 
   // Live conditions + next-3h rain chance (Open-Meteo, Hato/Curaçao)
@@ -23,17 +39,17 @@ async function main(){
       '&timezone=America%2FCuracao&wind_speed_unit=kn';
     const j = await (await fetch(url)).json();
     const cur = j.current || {};
-    if(cur.wind_gusts_10m >= 30) alerts.push('Strong wind: gusts ' + Math.round(cur.wind_gusts_10m) + ' kt');
-    if(cur.weather_code >= 95) alerts.push('Thunderstorm activity near Curacao');
-    else if(cur.weather_code >= 80 && cur.precipitation >= 2) alerts.push('Heavy showers now (' + cur.precipitation + ' mm)');
+    if(P.wind && cur.wind_gusts_10m >= P.windKt) alerts.push('Strong wind: gusts ' + Math.round(cur.wind_gusts_10m) + ' kt');
+    if(P.storm && cur.weather_code >= 95) alerts.push('Thunderstorm activity near Curacao');
+    else if(P.showers && cur.weather_code >= 80 && cur.precipitation >= 2) alerts.push('Heavy showers now (' + cur.precipitation + ' mm)');
     const h = new Date(Date.now() - 4 * 3600e3).getUTCHours();   // AST hour
     const pops = ((j.hourly || {}).precipitation_probability || []).slice(h, h + 3).map(Number).filter(Number.isFinite);
     const pop = Math.max(0, ...pops);
-    if(pop >= 70) alerts.push('High rain chance next hours: ' + Math.round(pop) + '%');
+    if(P.rain && pop >= P.rainPct) alerts.push('High rain chance next hours: ' + Math.round(pop) + '%');
   }catch(e){ console.error('open-meteo check failed:', e.message); }
 
   // Active Atlantic tropical systems (NHC)
-  try{
+  if(P.tropical) try{
     const sj = await (await fetch('https://www.nhc.noaa.gov/CurrentStorms.json')).json();
     const act = (sj.activeStorms || []).filter(s => /^AL/i.test(s.id || ''));
     if(act.length) alerts.push('Active Atlantic tropical system: ' + act.map(s => s.name).join(', '));
