@@ -1,0 +1,9 @@
+{
+  "wind": true,
+  "windKt": 30,
+  "storm": true,
+  "showers": true,
+  "rain": true,
+  "rainPct": 70,
+  "tropical": true
+}
