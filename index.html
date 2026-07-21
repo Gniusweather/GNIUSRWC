@@ -535,7 +535,7 @@ tr:last-child td{border-bottom:none;}
 }
 
 /* MONITOR TAB */
-#tab-monitor{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 175px);min-height:560px;overflow:hidden;}
+#tab-monitor{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 218px);min-height:560px;overflow:hidden;}
 .mon-grid{display:grid;grid-template-columns:1.05fr 1.35fr 1.35fr;grid-template-rows:1fr 1fr 1fr 1fr;gap:8px;flex:1;min-height:0;}
 .mon-wind,.mon-temp{grid-row:span 2;}
 .mon-hum{grid-row:span 2;}
@@ -1020,7 +1020,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 }
 
 /* ═══════════ MONITOR STYLE SWITCHER ═══════════ */
-.mon-switcher{display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;margin-bottom:8px;}
+.mon-switcher{display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;margin-bottom:0;width:100%;max-width:1600px;}
 .mon-switcher-lbl{font-family:var(--cond);font-size:16.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:4px;flex:0 0 auto;}
 .mon-switcher-div{flex:0 0 auto;width:1px;height:22px;background:linear-gradient(180deg,transparent,var(--bdrb),transparent);margin:0 3px;}
 .mon-style-btn{padding:7px 16px;border-radius:8px;border:1px solid var(--bdr);background:rgba(255,255,255,0.02);color:var(--muted);font-family:var(--cond);font-size:17.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px;height:34px;white-space:nowrap;}
@@ -2752,28 +2752,34 @@ html,body{max-width:100%;overflow-x:hidden;}
 <!-- TABS -->
 <nav class="tabs" role="tablist">
   <button class="tab active" role="tab" aria-selected="true" data-tab="monitor"><span class="tab-i">&#9889;</span>Monitor</button>
-  <button class="tab" role="tab" aria-selected="false" data-tab="forecast"><span class="tab-i">&#127782;</span>Forecast</button>
-  <button class="tab" role="tab" aria-selected="false" data-tab="knmi"><span class="tab-i">&#127788;</span>KNMI</button>
-  <button class="tab" role="tab" aria-selected="false" data-tab="aviation"><span class="tab-i">&#9992;</span>Aviation</button>
-  <button class="tab" role="tab" aria-selected="false" data-tab="stations"><span class="tab-i">&#8862;</span>Stations</button>
   <button class="tab" role="tab" aria-selected="false" data-tab="weather"><span class="tab-i">&#127777;</span>WX<span class="tbadge">3</span></button>
   <button class="tab" role="tab" aria-selected="false" data-tab="maps"><span class="tab-i">&#127752;</span>Maps</button>
   <button class="tab" role="tab" aria-selected="false" data-tab="atc"><span class="tab-i">&#127897;</span>ATC</button>
 </nav>
 
+<!-- Monitor sub-nav: faces + the sections folded in from the old top-level
+     tabs (Forecast/KNMI/Aviation/Stations). Lives OUTSIDE tab-monitor so it
+     stays visible while one of those section panels is open; switchTab hides
+     it on the WX/Maps/ATC tabs. -->
+<div class="mon-switcher" id="monSwitcher">
+  <span class="mon-switcher-lbl">Faces</span>
+  <button class="mon-style-btn active" data-monstyle="current"><span class="mon-style-btn-ic">&#9632;</span>Current</button>
+  <button class="mon-style-btn" data-monstyle="gauges"><span class="mon-style-btn-ic">&#9201;</span>Gauges</button>
+  <button class="mon-style-btn" data-monstyle="graphics"><span class="mon-style-btn-ic">&#128202;</span>Graphics</button>
+  <button class="mon-style-btn" data-monstyle="power"><span class="mon-style-btn-ic">&#9889;</span>Power</button>
+  <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="sky"><span class="mon-style-btn-ic">&#9889;</span>SkySense</button>
+  <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="home"><span class="mon-style-btn-ic">&#127968;</span>Dashboard</button>
+  <span class="mon-switcher-div"></span>
+  <button class="mon-style-btn" data-montab="forecast"><span class="mon-style-btn-ic">&#127782;</span>Forecast</button>
+  <button class="mon-style-btn" data-montab="knmi"><span class="mon-style-btn-ic">&#127788;</span>KNMI</button>
+  <button class="mon-style-btn" data-montab="aviation"><span class="mon-style-btn-ic">&#9992;</span>Aviation</button>
+  <button class="mon-style-btn" data-montab="stations"><span class="mon-style-btn-ic">&#8862;</span>Stations</button>
+</div>
+
 <div class="content">
 
   <!-- MONITOR -->
   <div id="tab-monitor" class="tpanel">
-    <div class="mon-switcher" id="monSwitcher">
-      <span class="mon-switcher-lbl">Faces</span>
-      <button class="mon-style-btn active" data-monstyle="current"><span class="mon-style-btn-ic">&#9632;</span>Current</button>
-      <button class="mon-style-btn" data-monstyle="gauges"><span class="mon-style-btn-ic">&#9201;</span>Gauges</button>
-      <button class="mon-style-btn" data-monstyle="graphics"><span class="mon-style-btn-ic">&#128202;</span>Graphics</button>
-      <button class="mon-style-btn" data-monstyle="power"><span class="mon-style-btn-ic">&#9889;</span>Power</button>
-      <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="sky"><span class="mon-style-btn-ic">&#9889;</span>SkySense</button>
-      <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="home"><span class="mon-style-btn-ic">&#127968;</span>Dashboard</button>
-    </div>
     <div class="mon-view" id="monViewDash" style="display:none;">
       <div id="dashboardsContent"></div>
       <!-- Persistent Windy radar + satellite (built once so the iframes never reload on refresh) -->
@@ -2991,6 +2997,24 @@ html,body{max-width:100%;overflow-x:hidden;}
           <div class="mon-islt-src" id="monIsltSrc"></div>
         </div>
       </div>
+      <div class="mon-tile mon-radar" style="grid-column:1/-1;">
+        <div class="mon-tile-hd" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="mon-tile-ttl">&#127968; ABC Islands &middot; Live View</span>
+          <span class="mon-tile-sub">windy.com</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;">
+          <div class="mon-radar-body" style="position:relative;">
+            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127928; Radar</div>
+            <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <a href="https://www.windy.com/?radar,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
+          </div>
+          <div class="mon-radar-body" style="position:relative;">
+            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127760; Satellite</div>
+            <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <a href="https://www.windy.com/?satellite,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
+          </div>
+        </div>
+      </div>
       <div style="grid-column:1/-1;padding:4px 2px 0;display:flex;align-items:center;gap:6px;">
         <div class="cw-title">&#127464;&#127484; Cura&ccedil;ao Weather</div>
       </div>
@@ -3056,27 +3080,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
       </div>
         </div><!-- /cw-grid -->
-      </div><!-- /cw-section -->
-      <div class="mon-tile mon-radar" style="grid-column:span 2;">
-        <div class="mon-tile-hd" style="display:flex;justify-content:space-between;align-items:center;">
-          <span class="mon-tile-ttl">&#127968; ABC Islands &middot; Live View</span>
-          <span class="mon-tile-sub">windy.com</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;">
-          <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127928; Radar</div>
-            <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
-            <a href="https://www.windy.com/?radar,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
-          </div>
-          <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127760; Satellite</div>
-            <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
-            <a href="https://www.windy.com/?satellite,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
-          </div>
-        </div>
-      </div>
-
-    </div>
+      </div><!-- closes .mon-grid -->
 
     </div><!-- /#monViewCurrent -->
     <div class="sbar" style="margin-top:7px;">
@@ -5336,9 +5340,30 @@ function showAviationSub(which){
 }
 window.showAviationSub = showAviationSub;
 
+const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations'];
 function switchTab(name){
-  tabs.forEach(t=>{ const on=t.dataset.tab===name; t.classList.toggle('active',on); t.setAttribute('aria-selected', on?'true':'false'); });
+  // Forecast/KNMI/Aviation/Stations live under the Monitor top tab now —
+  // keep Monitor highlighted while any of them is open.
+  const topName = MON_FAMILY.includes(name) ? 'monitor' : name;
+  tabs.forEach(t=>{ const on=t.dataset.tab===topName; t.classList.toggle('active',on); t.setAttribute('aria-selected', on?'true':'false'); });
   Object.entries(panels).forEach(([k,p])=>p&&p.classList.toggle('hidden',k!==name));
+  // Monitor sub-nav: visible for the whole family, hidden elsewhere; sync
+  // active states between the face buttons and the section buttons.
+  const msw = byId('monSwitcher');
+  if(msw){
+    msw.style.display = MON_FAMILY.includes(name) ? '' : 'none';
+    document.querySelectorAll('.mon-style-btn[data-montab]').forEach(b=>b.classList.toggle('active', b.dataset.montab===name));
+    if(name==='monitor'){
+      const ms = (typeof __monStyle!=='undefined' && __monStyle) ? __monStyle : 'current';
+      document.querySelectorAll('.mon-style-btn[data-monstyle]').forEach(b=>{
+        const mMatch = b.dataset.monstyle === ms;
+        const dsMatch = b.dataset.dashstyle && (typeof __dashStyle!=='undefined') && b.dataset.dashstyle === __dashStyle;
+        b.classList.toggle('active', mMatch && (!b.dataset.dashstyle || dsMatch));
+      });
+    } else {
+      document.querySelectorAll('.mon-style-btn[data-monstyle]').forEach(b=>b.classList.remove('active'));
+    }
+  }
   if(name!=='monitor' && __pwClockTimer){ clearInterval(__pwClockTimer); __pwClockTimer=null; }
   // Stop the ADS-B flight poll (15s) when leaving the Maps tab — it otherwise
   // keeps hitting a third-party API forever once the flights layer was enabled.
@@ -8018,7 +8043,14 @@ function setMonStyle(style){
 }
 document.querySelectorAll('.mon-style-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    if(btn.dataset.monstyle) setMonStyle(btn.dataset.monstyle);
+    if(btn.dataset.montab){ switchTab(btn.dataset.montab); return; }
+    if(btn.dataset.monstyle){
+      // Selecting a face while a section panel (Forecast/KNMI/…) is open
+      // returns to the Monitor panel first.
+      const mp = panels && panels.monitor;
+      if(mp && mp.classList.contains('hidden')) switchTab('monitor');
+      setMonStyle(btn.dataset.monstyle);
+    }
     if(btn.dataset.dashstyle) setTimeout(()=>{ if(typeof setDashStyle==='function') setDashStyle(btn.dataset.dashstyle); }, 0);
   });
 });
