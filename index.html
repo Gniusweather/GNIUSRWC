@@ -688,6 +688,14 @@ tr:last-child td{border-bottom:none;}
    (no touch-action:none — the default lets touches scroll the page). */
 .mrb-blocker{position:absolute;inset:0;z-index:5;background:transparent;}
 .mrb-blocker.unlocked{pointer-events:none;}
+/* Radar+satellite pair: side-by-side normally; stacked full-width on phones so
+   zoom 8 still fits the whole Aruba–Curaçao–Bonaire chain (~1.9° of longitude,
+   which a half-width window can't show at that zoom). */
+.mon-radar-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;}
+@media(max-width:640px){
+  .mon-radar-grid{grid-template-columns:1fr;}
+  .mon-radar-grid .mon-radar-body{min-height:250px;}
+}
 .mon-radar-link:hover{background:rgba(77,184,255,0.15);border-color:rgba(77,184,255,0.45);transform:translate(1px,-1px);}
 .mon-radar::before{display:none;}
 .mon-vis.vis-good .mon-big{color:var(--grn);}
@@ -3020,22 +3028,22 @@ html,body{max-width:100%;overflow-x:hidden;}
             <span class="mon-tile-sub">windy.com</span>
           </span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;">
+        <div class="mon-radar-grid">
           <div class="mon-radar-body" id="monRadarBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127928; Radar</div>
-            <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-anim" id="monRadarAnim"></div>
             <div class="mrb-time" id="monRadarTime"></div>
             <div class="mrb-blocker"></div>
-            <a href="https://www.windy.com/?radar,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
+            <a href="https://www.windy.com/?radar,12.3,-69.15,8" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
           </div>
           <div class="mon-radar-body" id="monSatBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127760; Satellite</div>
-            <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-anim" id="monSatAnim"></div>
             <div class="mrb-time" id="monSatTime"></div>
             <div class="mrb-blocker"></div>
-            <a href="https://www.windy.com/?satellite,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
+            <a href="https://www.windy.com/?satellite,12.3,-69.15,8" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
           </div>
         </div>
       </div>
@@ -12409,7 +12417,7 @@ document.querySelectorAll('.atcplayer').forEach(player => {
 
   function mkMap(id, dark){
     const m = L.map(id, {zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, touchZoom:false, doubleClickZoom:false})
-      .setView([12.3, -69.15], 7);
+      .setView([12.3, -69.15], 8);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {maxZoom:12, subdomains:'abcd'}).addTo(m);
     return m;
   }
