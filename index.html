@@ -673,7 +673,21 @@ tr:last-child td{border-bottom:none;}
    buttons, bottom timeline + colour legend) is pushed outside the clipped wrapper
    — leaving just the live map image. */
 .mon-radar-body iframe{position:absolute;top:-52px;left:-52px;width:calc(100% + 104px);height:calc(100% + 140px);border:0;display:block;}
-.mon-radar-link{position:absolute;top:8px;right:8px;z-index:3;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(8,18,32,0.85);border:1px solid var(--bdr);color:var(--acc);font-size:17.5px;text-decoration:none;backdrop-filter:blur(4px);transition:all .2s;}
+.mon-radar-link{position:absolute;top:8px;right:8px;z-index:7;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(8,18,32,0.85);border:1px solid var(--bdr);color:var(--acc);font-size:17.5px;text-decoration:none;backdrop-filter:blur(4px);transition:all .2s;}
+/* Monitor Windy windows: lock + play controls, animation overlay */
+.mrb-btn{background:rgba(77,184,255,0.12);border:1px solid var(--bdrb);color:var(--acc);border-radius:6px;font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:.8px;padding:3px 10px;cursor:pointer;text-transform:uppercase;transition:all .18s;-webkit-tap-highlight-color:transparent;line-height:1.3;}
+.mrb-btn:hover{background:rgba(77,184,255,0.25);border-color:var(--acc);}
+.mrb-btn.locked{color:var(--ylw);border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.08);}
+.mrb-btn.on{color:var(--grn);border-color:rgba(46,201,122,0.45);background:rgba(46,201,122,0.1);}
+.mrb-anim{position:absolute;inset:0;z-index:2;display:none;background:#0a1525;}
+.mrb-anim.leaflet-container{background:#0a1525;}
+.mon-radar-body.playing .mrb-anim{display:block;}
+.mrb-time{position:absolute;bottom:6px;left:8px;z-index:6;display:none;font-family:var(--mono);font-size:14.5px;color:#fff;background:rgba(8,18,32,0.82);padding:2px 8px;border-radius:4px;letter-spacing:.5px;}
+.mon-radar-body.playing .mrb-time{display:block;}
+/* Blocker: locked = swallow map interaction so the page scrolls normally
+   (no touch-action:none — the default lets touches scroll the page). */
+.mrb-blocker{position:absolute;inset:0;z-index:5;background:transparent;}
+.mrb-blocker.unlocked{pointer-events:none;}
 .mon-radar-link:hover{background:rgba(77,184,255,0.15);border-color:rgba(77,184,255,0.45);transform:translate(1px,-1px);}
 .mon-radar::before{display:none;}
 .mon-vis.vis-good .mon-big{color:var(--grn);}
@@ -3000,17 +3014,27 @@ html,body{max-width:100%;overflow-x:hidden;}
       <div class="mon-tile mon-radar" style="grid-column:1/-1;">
         <div class="mon-tile-hd" style="display:flex;justify-content:space-between;align-items:center;">
           <span class="mon-tile-ttl">&#127968; ABC Islands &middot; Live View</span>
-          <span class="mon-tile-sub">windy.com</span>
+          <span style="display:flex;align-items:center;gap:6px;">
+            <button class="mrb-btn" id="monWindyPlay" type="button" title="Play radar + satellite loop">&#9654; Play</button>
+            <button class="mrb-btn locked" id="monWindyLock" type="button" title="Locked &mdash; tap to allow pan/zoom">&#128274;</button>
+            <span class="mon-tile-sub">windy.com</span>
+          </span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0;">
-          <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127928; Radar</div>
+          <div class="mon-radar-body" id="monRadarBody" style="position:relative;">
+            <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127928; Radar</div>
             <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <div class="mrb-anim" id="monRadarAnim"></div>
+            <div class="mrb-time" id="monRadarTime"></div>
+            <div class="mrb-blocker"></div>
             <a href="https://www.windy.com/?radar,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
           </div>
-          <div class="mon-radar-body" style="position:relative;">
-            <div style="position:absolute;top:6px;left:8px;z-index:3;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);">&#127760; Satellite</div>
+          <div class="mon-radar-body" id="monSatBody" style="position:relative;">
+            <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127760; Satellite</div>
             <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=7&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <div class="mrb-anim" id="monSatAnim"></div>
+            <div class="mrb-time" id="monSatTime"></div>
+            <div class="mrb-blocker"></div>
             <a href="https://www.windy.com/?satellite,12.3,-69.15,7" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
           </div>
         </div>
@@ -12354,6 +12378,110 @@ document.querySelectorAll('.atcplayer').forEach(player => {
     btn.textContent = collapsed ? 'Show' : 'Hide';
     btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   });
+})();
+
+/* ═══ MONITOR WINDY WINDOWS — lock + one-press radar/satellite loop ═══
+   Windy's embed has no autoplay URL parameter and the iframe is cross-origin,
+   so Play overlays each window with a self-driven animated loop instead:
+   radar = RainViewer past frames, satellite = NOAA GOES-East IR (GIBS) in
+   10-minute steps — the same two sources the conditions map already uses.
+   Stop returns to the live Windy embeds untouched underneath. */
+(function(){
+  const playBtn = byId('monWindyPlay'), lockBtn = byId('monWindyLock');
+  const bodyR = byId('monRadarBody'), bodyS = byId('monSatBody');
+  if(!playBtn || !lockBtn || !bodyR || !bodyS) return;
+  let locked = true, playing = false, tick = null, idx = 0;
+  let mapR = null, mapS = null, rLayers = [], sLayers = [], rTimes = [], sTimes = [];
+
+  function applyLock(){
+    document.querySelectorAll('#monViewCurrent .mrb-blocker').forEach(b => b.classList.toggle('unlocked', !locked));
+    lockBtn.classList.toggle('locked', locked);
+    lockBtn.innerHTML = locked ? '&#128274;' : '&#128275;';
+    lockBtn.title = locked ? 'Locked — tap to allow pan/zoom' : 'Unlocked — tap to lock';
+    [mapR, mapS].forEach(m => {
+      if(!m) return;
+      ['dragging','scrollWheelZoom','touchZoom','doubleClickZoom'].forEach(h => {
+        if(m[h]){ locked ? m[h].disable() : m[h].enable(); }
+      });
+    });
+  }
+  lockBtn.addEventListener('click', () => { locked = !locked; applyLock(); });
+
+  function mkMap(id, dark){
+    const m = L.map(id, {zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, touchZoom:false, doubleClickZoom:false})
+      .setView([12.3, -69.15], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {maxZoom:12, subdomains:'abcd'}).addTo(m);
+    return m;
+  }
+  const fmtT = ms => { const d = new Date(ms); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + 'Z'; };
+
+  function buildRadar(){
+    return fetch('https://api.rainviewer.com/public/weather-maps.json')
+      .then(r => r.json())
+      .then(j => {
+        const frames = ((j.radar && j.radar.past) || []).slice(-10);
+        rLayers.forEach(l => { try{ mapR.removeLayer(l); }catch(e){} });
+        rLayers = []; rTimes = [];
+        frames.forEach(f => {
+          const l = L.tileLayer(j.host + f.path + '/256/{z}/{x}/{y}/8/1_1.png', {opacity:0, maxZoom:12});
+          l.addTo(mapR); rLayers.push(l); rTimes.push(f.time * 1000);
+        });
+      });
+  }
+  function buildSat(){
+    sLayers.forEach(l => { try{ mapS.removeLayer(l); }catch(e){} });
+    sLayers = []; sTimes = [];
+    // 8 frames in 10-min steps ending at the newest fully-ingested GOES frame
+    const end = new Date(Date.now() - 70*60*1000);
+    end.setUTCSeconds(0,0); end.setUTCMinutes(Math.floor(end.getUTCMinutes()/10)*10);
+    for(let i = 7; i >= 0; i--){
+      const t = new Date(end.getTime() - i*10*60*1000);
+      const l = L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
+        layers:'GOES-East_ABI_Band13_Clean_Infrared', format:'image/png', transparent:true,
+        opacity:0, maxZoom:12, TIME: t.toISOString().slice(0,19) + 'Z'
+      });
+      l.addTo(mapS); sLayers.push(l); sTimes.push(t.getTime());
+    }
+  }
+  function step(){
+    if(document.hidden) return;
+    idx++;
+    if(rLayers.length){
+      rLayers.forEach((l,i) => l.setOpacity(i === idx % rLayers.length ? 0.8 : 0));
+      const tr = byId('monRadarTime'); if(tr) tr.textContent = '\u{1F4E1} ' + fmtT(rTimes[idx % rTimes.length]);
+    }
+    if(sLayers.length){
+      sLayers.forEach((l,i) => l.setOpacity(i === idx % sLayers.length ? 0.85 : 0));
+      const ts = byId('monSatTime'); if(ts) ts.textContent = '\u{1F6F0} ' + fmtT(sTimes[idx % sTimes.length]);
+    }
+  }
+  function start(){
+    playing = true;
+    playBtn.classList.add('on'); playBtn.innerHTML = '&#9632; Stop';
+    bodyR.classList.add('playing'); bodyS.classList.add('playing');
+    ensureMaps();
+  }
+  function ensureMaps(){
+    if(!playing) return;                                   // stopped while waiting
+    if(typeof L === 'undefined'){ setTimeout(ensureMaps, 400); return; }   // leaflet.js is deferred
+    if(!mapR) mapR = mkMap('monRadarAnim', false);
+    if(!mapS) mapS = mkMap('monSatAnim', true);
+    setTimeout(() => { try{ mapR.invalidateSize(); mapS.invalidateSize(); }catch(e){} }, 60);
+    buildRadar().catch(()=>{});
+    buildSat();
+    applyLock();
+    idx = -1;
+    if(tick) clearInterval(tick);
+    tick = setInterval(step, 650);
+  }
+  function stop(){
+    playing = false;
+    playBtn.classList.remove('on'); playBtn.innerHTML = '&#9654; Play';
+    bodyR.classList.remove('playing'); bodyS.classList.remove('playing');
+    if(tick){ clearInterval(tick); tick = null; }
+  }
+  playBtn.addEventListener('click', () => { playing ? stop() : start(); });
+  applyLock();
 })();
 
 /* ═══ INIT (dead visibility-refresh code removed: no no-op stub, no 60s vis interval) ═══ */
