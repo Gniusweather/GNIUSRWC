@@ -538,7 +538,7 @@ tr:last-child td{border-bottom:none;}
 #tab-monitor{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 218px);min-height:560px;overflow:hidden;}
 .mon-grid{display:grid;grid-template-columns:1.05fr 1.35fr 1.35fr;grid-template-rows:1fr 1fr 1fr 1fr;gap:8px;flex:1;min-height:0;}
 .mon-wind,.mon-temp{grid-row:span 2;}
-.mon-hum{grid-row:span 2;}
+.mon-hum{grid-row:span 2;grid-column:span 2;}
 /* Dashboard / alternate faces have long content — let them scroll within the
    fixed-height monitor tab on desktop (otherwise overflow:hidden clips the
    Windy maps and lower cards). */
@@ -660,16 +660,16 @@ tr:last-child td{border-bottom:none;}
 .mon-rain-cell-val{font-family:var(--cond);font-size:19.5px;font-weight:800;color:#4db8ff;}
 .mon-rain-instant-val{font-family:var(--cond);font-size:19.5px;font-weight:800;color:#4db8ff;}
 .mon-hum-body{display:flex;align-items:stretch;gap:16px;flex:1;min-height:0;}
-.mon-hum-bars{display:flex;align-items:stretch;gap:6px;flex:1;min-width:0;padding:6px 0;}
+.mon-hum-bars{display:flex;align-items:stretch;gap:3px;flex:1;min-width:0;padding:6px 0;}
 .mon-hum-bar{flex:1;min-width:8px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}
 .mon-hum-bar-fill{width:100%;background:linear-gradient(180deg,#7bc4f5,#1e6dd6);border-radius:5px;transition:height .7s cubic-bezier(0.22,0.61,0.36,1);box-shadow:0 0 8px rgba(77,184,255,0.5),inset 0 1px 0 rgba(255,255,255,0.15);}
-/* 6-hour Curaçao weather forecast columns (hour, feels-like, rain, dust) */
+/* 12-hour Curaçao weather forecast columns (hour, feels-like, rain, dust) */
 .mon-wxfc-leg{flex:none;display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:flex-start;padding-right:2px;}
-.mon-wxfc-l{font-family:var(--cond);font-size:21.5px;color:var(--muted);font-weight:600;letter-spacing:.4px;line-height:1.25;text-transform:uppercase;}
+.mon-wxfc-l{font-family:var(--cond);font-size:15.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;line-height:1.3;text-transform:uppercase;}
 .mon-wxfc-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:center;}
-.mon-wxfc-hr{font-family:var(--mono);font-size:21.5px;color:var(--muted);line-height:1.25;}
-.mon-wxfc-v{font-family:var(--cond);font-size:21.5px;font-weight:800;line-height:1.25;white-space:nowrap;text-align:center;}
-.mon-wxfc-v small{font-size:17.5px;font-weight:600;opacity:.85;}
+.mon-wxfc-hr{font-family:var(--mono);font-size:14.5px;color:var(--muted);line-height:1.3;}
+.mon-wxfc-v{font-family:var(--cond);font-size:15.5px;font-weight:800;line-height:1.3;white-space:nowrap;text-align:center;}
+.mon-wxfc-v small{font-size:12px;font-weight:600;opacity:.85;}
 .mon-hum-stats{flex-shrink:0;width:88px;display:flex;flex-direction:column;justify-content:center;gap:1px;}
 .mon-hum-val{font-family:var(--cond);font-weight:900;font-size:clamp(30px,3.5vw,39px);line-height:1;color:#fff;letter-spacing:-0.5px;}
 .mon-hum-unit{font-family:var(--cond);font-size:21.5px;font-weight:600;color:var(--muted);margin-left:1px;}
@@ -2916,9 +2916,9 @@ html,body{max-width:100%;overflow-x:hidden;}
     <div class="mon-view" id="monViewCurrent">
     <div class="mon-grid">
       <div class="mon-tile mon-vis">
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">Visibility</span><span class="mon-live-pip">LIVE</span></div>
         <div class="mon-row">
           <div class="mon-left">
-            <div class="mon-lbl">Visibility <span class="mon-live-pip">LIVE</span></div>
             <div class="mon-big" id="monVisVal">&mdash; <span class="mon-unit">km</span></div>
             <div class="mon-sm" id="monVisDesc">&mdash;</div>
           </div>
@@ -2926,9 +2926,9 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
       </div>
       <div class="mon-tile mon-dust">
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">Dust Index</span><span class="mon-tile-sub">VIS+PM10+SYNOP</span></div>
         <div class="mon-row">
           <div class="mon-left">
-            <div class="mon-lbl">Dust Index <span style="font-size:16.5px;opacity:.6;letter-spacing:.5px;">VIS+PM10+SYNOP</span></div>
             <div class="mon-big" id="monDustVal">&mdash;</div>
             <div class="mon-sm" id="monDustDesc">&mdash;</div>
           </div>
@@ -2995,7 +2995,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="mon-wind-bft" id="monWindBft">&mdash;</div>
       </div>
       <div class="mon-tile mon-hum">
-        <div class="mon-tile-hd"><span class="mon-tile-ttl">Forecast &middot; Next 6 h</span><span class="mon-tile-sub">Cura&ccedil;ao</span></div>
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">Forecast &middot; Next 12 h</span><span class="mon-tile-sub">Cura&ccedil;ao</span></div>
         <div class="mon-hum-body">
           <div class="mon-hum-bars" id="monHumBars"></div>
         </div>
@@ -7536,7 +7536,7 @@ async function updateWxTileForecast(){
     var idx = wx.hourly.time.findIndex(function(ts){ return new Date(ts) > now; });
     if(idx < 0) idx = 0;
     var hours = [];
-    for(var i = idx; i < Math.min(idx + 6, wx.hourly.time.length); i++){
+    for(var i = idx; i < Math.min(idx + 12, wx.hourly.time.length); i++){
       var ts = wx.hourly.time[i];
       hours.push({
         h: parseInt(ts.split('T')[1].slice(0,2), 10),
