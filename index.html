@@ -568,21 +568,19 @@ tr:last-child td{border-bottom:none;}
 .mon-tile:hover{transform:translateY(-1px);}
 .mon-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;z-index:2;background:linear-gradient(90deg,var(--acc2),var(--acc),transparent);}
 .mon-vis::before{background:linear-gradient(90deg,#2ec97a,#22d3ee,transparent);}
-.mon-pres::before{background:linear-gradient(90deg,#a78bfa,#4db8ff,transparent);}
 .mon-dust::before{background:linear-gradient(90deg,#f59e0b,#ff8a3d,transparent);}
-.mon-sea::before{background:linear-gradient(90deg,#22d3ee,#0ea5e9,#0369a1,transparent);}
+.mon-weather::before{background:linear-gradient(90deg,#a78bfa,#4db8ff,#22d3ee,#fbbf24,transparent);}
 .mon-rad::before{background:linear-gradient(90deg,#fde047,#fbbf24,#f59e0b,transparent);}
 .mon-solar::before{background:linear-gradient(90deg,#fbbf24,#f59e0b,#ff8a3d,transparent);}
 .mon-solar .mon-big{color:#fbbf24;}
 .mon-rad .mon-big{color:#fbbf24;}
-.mon-sea .mon-big{color:#22d3ee;}
-.mon-uv::before{background:linear-gradient(90deg,#fbbf24,#f59e0b,#ff8a3d,#ff4f4f,#a78bfa,transparent);}
 .mon-wind::before{background:linear-gradient(90deg,#4db8ff,#22d3ee,transparent);}
 .mon-hum::before{background:linear-gradient(90deg,#4db8ff,#1e6dd6,transparent);}
 
 /* ── Island Temperature tile ── */
 .mon-islt{grid-column:span 1;}
 .mon-islt::before{background:linear-gradient(90deg,#f97316,#dc2626,transparent);}
+.mon-rain::before{background:linear-gradient(90deg,#4db8ff,#0ea5e9,#22d3ee,transparent);}
 .mon-islt-body{display:flex;flex-direction:column;flex:1;gap:6px;justify-content:center;padding:0 2px;}
 .mon-islt-main{font-family:var(--cond);font-weight:900;font-size:clamp(32.5px,3.8vw,45.5px);line-height:1;letter-spacing:-1px;color:#fff;}
 .mon-islt-deg{font-size:55%;color:var(--muted);vertical-align:super;}
@@ -609,11 +607,6 @@ tr:last-child td{border-bottom:none;}
 #monVisIcon{flex-direction:column;justify-content:center;gap:4px;width:58px;}
 .mon-visbar{height:6px;border-radius:3px;background:rgba(255,255,255,0.06);transition:background .5s ease, box-shadow .5s ease, width .5s cubic-bezier(0.22,0.61,0.36,1);}
 .mon-visbar.fill{background:currentColor;box-shadow:0 0 8px currentColor,0 0 2px currentColor;}
-.mon-pres-bar-wrap{flex-direction:column;align-items:flex-end;gap:5px;width:92px;}
-.mon-pres-bar{position:relative;width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg,rgba(167,139,250,0.35) 0%,rgba(77,184,255,0.35) 50%,rgba(255,138,61,0.35) 100%);border:1px solid rgba(255,255,255,0.08);}
-.mon-pres-bar-track{position:absolute;inset:0;border-radius:3px;}
-.mon-pres-bar-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);background:#4db8ff;border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 10px rgba(77,184,255,0.8);transition:left .6s cubic-bezier(0.22,0.61,0.36,1);}
-.mon-pres-bar-lbl{display:flex;justify-content:space-between;width:100%;font-family:var(--mono);font-size:19px;color:var(--muted);letter-spacing:.2px;}
 .mon-gauge{width:clamp(96px,9vw,116px);height:clamp(96px,9vw,116px);flex-shrink:0;}
 /* ── Theme-aware gauges ── unfilled track + soft halo recolour per app theme.
    Neon is intentionally excluded so it keeps its original look. */
@@ -637,6 +630,35 @@ tr:last-child td{border-bottom:none;}
 .mon-wind-spd-sub{font-family:var(--cond);font-size:21.5px;color:var(--muted);letter-spacing:.3px;margin-left:auto;}
 .mon-wind-dir-line{font-family:var(--mono);font-size:21.5px;color:var(--acc);font-weight:700;letter-spacing:.5px;margin-top:2px;}
 .mon-wind-bft{margin-top:auto;padding-top:8px;border-top:1px solid rgba(77,184,255,0.15);font-family:var(--cond);font-size:21.5px;font-weight:900;color:#cce4ff;letter-spacing:.8px;text-align:center;text-transform:uppercase;}
+/* ── WEATHER tile (gauges: pressure · sea temp · dust · uv) ── */
+.mon-wx-body{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px;flex:1;align-content:center;min-height:0;}
+.mon-wx-item{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;}
+.mon-wx-item .mon-gauge{width:clamp(52px,6.5vw,70px);height:clamp(52px,6.5vw,70px);}
+.mon-wx-item-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-top:1px;white-space:nowrap;}
+.mon-wx-item-val{font-family:var(--cond);font-size:16.5px;font-weight:700;color:var(--txt);white-space:nowrap;}
+.mon-wx-item-desc{font-family:var(--cond);font-size:14px;color:var(--muted);text-align:center;line-height:1.15;max-height:2.3em;overflow:hidden;}
+/* ── RAIN tile (TNCC weather · nowcast · SYNOP precip windows · instant rain) ── */
+.mon-rain{grid-column:1/-1;}
+.mon-rain-body{display:flex;align-items:stretch;gap:16px;flex:1;min-height:0;flex-wrap:wrap;}
+.mon-rain-sec{display:flex;flex-direction:column;gap:5px;justify-content:center;min-width:0;}
+.mon-rain-sec + .mon-rain-sec{border-left:1px solid var(--bdr);padding-left:16px;}
+@media(max-width:640px){
+  .mon-rain-sec + .mon-rain-sec{border-left:none;border-top:1px solid var(--bdr);padding-left:0;padding-top:8px;}
+}
+.mon-rain-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.mon-rain-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
+.mon-rain-lbl small{font-size:14px;opacity:.7;text-transform:none;margin-left:4px;}
+.mon-rain-wxwrap{display:flex;flex-wrap:wrap;gap:2px;}
+.mon-rain-nc-bars{display:flex;gap:5px;align-items:flex-end;height:38px;}
+.mon-rain-nc-bar{width:16px;border-radius:3px 3px 1px 1px;background:rgba(255,255,255,0.06);position:relative;min-height:3px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;}
+.mon-rain-nc-bar-fill{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,#4db8ff,#0ea5e9);min-height:2px;box-shadow:0 0 6px rgba(77,184,255,0.5);}
+.mon-rain-nc-lbl{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center;margin-top:2px;}
+.mon-rain-nc-col{display:flex;flex-direction:column;align-items:center;}
+.mon-rain-grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;}
+.mon-rain-cell{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.mon-rain-cell-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.mon-rain-cell-val{font-family:var(--cond);font-size:19.5px;font-weight:800;color:#4db8ff;}
+.mon-rain-instant-val{font-family:var(--cond);font-size:19.5px;font-weight:800;color:#4db8ff;}
 .mon-hum-body{display:flex;align-items:stretch;gap:16px;flex:1;min-height:0;}
 .mon-hum-bars{display:flex;align-items:stretch;gap:6px;flex:1;min-width:0;padding:6px 0;}
 .mon-hum-bar{flex:1;min-width:8px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}
@@ -1503,7 +1525,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 :root.glass .theme-swatch.active { border-color: #c084fc; box-shadow: 0 0 12px rgba(192,132,252,0.35); }
 :root.glass .gau-tile { background: linear-gradient(180deg,rgba(168,85,247,0.07),rgba(255,255,255,0.01)),rgba(40,20,75,0.55); border-color: rgba(192,132,252,0.18); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 :root.glass .mon-hum-bar-fill { background: linear-gradient(180deg,#d8b4fe,#7c3aed); box-shadow: 0 0 8px rgba(192,132,252,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
-:root.glass .mon-pres-bar-dot { background: #c084fc; box-shadow: 0 0 10px rgba(192,132,252,0.85); }
 
 /* ── Neon Purple theme (dark purple, vivid cyan/neon — IMG_6906) ── */
 :root.neon {
@@ -1649,7 +1670,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 /* Gauges & arcs — hue-shift to blue-violet */
 :root.storm .gau-tile { background: linear-gradient(180deg,rgba(96,165,250,0.06),rgba(255,255,255,0.004)),rgba(10,22,70,0.92); border-color: rgba(96,165,250,0.20); }
 :root.storm .mon-hum-bar-fill { background: linear-gradient(180deg,#93c5fd,#4338ca); box-shadow: 0 0 8px rgba(99,102,241,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
-:root.storm .mon-pres-bar-dot { background: #818cf8; box-shadow: 0 0 10px rgba(99,102,241,0.85); }
 /* Settings swatches active */
 :root.storm .theme-swatch.active { border-color: #60a5fa; box-shadow: 0 0 14px rgba(96,165,250,0.40); }
 
@@ -1701,7 +1721,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 :root.aurora .wdb-rain-bar-fill { background: linear-gradient(90deg,#0d9488,#5eead4); }
 :root.aurora .gau-tile { background: linear-gradient(180deg,rgba(45,212,191,0.06),rgba(255,255,255,0.004)),rgba(8,34,28,0.92); border-color: rgba(45,212,191,0.20); }
 :root.aurora .mon-hum-bar-fill { background: linear-gradient(180deg,#99f6e4,#0d9488); box-shadow: 0 0 8px rgba(45,212,191,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
-:root.aurora .mon-pres-bar-dot { background: #2dd4bf; box-shadow: 0 0 10px rgba(45,212,191,0.85); }
 :root.aurora .theme-swatch.active { border-color: #2dd4bf; box-shadow: 0 0 14px rgba(45,212,191,0.40); }
 
 /* ── Sunset theme (Caribbean dusk — coral / amber / magenta) ── */
@@ -1752,7 +1771,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 :root.sunset .wdb-rain-bar-fill { background: linear-gradient(90deg,#f43f5e,#fb923c); }
 :root.sunset .gau-tile { background: linear-gradient(180deg,rgba(251,146,60,0.06),rgba(255,255,255,0.004)),rgba(44,16,28,0.92); border-color: rgba(251,146,60,0.20); }
 :root.sunset .mon-hum-bar-fill { background: linear-gradient(180deg,#fdba74,#f43f5e); box-shadow: 0 0 8px rgba(251,146,60,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
-:root.sunset .mon-pres-bar-dot { background: #fb923c; box-shadow: 0 0 10px rgba(251,146,60,0.85); }
 :root.sunset .theme-swatch.active { border-color: #fb923c; box-shadow: 0 0 14px rgba(251,146,60,0.40); }
 
 /* ── Mono theme (clean slate / cyan minimalist) ── */
@@ -1802,7 +1820,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 :root.mono .wdb-rain-bar-fill { background: linear-gradient(90deg,#475569,#38bdf8); }
 :root.mono .gau-tile { background: linear-gradient(180deg,rgba(56,189,248,0.05),rgba(255,255,255,0.004)),rgba(22,28,38,0.94); border-color: rgba(120,140,170,0.20); }
 :root.mono .mon-hum-bar-fill { background: linear-gradient(180deg,#7dd3fc,#475569); box-shadow: 0 0 8px rgba(56,189,248,0.45),inset 0 1px 0 rgba(255,255,255,0.15); }
-:root.mono .mon-pres-bar-dot { background: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.85); }
 :root.mono .theme-swatch.active { border-color: #38bdf8; box-shadow: 0 0 14px rgba(56,189,248,0.38); }
 
 /* ── Theme polish (added depth, sheen & glow) ───────────────────────────── */
@@ -2908,22 +2925,6 @@ html,body{max-width:100%;overflow-x:hidden;}
           <div class="mon-icon-r" id="monVisIcon"></div>
         </div>
       </div>
-      <div class="mon-tile mon-pres">
-        <div class="mon-row">
-          <div class="mon-left">
-            <div class="mon-lbl">Pressure</div>
-            <div class="mon-big" id="monPresVal">&mdash; <span class="mon-unit">mb</span></div>
-            <div class="mon-sm" id="monPresTend">&mdash;</div>
-          </div>
-          <div class="mon-icon-r mon-pres-bar-wrap">
-            <div class="mon-pres-bar">
-              <div class="mon-pres-bar-track"></div>
-              <div class="mon-pres-bar-dot" id="monPresBarDot"></div>
-            </div>
-            <div class="mon-pres-bar-lbl"><span>980</span><span>1013</span><span>1040</span></div>
-          </div>
-        </div>
-      </div>
       <div class="mon-tile mon-dust">
         <div class="mon-row">
           <div class="mon-left">
@@ -2934,14 +2935,33 @@ html,body{max-width:100%;overflow-x:hidden;}
           <div class="mon-icon-r"><svg class="mon-gauge" viewBox="0 0 80 80" id="monDustGauge"></svg></div>
         </div>
       </div>
-      <div class="mon-tile mon-sea">
-        <div class="mon-row">
-          <div class="mon-left">
-            <div class="mon-lbl">Sea Temperature <span style="font-size:16.5px;opacity:.6;letter-spacing:.5px;">MARINE</span></div>
-            <div class="mon-big" id="monSeaVal">&mdash;</div>
-            <div class="mon-sm" id="monSeaDesc">&mdash;</div>
+      <div class="mon-tile mon-weather">
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">Weather</span><span class="mon-tile-sub">Cura&ccedil;ao</span></div>
+        <div class="mon-wx-body">
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monPresGauge"></svg>
+            <div class="mon-wx-item-val" id="monPresVal">&mdash;</div>
+            <div class="mon-wx-item-desc" id="monPresTend">&mdash;</div>
+            <div class="mon-wx-item-lbl">Pressure</div>
           </div>
-          <div class="mon-icon-r"><svg class="mon-gauge" viewBox="0 0 80 80" id="monSeaGauge"></svg></div>
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monSeaGauge"></svg>
+            <div class="mon-wx-item-val" id="monSeaVal">&mdash;</div>
+            <div class="mon-wx-item-desc" id="monSeaDesc">&mdash;</div>
+            <div class="mon-wx-item-lbl">Sea Temp</div>
+          </div>
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monWxDustGauge"></svg>
+            <div class="mon-wx-item-val" id="monWxDustVal">&mdash;</div>
+            <div class="mon-wx-item-desc" id="monWxDustDesc">&mdash;</div>
+            <div class="mon-wx-item-lbl">Dust</div>
+          </div>
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monUvGauge"></svg>
+            <div class="mon-wx-item-val" id="monUvVal">&mdash;</div>
+            <div class="mon-wx-item-desc" id="monUvLabel">&mdash;</div>
+            <div class="mon-wx-item-lbl">UV Index</div>
+          </div>
         </div>
       </div>
       <div class="mon-tile mon-rad">
@@ -2963,18 +2983,6 @@ html,body{max-width:100%;overflow-x:hidden;}
             <div class="mon-sm" id="monSolarDay" style="margin-top:3px;font-size:16.5px;color:var(--muted);">&mdash;</div>
           </div>
           <div class="mon-icon-r"><svg class="mon-gauge" viewBox="0 0 80 80" id="monSolarGauge"></svg></div>
-        </div>
-      </div>
-      <div class="mon-tile mon-uv">
-        <div class="mon-row">
-          <div class="mon-left">
-            <div class="mon-lbl">UV Index <span style="font-size:16.5px;opacity:.6;">&middot; Zonkracht</span></div>
-            <div class="mon-big" id="monUvVal">&mdash;</div>
-            <div class="mon-sm" id="monUvLabel">&mdash;</div>
-            <div class="mon-sm" id="monZonkracht" style="margin-top:3px;font-size:16.5px;">&mdash;</div>
-            <div class="mon-sm" id="monHitte" style="margin-top:3px;font-size:16.5px;">&mdash;</div>
-          </div>
-          <div class="mon-icon-r"><svg class="mon-gauge" viewBox="0 0 80 80" id="monUvGauge"></svg></div>
         </div>
       </div>
       <div class="mon-tile mon-wind">
@@ -3011,6 +3019,32 @@ html,body{max-width:100%;overflow-x:hidden;}
           </div>
           <div class="mon-islt-hum">&#128167; <span id="monIsltHum">&mdash;</span>% <span class="mon-islt-hum-lbl" id="monIsltHumLbl"></span> &middot; dew <span id="monIsltDew">&mdash;</span>°</div>
           <div class="mon-islt-src" id="monIsltSrc"></div>
+        </div>
+      </div>
+      <div class="mon-tile mon-rain">
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">&#127783; Rain</span><span class="mon-tile-sub" id="monRainTime">&mdash;</span></div>
+        <div class="mon-rain-body">
+          <div class="mon-rain-sec">
+            <span class="mon-rain-lbl">TNCC Weather</span>
+            <span class="mon-rain-wxwrap" id="monRainWx">&mdash;</span>
+          </div>
+          <div class="mon-rain-sec">
+            <span class="mon-rain-lbl">Nowcast &middot; next 1h</span>
+            <div class="mon-rain-nc-bars" id="monRainNowcast"></div>
+          </div>
+          <div class="mon-rain-sec">
+            <span class="mon-rain-lbl">SYNOP 78988 &middot; Precip</span>
+            <div class="mon-rain-grid4">
+              <div class="mon-rain-cell"><div class="mon-rain-cell-lbl">3h</div><div class="mon-rain-cell-val" id="monRain3h">&mdash;</div></div>
+              <div class="mon-rain-cell"><div class="mon-rain-cell-lbl">6h</div><div class="mon-rain-cell-val" id="monRain6h">&mdash;</div></div>
+              <div class="mon-rain-cell"><div class="mon-rain-cell-lbl">12h</div><div class="mon-rain-cell-val" id="monRain12h">&mdash;</div></div>
+              <div class="mon-rain-cell"><div class="mon-rain-cell-lbl">24h</div><div class="mon-rain-cell-val" id="monRain24hSyn">&mdash;</div></div>
+            </div>
+          </div>
+          <div class="mon-rain-sec">
+            <span class="mon-rain-lbl">Instant Rain <small>KNMI</small></span>
+            <span class="mon-rain-instant-val" id="monRainInstant">&mdash;</span>
+          </div>
         </div>
       </div>
       <div class="mon-tile mon-radar" style="grid-column:1/-1;">
@@ -6235,6 +6269,71 @@ async function ovzFetchSynop(wmo){
   if(out.tmax == null && out.tmin == null && out.wt == null) return null;
   return out;
 }
+/* SYNOP 78988 precipitation windows (3h/6h/12h/24h) for the Monitor RAIN tile.
+   Reuses the same getsynop (26h CSV) + decodeSynopText pipeline as ovzFetchSynop
+   above, but instead of collapsing to one "best" total, keeps every observation's
+   own reported 6RRRtR period + amount so each window can be answered honestly:
+   prefer a single report that covers that exact period; otherwise sum only the
+   back-to-back reports whose own period fits inside the requested window (never
+   attribute a longer period's total to a shorter one). */
+function synopPrecipPeriodHours(p){
+  if(!p) return null;
+  const m = /^(\d+)h$/.exec(p);
+  return m ? parseInt(m[1], 10) : null;
+}
+async function fetchSynopRainWindows(wmo){
+  var b = new Date(Date.now() - 26 * 3600e3);
+  var begin = '' + b.getUTCFullYear() + String(b.getUTCMonth()+1).padStart(2,'0') + String(b.getUTCDate()).padStart(2,'0') + String(b.getUTCHours()).padStart(2,'0') + '00';
+  var url = 'https://www.ogimet.com/cgi-bin/getsynop?block=' + wmo + '&begin=' + begin;
+  var r = await fetchURL(url, 1);
+  if(!r || !r.text || !/AAXX/.test(r.text)) return null;
+  var obs = [];
+  r.text.split('\n').forEach(function(line){
+    var m = line.match(/^(\d{5}),(\d{4}),(\d{2}),(\d{2}),(\d{2}),(\d{2}),(.*)$/);
+    if(!m || m[1] !== String(wmo)) return;
+    var obsTime = Date.UTC(parseInt(m[2],10), parseInt(m[3],10)-1, parseInt(m[4],10), parseInt(m[5],10), parseInt(m[6],10));
+    var rep = m[7];
+    if(!/AAXX/.test(rep)) rep = 'AAXX ' + m[4] + m[5] + '4 ' + rep;
+    var dec;
+    try { dec = decodeSynopText(rep); } catch(e){ return; }
+    if(!dec || !dec.reports || !dec.reports.length) return;
+    var P = dec.reports[0].P || {};
+    obs.push({
+      t: obsTime,
+      precip_mm: (P.precip_mm != null && isFinite(P.precip_mm)) ? P.precip_mm : null,
+      precip_period: P.precip_period || null,
+      precip_24h: (P.precip_24h != null && isFinite(P.precip_24h)) ? P.precip_24h : null
+    });
+  });
+  if(!obs.length) return null;
+  obs.sort(function(a,b){ return a.t - b.t; });
+  var nowMs = Date.now();
+  function exactPeriod(label){
+    for(var i = obs.length - 1; i >= 0; i--){
+      if(obs[i].precip_period === label && obs[i].precip_mm != null) return obs[i].precip_mm;
+    }
+    return null;
+  }
+  function windowSum(hours){
+    var cutoff = nowMs - hours * 3600e3;
+    var sum = 0, seen = false;
+    obs.forEach(function(o){
+      var ph = synopPrecipPeriodHours(o.precip_period);
+      if(o.t >= cutoff && o.t <= nowMs && o.precip_mm != null && ph != null && ph <= hours){
+        sum += o.precip_mm; seen = true;
+      }
+    });
+    return seen ? sum : null;
+  }
+  var h3 = exactPeriod('3h'); if(h3 == null) h3 = windowSum(3);
+  var h6 = exactPeriod('6h'); if(h6 == null) h6 = windowSum(6);
+  var h12 = exactPeriod('12h'); if(h12 == null) h12 = windowSum(12);
+  var h24 = null;
+  for(var i = obs.length - 1; i >= 0; i--){ if(obs[i].precip_24h != null){ h24 = obs[i].precip_24h; break; } }
+  if(h24 == null) h24 = exactPeriod('24h');
+  if(h24 == null) h24 = windowSum(24);
+  return {h3: h3, h6: h6, h12: h12, h24: h24};
+}
 /* 2) 24-uurs METARs via aviationweather.gov */
 async function ovzFetchMetars(icao){
   var url = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&hours=26&format=raw';
@@ -7555,6 +7654,7 @@ async function fetchMonitorData(){
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${ABC_LAT}&longitude=${ABC_LON}` +
         `&current=uv_index,precipitation,rain,weathercode,shortwave_radiation` +
+        `&minutely_15=precipitation` +
         `&daily=sunrise,sunset,precipitation_sum,rain_sum` +
         `&timezone=auto&forecast_days=2`;
       const ctrl = new AbortController();
@@ -7564,6 +7664,20 @@ async function fetchMonitorData(){
       if(!res.ok) return null;
       return await res.json();
     } catch(e){ return null; }
+  }
+  // Next-1h nowcast: 4 × 15-min precipitation buckets from Open-Meteo minutely_15.
+  function buildNowcast(json){
+    const m = json && json.minutely_15;
+    if(!m || !m.time || !m.precipitation) return null;
+    const nowMs = Date.now();
+    let startIdx = m.time.findIndex(t => new Date(t + 'Z').getTime() >= nowMs);
+    if(startIdx < 0) startIdx = 0;
+    const out = [];
+    for(let i = startIdx; i < Math.min(startIdx + 4, m.time.length); i++){
+      const v = m.precipitation[i];
+      out.push({label: '+' + ((i - startIdx + 1) * 15) + 'm', precip: v != null ? v : 0});
+    }
+    return out.length ? out : null;
   }
   async function fetchSeaTemp(){
     try {
@@ -7586,9 +7700,10 @@ async function fetchMonitorData(){
     fetchURL('https://www.ogimet.com/ultimos_synops2.php?estado=Cura&fmt=html&Enviar=Ver'),
     fetchURL(KNMI_URL),
     fetchMonitorOM(),
-    fetchSeaTemp()
+    fetchSeaTemp(),
+    fetchSynopRainWindows('78988')
   ]);
-  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null;
+  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null;
   if(tasks[0].status === 'fulfilled' && tasks[0].value && tasks[0].value.ok){
     try { const scraped = scrapeOgimetSynop(tasks[0].value.text); if(scraped){ synopRaw = scraped; synopP = extractWxFromSynop(scraped, '78988'); window.__synopPCur = synopP; window.__synopLoadedAt = Date.now();
       try{ window.__synopPAru = extractWxFromSynop(scraped, '78762'); }catch(_e){}
@@ -7601,11 +7716,15 @@ async function fetchMonitorData(){
     omCurrent = tasks[2].value.current || null;
     window.__omCurrent = omCurrent; // expose for condition map boxes
     omDaily   = tasks[2].value.daily   || null;
+    nowcast   = buildNowcast(tasks[2].value);
   }
   if(tasks[3] && tasks[3].status === 'fulfilled' && tasks[3].value != null){
     seaTemp = tasks[3].value;
   }
-  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw};
+  if(tasks[4] && tasks[4].status === 'fulfilled' && tasks[4].value != null){
+    synopRain = tasks[4].value;
+  }
+  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw, nowcast, synopRain};
 }
 
 function renderMonitor(data){
@@ -7655,11 +7774,15 @@ function renderMonitor(data){
     byId('monPresVal').innerHTML = _slp.toFixed(0) + ' <span class="mon-unit">mb</span>';
     byId('monPresTend').innerHTML = _tend + staleDot(window.__synopLoadedAt);
     const pct = Math.max(0, Math.min(100, ((_slp - 980) / 60) * 100));
-    byId('monPresBarDot').style.left = pct + '%';
+    byId('monPresGauge').innerHTML = buildArcGauge({
+      value: Math.round(pct), max: 100,
+      color: pct < 33 ? '#a78bfa' : pct > 66 ? '#ff8a3d' : '#4db8ff',
+      bgColor: 'rgba(255,255,255,0.06)'
+    });
   } else {
     byId('monPresVal').innerHTML = '\u2014 <span class="mon-unit">mb</span>';
     byId('monPresTend').textContent = '\u2014';
-    byId('monPresBarDot').style.left = '50%';
+    byId('monPresGauge').innerHTML = '';
   }
   // Dust vis: KNMI only (window.__knmiData.vis_m → bonaireVisM → SYNOP)
   var _dustVis = (window.__knmiData && window.__knmiData.vis_m != null)
@@ -7672,6 +7795,14 @@ function renderMonitor(data){
   byId('monDustVal').textContent = dust.index + ' / 100';
   byId('monDustDesc').textContent = dust.text + ' \u00b7 ' + dust.desc;
   byId('monDustGauge').innerHTML = buildArcGauge({
+    value: dust.index, max: 100,
+    color: dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a',
+    bgColor: 'rgba(255,255,255,0.06)'
+  });
+  // Duplicate dust reading into the consolidated WEATHER tile
+  byId('monWxDustVal').textContent = dust.index + ' / 100';
+  byId('monWxDustDesc').textContent = dust.text;
+  byId('monWxDustGauge').innerHTML = buildArcGauge({
     value: dust.index, max: 100,
     color: dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a',
     bgColor: 'rgba(255,255,255,0.06)'
@@ -7964,6 +8095,49 @@ function renderMonitor(data){
   if(omDaily && omDaily.precipitation_sum && omDaily.precipitation_sum.length){
     byId('monRain24h').textContent = omDaily.precipitation_sum[0].toFixed(1) + ' mm';
   } else { byId('monRain24h').textContent = '\u2014'; }
+  // \u2500\u2500 RAIN tile: TNCC weather chips, next-1h nowcast, SYNOP precip windows, instant rain \u2500\u2500
+  (function(){
+    var wxEl = byId('monRainWx');
+    if(wxEl){
+      if(metarP && metarP.wxToks && metarP.wxToks.length){
+        wxEl.innerHTML = metarP.wxToks.map(function(tok){
+          var d = decodeWxToken(tok);
+          var cls = /^[+-]?(?:VC)?(?:TS|TSRA|VCTS)/.test(tok) ? 'crit' : (d.severe ? 'sig' : 'mod');
+          return '<span class="wxtag ' + cls + '" title="' + tok + '">' + wxIcon(tok) + '<span>' + d.label + '</span></span>';
+        }).join('');
+      } else if(metarP){
+        wxEl.innerHTML = '<span class="wxtag nil">No significant weather</span>';
+      } else {
+        wxEl.innerHTML = '<span class="wxtag nil">No TNCC data</span>';
+      }
+    }
+    var ncEl = byId('monRainNowcast');
+    if(ncEl){
+      var mins = (data && data.nowcast) || null;
+      if(mins && mins.length){
+        var maxV = Math.max(0.2, Math.max.apply(null, mins.map(function(m){ return m.precip; })));
+        ncEl.innerHTML = mins.map(function(m){
+          var h = Math.max(3, Math.round((m.precip / maxV) * 34));
+          return '<div class="mon-rain-nc-col"><div class="mon-rain-nc-bar" style="height:34px;" title="' + m.precip.toFixed(2) + ' mm"><div class="mon-rain-nc-bar-fill" style="height:' + h + 'px;"></div></div><div class="mon-rain-nc-lbl">' + m.label + '</div></div>';
+        }).join('');
+      } else {
+        ncEl.innerHTML = '<span style="color:var(--muted);font-family:var(--cond);font-size:16.5px;">No data</span>';
+      }
+    }
+    var synRain = (data && data.synopRain) || null;
+    function fmtP(v){ return v != null ? v.toFixed(1) + ' mm' : '\u2014'; }
+    byId('monRain3h').textContent = fmtP(synRain && synRain.h3);
+    byId('monRain6h').textContent = fmtP(synRain && synRain.h6);
+    byId('monRain12h').textContent = fmtP(synRain && synRain.h12);
+    byId('monRain24hSyn').textContent = fmtP(synRain && synRain.h24);
+    var instEl = byId('monRainInstant');
+    if(instEl){
+      var p10 = (window.__knmiData && window.__knmiData.precip_10m != null) ? window.__knmiData.precip_10m : null;
+      instEl.textContent = p10 != null ? p10.toFixed(1) + ' mm/10min' : '\u2014';
+    }
+    var rt = byId('monRainTime');
+    if(rt) rt.textContent = tnccMetarRaw ? 'TNCC \u00b7 78988' : '\u2014';
+  })();
   byId('monLastUpd').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
   renderStationsAverage();
   if(__monStyle === 'power' && byId('tab-monitor') && !byId('tab-monitor').classList.contains('hidden')) renderPowerStation();
