@@ -12421,12 +12421,12 @@ document.querySelectorAll('.atcplayer').forEach(player => {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {maxZoom:12, subdomains:'abcd'}).addTo(m);
     return m;
   }
-  // GIBS only publishes GOES-East Clean Infrared up to native zoom 6 (2km,
-  // GoogleMapsCompatible_Level6) — past that its WMS endpoint returns a
-  // "Zoom Level Not Supported" image instead of data. The radar loop and
-  // both live Windy embeds stay at zoom 8; only this animated satellite map
-  // is held back to what GIBS actually serves.
-  const SAT_ANIM_ZOOM = 6;
+  // The satellite frames are fetched as a single WMS GetMap image sized to
+  // this map's own bounds (see buildSat) rather than XYZ tiles, so its zoom
+  // only sets how tight the framing is — it no longer has to dodge GIBS's
+  // tile-pyramid depth limit for this layer (that's what caused "Zoom Level
+  // Not Supported" when this used L.tileLayer.wms). Matches the radar loop.
+  const SAT_ANIM_ZOOM = 8;
   const fmtT = ms => { const d = new Date(ms); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + 'Z'; };
 
   function buildRadar(){
@@ -12445,15 +12445,29 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   function buildSat(){
     sLayers.forEach(l => { try{ mapS.removeLayer(l); }catch(e){} });
     sLayers = []; sTimes = [];
+    // Single WMS GetMap image per frame, sized to the window's own bounds/
+    // pixels, instead of a Leaflet XYZ tile pyramid. GIBS's "Zoom Level Not
+    // Supported" reply is about the requested TILE resolution exceeding this
+    // layer's native pyramid depth — a plain GetMap for an arbitrary bbox at
+    // an arbitrary pixel size is the standard WMS request shape and isn't
+    // tied to that tile-zoom ladder at all, so there's no level to exceed.
+    mapS.invalidateSize();
+    const b = mapS.getBounds();
+    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    const bbox = [sw.x, sw.y, ne.x, ne.y].join(',');
+    const sz = mapS.getSize();
+    const w = Math.max(200, Math.round(sz.x) || 300), h = Math.max(150, Math.round(sz.y) || 220);
     // 8 frames in 10-min steps ending at the newest fully-ingested GOES frame
     const end = new Date(Date.now() - 70*60*1000);
     end.setUTCSeconds(0,0); end.setUTCMinutes(Math.floor(end.getUTCMinutes()/10)*10);
     for(let i = 7; i >= 0; i--){
       const t = new Date(end.getTime() - i*10*60*1000);
-      const l = L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
-        layers:'GOES-East_ABI_Band13_Clean_Infrared', format:'image/png', transparent:true,
-        opacity:0, maxZoom:12, TIME: t.toISOString().slice(0,19) + 'Z'
-      });
+      const url = 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap'
+        + '&LAYERS=GOES-East_ABI_Band13_Clean_Infrared&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE'
+        + '&SRS=EPSG%3A3857&BBOX=' + bbox + '&WIDTH=' + w + '&HEIGHT=' + h
+        + '&TIME=' + encodeURIComponent(t.toISOString().slice(0,19) + 'Z');
+      const l = L.imageOverlay(url, b, {opacity:0});
       l.addTo(mapS); sLayers.push(l); sTimes.push(t.getTime());
     }
   }
