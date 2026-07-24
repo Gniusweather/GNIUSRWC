@@ -5572,7 +5572,7 @@ function renderWrittenForecast(){
   // ── Synoptic situation ──
   var syn = [];
   if(isPap){
-    syn.push('Un fluho di bientu pasat ' + (d0.wind != null && d0.wind >= 20 ? 'basta fuerte' : d0.wind != null && d0.wind >= 13 ? 'moderá' : 'suave') + ' for di ' + (dirTxt.indexOf('E') >= 0 ? 'ost' : 'direkshon variabel') + ' ta domina nos region.');
+    syn.push('Un fluho di bientu pasat ' + (d0.wind != null && d0.wind >= 20 ? 'basta fuerte' : d0.wind != null && d0.wind >= 13 ? 'moderá' : 'suak') + ' for di ' + (dirTxt.indexOf('E') >= 0 ? 'ost' : 'direkshon variabel') + ' ta domina nos region.');
     if(slp) syn.push('Presion atmosferiko na nivel di laman ta rondó di <b>' + slp + ' hPa</b>' + (tend ? ' i ta ' + (TEND_PAP[tend] || tend.toLowerCase()) : '') + '.');
     if(maxPop >= 40) syn.push('Un mása di airu mas húmedo ta pasa riba nos region i ta oumentá e posibilidat di áwaseru.');
     else if(maxPop >= 20) syn.push('Lokalmente algu di inestabilidat por generá un áwaseru kòrtiku.');
@@ -5753,7 +5753,7 @@ function renderMeteoForecast(host, fc){
   var fG = gust != null ? forceOf(gust) : null;
   var FN_EN = {1:'light',2:'light',3:'gentle',4:'moderate',5:'fresh',6:'strong',7:'near gale',8:'gale'};
   var FN_NL = {1:'zwak',2:'zwak',3:'matig',4:'matig',5:'vrij krachtig',6:'krachtig',7:'hard',8:'stormachtig'};
-  var FN_PAP = {1:'liviano',2:'liviano',3:'suave',4:'moderá',5:'basta fuerte',6:'fuerte',7:'duru',8:'tempestat'};
+  var FN_PAP = {1:'suak',2:'suak',3:'suak',4:'moderá',5:'basta fuerte',6:'fuerte',7:'duru',8:'tempestat'};
   var COMP = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   var DIR_EN = {N:'Northerly',NNE:'North-northeasterly',NE:'Northeasterly',ENE:'East-northeasterly',E:'Easterly',ESE:'East-southeasterly',SE:'Southeasterly',SSE:'South-southeasterly',S:'Southerly',SSW:'South-southwesterly',SW:'Southwesterly',WSW:'West-southwesterly',W:'Westerly',WNW:'West-northwesterly',NW:'Northwesterly',NNW:'North-northwesterly'};
   var DIR_NL = {N:'Noordelijk',NNE:'Noord-noordoostelijk',NE:'Noordoostelijk',ENE:'Oost-noordoostelijk',E:'Oostelijk',ESE:'Oost-zuidoostelijk',SE:'Zuidoostelijk',SSE:'Zuid-zuidoostelijk',S:'Zuidelijk',SSW:'Zuid-zuidwestelijk',SW:'Zuidwestelijk',WSW:'West-zuidwestelijk',W:'Westelijk',WNW:'West-noordwestelijk',NW:'Noordwestelijk',NNW:'Noord-noordwestelijk'};
@@ -5765,19 +5765,19 @@ function renderMeteoForecast(host, fc){
   var windTxt;
   if(isPap){
     windTxt = 'Generalmente for di ' + DIR_PAP[c0] + (c1 !== c0 ? ', okashonalmente for di ' + DIR_PAP[c1] : '') +
-      ' i ' + FN_PAP[fLo] + (fHi > fLo ? ' te ' + FN_PAP[fHi] : '') +
+      ' i ' + FN_PAP[fLo] + (fHi > fLo && FN_PAP[fHi] !== FN_PAP[fLo] ? ' te ' + FN_PAP[fHi] : '') +
       '; forsa ' + fLo + (fHi > fLo ? ' te ' + fHi : '') +
       ' (' + kmhLo + ' te ' + kmhHi + ' km/ora, ' + knLo + ' te ' + knHi + ' nudo).';
     if(fG != null && fG > fHi) windTxt += ' De bes en kuando ' + FN_PAP[fG] + ' den ráfaga; forsa ' + fG + ' (' + BFT[fG][0] + ' te ' + BFT[fG][1] + ' km/ora, ' + BFT[fG][2] + ' te ' + BFT[fG][3] + ' nudo).';
   } else if(isNL){
     windTxt = DIR_NL[c0] + (c1 !== c0 ? ', soms overgaand naar ' + DIRN_NL[c1] : '') +
-      ' en ' + FN_NL[fLo] + (fHi > fLo ? ' tot ' + FN_NL[fHi] : '') +
+      ' en ' + FN_NL[fLo] + (fHi > fLo && FN_NL[fHi] !== FN_NL[fLo] ? ' tot ' + FN_NL[fHi] : '') +
       '; windkracht ' + fLo + (fHi > fLo ? ' tot ' + fHi : '') +
       ' (' + kmhLo + ' tot ' + kmhHi + ' km/uur, ' + knLo + ' tot ' + knHi + ' knopen).';
     if(fG != null && fG > fHi) windTxt += ' Af en toe ' + FN_NL[fG] + ' in uitschieters; windkracht ' + fG + ' (' + BFT[fG][0] + ' tot ' + BFT[fG][1] + ' km/uur, ' + BFT[fG][2] + ' tot ' + BFT[fG][3] + ' knopen).';
   } else {
     windTxt = DIR_EN[c0] + (c1 !== c0 ? ' to ' + DIR_EN[c1].toLowerCase().replace('erly','erly') : '') +
-      ' and ' + FN_EN[fLo] + (fHi > fLo ? ' to ' + FN_EN[fHi] : '') +
+      ' and ' + FN_EN[fLo] + (fHi > fLo && FN_EN[fHi] !== FN_EN[fLo] ? ' to ' + FN_EN[fHi] : '') +
       '; force ' + fLo + (fHi > fLo ? ' to ' + fHi : '') +
       ' (' + kmhLo + ' to ' + kmhHi + ' km/h, ' + knLo + ' to ' + knHi + ' knots).';
     if(fG != null && fG > fHi) windTxt += ' Occasionally ' + FN_EN[fG] + ' in gusts; force ' + fG + ' (' + BFT[fG][0] + ' to ' + BFT[fG][1] + ' km/h, ' + BFT[fG][2] + ' to ' + BFT[fG][3] + ' knots).';
@@ -5867,7 +5867,7 @@ function renderMeteoForecast(host, fc){
 
   // ── Special features ──
   var special = hazy
-    ? (isPap ? 'Bishibilidat un tiki reducí pa motibu di stof di Sahara.' : isNL ? 'Enigszins verminderd zicht door Saharastof.' : 'Slightly reduced visibility due to Saharan dust.')
+    ? (isPap ? 'Bishibilidat un tiki reducí pa motibu di stòf di Sahara.' : isNL ? 'Enigszins verminderd zicht door Saharastof.' : 'Slightly reduced visibility due to Saharan dust.')
     : (isPap ? 'Ningun.' : isNL ? 'Geen.' : 'None.');
 
   // ── Apply free-text overrides (per language) + forecaster name ──
@@ -5963,7 +5963,7 @@ function meteoEditFormHtml(lang){
   }
   var T = isPap
     ? {ttl:'Editá boletin', gen:'Generá pronóstiko', auto:'Outomátiko (kita)', close:'Sera',
-       tmax:'Máks °C', tmin:'Mín °C', pop:'Chns di áwaseru %', sr:'Solo ta sali', ss:'Solo ta baha',
+       tmax:'Máks °C', tmin:'Mín °C', pop:'Posibilidat di áwaseru %', sr:'Solo ta sali', ss:'Solo ta baha',
        wlo:'Bientu for di (kt)', whi:'Bientu te (kt)', gust:'Ráfaga (kt)', wvl:'Ola for di (m)', wvh:'Ola te (m)', fc:'Meteorólogo',
        wx:'Tempu', wnd:'Bientu', syn:'Situashon general', sea:'Kondishon di laman', spc:'Fenómeno spesial', out:'Perspektiva'}
     : isNL
