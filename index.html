@@ -546,7 +546,9 @@ tr:last-child td{border-bottom:none;}
 @media(max-width:1100px){
   #tab-monitor{height:auto;overflow:visible;}
   .mon-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:auto;flex:initial;}
-  .mon-wind,.mon-hum,.mon-temp,.mon-radar,.mon-stavg{grid-row:auto;grid-column:auto;}
+  .mon-wind,.mon-hum,.mon-temp,.mon-radar,.mon-stavg{grid-row:auto;}
+  .mon-wind,.mon-temp,.mon-radar,.mon-stavg{grid-column:auto;}
+  .mon-hum{grid-column:span 2;}
   .mon-grid > [style*="grid-column"]{grid-column:1 / -1 !important;}
   .mon-tile{min-height:120px;}
   .mon-stavg{grid-column:1 / -1 !important;}
@@ -2427,6 +2429,12 @@ html,body{max-width:100%;overflow-x:hidden;}
   .cw-grid{grid-template-columns:1fr !important;}
   .cw-tile.mon-stavg{grid-column:auto !important;}
 }
+/* 3-column range (>1100px, <1200px): a 2-column span leaves 1 empty column,
+   so go full-width here instead — half-width only makes sense once the grid
+   reaches 4 columns below. */
+@media(min-width:1101px) and (max-width:1199px){
+  .mon-hum{grid-column:1/-1;}
+}
 /* ── Large desktop ── */
 @media(min-width:1200px){
   .mon-grid{grid-template-columns:repeat(4,1fr);}
@@ -2994,13 +3002,6 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
         <div class="mon-wind-bft" id="monWindBft">&mdash;</div>
       </div>
-      <div class="mon-tile mon-hum">
-        <div class="mon-tile-hd"><span class="mon-tile-ttl">Forecast &middot; Next 12 h</span><span class="mon-tile-sub">Cura&ccedil;ao</span></div>
-        <div class="mon-hum-body">
-          <div class="mon-hum-bars" id="monHumBars"></div>
-        </div>
-      </div>
-
       <!-- Island Average Temperature tile -->
       <div class="mon-tile mon-islt">
         <div class="mon-tile-hd"><span class="mon-tile-ttl">🌡 Island Avg Temp</span></div>
@@ -3016,6 +3017,12 @@ html,body{max-width:100%;overflow-x:hidden;}
           </div>
           <div class="mon-islt-hum">&#128167; <span id="monIsltHum">&mdash;</span>% <span class="mon-islt-hum-lbl" id="monIsltHumLbl"></span> &middot; dew <span id="monIsltDew">&mdash;</span>°</div>
           <div class="mon-islt-src" id="monIsltSrc"></div>
+        </div>
+      </div>
+      <div class="mon-tile mon-hum">
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">Forecast &middot; Next 12 h</span><span class="mon-tile-sub">Cura&ccedil;ao</span></div>
+        <div class="mon-hum-body">
+          <div class="mon-hum-bars" id="monHumBars"></div>
         </div>
       </div>
       <div class="mon-tile mon-rain">
