@@ -12415,12 +12415,18 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   }
   lockBtn.addEventListener('click', () => { locked = !locked; applyLock(); });
 
-  function mkMap(id, dark){
+  function mkMap(id, dark, zoom){
     const m = L.map(id, {zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, touchZoom:false, doubleClickZoom:false})
-      .setView([12.3, -69.15], 8);
+      .setView([12.3, -69.15], zoom);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {maxZoom:12, subdomains:'abcd'}).addTo(m);
     return m;
   }
+  // GIBS only publishes GOES-East Clean Infrared up to native zoom 6 (2km,
+  // GoogleMapsCompatible_Level6) — past that its WMS endpoint returns a
+  // "Zoom Level Not Supported" image instead of data. The radar loop and
+  // both live Windy embeds stay at zoom 8; only this animated satellite map
+  // is held back to what GIBS actually serves.
+  const SAT_ANIM_ZOOM = 6;
   const fmtT = ms => { const d = new Date(ms); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + 'Z'; };
 
   function buildRadar(){
@@ -12472,8 +12478,8 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   function ensureMaps(){
     if(!playing) return;                                   // stopped while waiting
     if(typeof L === 'undefined'){ setTimeout(ensureMaps, 400); return; }   // leaflet.js is deferred
-    if(!mapR) mapR = mkMap('monRadarAnim', false);
-    if(!mapS) mapS = mkMap('monSatAnim', true);
+    if(!mapR) mapR = mkMap('monRadarAnim', false, 8);
+    if(!mapS) mapS = mkMap('monSatAnim', true, SAT_ANIM_ZOOM);
     setTimeout(() => { try{ mapR.invalidateSize(); mapS.invalidateSize(); }catch(e){} }, 60);
     buildRadar().catch(()=>{});
     buildSat();
