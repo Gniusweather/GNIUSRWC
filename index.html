@@ -639,15 +639,14 @@ tr:last-child td{border-bottom:none;}
 .mon-wind-dir-line{font-family:var(--mono);font-size:21.5px;color:var(--acc);font-weight:700;letter-spacing:.5px;margin-top:2px;}
 .mon-wind-bft{margin-top:auto;padding-top:8px;border-top:1px solid rgba(77,184,255,0.15);font-family:var(--cond);font-size:21.5px;font-weight:900;color:#cce4ff;letter-spacing:.8px;text-align:center;text-transform:uppercase;}
 /* ── WEATHER tile (gauges: pressure · sea temp · dust · uv) ── */
-.mon-wx-body{display:grid;grid-template-columns:repeat(2,1fr);gap:2px 10px;flex:1;align-content:center;min-height:0;}
+.mon-wx-body{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px;flex:1;align-content:center;min-height:0;}
 .mon-wx-item{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;}
-.mon-wx-item .mon-gauge{width:clamp(68px,8.5vw,92px);height:clamp(68px,8.5vw,92px);}
-.mon-wx-item-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-top:1px;white-space:nowrap;}
-.mon-wx-item-val{font-family:var(--cond);font-size:17.5px;font-weight:700;color:var(--txt);white-space:nowrap;}
-.mon-wx-item-desc{font-family:var(--cond);font-size:14px;color:var(--muted);text-align:center;line-height:1.15;max-height:2.3em;overflow:hidden;}
+.mon-wx-item .mon-gauge{width:clamp(84px,10.5vw,110px);height:clamp(84px,10.5vw,110px);}
+.mon-wx-item-lbl{font-family:var(--cond);font-size:18px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-top:2px;white-space:nowrap;}
+.mon-wx-item-desc{font-family:var(--cond);font-size:16px;color:var(--muted);text-align:center;line-height:1.2;max-height:2.4em;overflow:hidden;}
 /* Variant for 2-item tiles (Solar): more room per item, bigger gauge */
-.mon-wx-body-2{grid-template-columns:repeat(2,1fr);gap:2px 16px;}
-.mon-wx-body-2 .mon-gauge{width:clamp(84px,11vw,112px);height:clamp(84px,11vw,112px);}
+.mon-wx-body-2{grid-template-columns:repeat(2,1fr);gap:4px 16px;}
+.mon-wx-body-2 .mon-gauge{width:clamp(100px,13vw,132px);height:clamp(100px,13vw,132px);}
 /* ── RAIN tile (TNCC weather · nowcast · SYNOP precip windows · instant rain) ── */
 .mon-rain{grid-column:1/-1;}
 .mon-rain-body{display:flex;align-items:stretch;gap:16px;flex:1;min-height:0;flex-wrap:wrap;}
@@ -2955,25 +2954,21 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="mon-wx-body">
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monPresGauge"></svg>
-            <div class="mon-wx-item-val" id="monPresVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monPresTend">&mdash;</div>
             <div class="mon-wx-item-lbl">Pressure</div>
           </div>
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monSeaGauge"></svg>
-            <div class="mon-wx-item-val" id="monSeaVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monSeaDesc">&mdash;</div>
             <div class="mon-wx-item-lbl">Sea Temp</div>
           </div>
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monWxDustGauge"></svg>
-            <div class="mon-wx-item-val" id="monWxDustVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monWxDustDesc">&mdash;</div>
             <div class="mon-wx-item-lbl">Dust</div>
           </div>
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monUvGauge"></svg>
-            <div class="mon-wx-item-val" id="monUvVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monUvLabel">&mdash;</div>
             <div class="mon-wx-item-lbl">UV Index</div>
           </div>
@@ -2984,13 +2979,11 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="mon-wx-body mon-wx-body-2">
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monRadGauge"></svg>
-            <div class="mon-wx-item-val" id="monRadVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monRadDesc">&mdash;</div>
             <div class="mon-wx-item-lbl">Radiation</div>
           </div>
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monSolarGauge"></svg>
-            <div class="mon-wx-item-val" id="monSolarVal">&mdash;</div>
             <div class="mon-wx-item-desc" id="monSolarDesc">&mdash;</div>
             <div class="mon-wx-item-lbl">Power</div>
           </div>
@@ -7380,7 +7373,7 @@ function monitorWindCompass(dir, spd){
   </svg>`;
 }
 
-function buildArcGauge({value, max, color, bgColor}){
+function buildArcGauge({value, max, color, bgColor, label, unit}){
   const cx = 40, cy = 40, r = 28;
   const startA = -225 * Math.PI / 180;
   const endA   =  45 * Math.PI / 180;
@@ -7393,12 +7386,14 @@ function buildArcGauge({value, max, color, bgColor}){
   const valA = startA + (arcLen * pct * Math.PI / 180);
   const vp = polar(valA);
   const largeArcVal = (arcLen * pct) > 180 ? 1 : 0;
+  const dispVal = label != null ? label : value;
+  const dispUnit = unit != null ? unit : ('/' + max);
   return `
     <path class="g-track" d="M ${sp.x} ${sp.y} A ${r} ${r} 0 ${largeArcBg} 1 ${ep.x} ${ep.y}" stroke="${bgColor}" stroke-width="6" fill="none" stroke-linecap="round"/>
     <path d="M ${sp.x} ${sp.y} A ${r} ${r} 0 ${largeArcVal} 1 ${vp.x} ${vp.y}" stroke="${color}" stroke-width="6" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 5px ${color});"/>
     <circle cx="${vp.x.toFixed(2)}" cy="${vp.y.toFixed(2)}" r="6" fill="${color}" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>
-    <text x="${cx}" y="${cy+5}" fill="${color}" font-size="16" font-weight="900" text-anchor="middle" font-family="Barlow Condensed,sans-serif">${value}</text>
-    <text x="${cx}" y="${cy+16}" fill="rgba(255,255,255,0.5)" font-size="6" font-weight="700" text-anchor="middle" font-family="Barlow Condensed,sans-serif" letter-spacing="1">/${max}</text>
+    <text x="${cx}" y="${cy+4}" fill="${color}" font-size="19" font-weight="900" text-anchor="middle" font-family="Barlow Condensed,sans-serif">${dispVal}</text>
+    <text x="${cx}" y="${cy+16}" fill="rgba(255,255,255,0.55)" font-size="9" font-weight="700" text-anchor="middle" font-family="Barlow Condensed,sans-serif" letter-spacing="0.5">${dispUnit}</text>
   `;
 }
 
@@ -7428,7 +7423,7 @@ function buildRainbowGauge(uv){
   for(const s of segments){ if(pct >= s.start && pct <= s.end){ markCol = s.col; break; } }
   return arcs +
     `<circle cx="${mp.x.toFixed(2)}" cy="${mp.y.toFixed(2)}" r="7" fill="${markCol}" stroke="rgba(255,255,255,0.75)" stroke-width="1.5" style="filter:drop-shadow(0 0 6px ${markCol});"/>` +
-    `<text x="${cx}" y="${cy+5}" fill="${markCol}" font-size="20" font-weight="900" text-anchor="middle" font-family="Barlow Condensed,sans-serif" letter-spacing="-0.5">${uv.toFixed(0)}</text>`;
+    `<text x="${cx}" y="${cy+6}" fill="${markCol}" font-size="21" font-weight="900" text-anchor="middle" font-family="Barlow Condensed,sans-serif" letter-spacing="-0.5">${uv.toFixed(1)}</text>`;
 }
 
 function bftMonitor(kt){
@@ -7786,16 +7781,14 @@ function renderMonitor(data){
            : (synopP && synopP.slp != null ? synopP.slp : null);
   var _tend = (synopP && synopP.tend_type) ? synopP.tend_type : 'Steady';
   if(_slp != null){
-    byId('monPresVal').innerHTML = _slp.toFixed(0) + ' <span class="mon-unit">mb</span>';
     byId('monPresTend').innerHTML = _tend + staleDot(window.__synopLoadedAt);
     const pct = Math.max(0, Math.min(100, ((_slp - 980) / 60) * 100));
     byId('monPresGauge').innerHTML = buildArcGauge({
-      value: Math.round(pct), max: 100,
+      value: Math.round(pct), max: 100, label: _slp.toFixed(0), unit: 'mb',
       color: pct < 33 ? '#a78bfa' : pct > 66 ? '#ff8a3d' : '#4db8ff',
       bgColor: 'rgba(255,255,255,0.06)'
     });
   } else {
-    byId('monPresVal').innerHTML = '\u2014 <span class="mon-unit">mb</span>';
     byId('monPresTend').textContent = '\u2014';
     byId('monPresGauge').innerHTML = '';
   }
@@ -7815,7 +7808,6 @@ function renderMonitor(data){
     bgColor: 'rgba(255,255,255,0.06)'
   });
   // Duplicate dust reading into the consolidated WEATHER tile
-  byId('monWxDustVal').textContent = dust.index + ' / 100';
   byId('monWxDustDesc').textContent = dust.text;
   byId('monWxDustGauge').innerHTML = buildArcGauge({
     value: dust.index, max: 100,
@@ -7824,7 +7816,6 @@ function renderMonitor(data){
   });
   // ── Sea surface temperature (Marine API) ──
   if(seaTemp != null && isFinite(seaTemp)){
-    byId('monSeaVal').innerHTML = seaTemp.toFixed(1) + ' <span class="mon-unit">\u00b0C</span>';
     // Caribbean SST typically 26-30°C. Describe relative to that.
     let sdesc, scol;
     if(seaTemp >= 29){ sdesc='Very warm'; scol='#ff8a3d'; }
@@ -7833,20 +7824,20 @@ function renderMonitor(data){
     else { sdesc='Cool'; scol='#0369a1'; }
     byId('monSeaDesc').textContent = sdesc;
     byId('monSeaDesc').style.color = scol;
-    // Gauge: map 22-32°C to 0-100% (buildArcGauge prints value/max in the centre)
+    // Gauge: map 22-32°C to 0-100% fill; label shows the real reading.
     const spct = Math.max(0, Math.min(1, (seaTemp - 22) / 10));
     byId('monSeaGauge').innerHTML = buildArcGauge({
-      value: Math.round(spct*100), max: 100, color: scol, bgColor: 'rgba(255,255,255,0.06)'
+      value: Math.round(spct*100), max: 100, label: seaTemp.toFixed(1), unit: '°C',
+      color: scol, bgColor: 'rgba(255,255,255,0.06)'
     });
   } else {
-    byId('monSeaVal').innerHTML = '\u2014 <span class="mon-unit">\u00b0C</span>';
     byId('monSeaDesc').textContent = 'Marine source unavailable';
     byId('monSeaGauge').innerHTML = '';
   }
   // ── Solar radiation (Open-Meteo shortwave_radiation, W/m²) ──
   (function(){
-    var rv = byId('monRadVal'), rd = byId('monRadDesc'), rg = byId('monRadGauge');
-    if(!rv) return;
+    var rd = byId('monRadDesc'), rg = byId('monRadGauge');
+    if(!rg) return;
     // Radiation changes minute-to-minute: trust KNMI only when its reading is
     // fresh (<30 min); otherwise use Open-Meteo, which is available instantly.
     var _kFresh = window.__knmiData && window.__knmiData.radiation != null &&
@@ -7855,7 +7846,6 @@ function renderMonitor(data){
             : (omCurrent && omCurrent.shortwave_radiation != null) ? omCurrent.shortwave_radiation
             : (window.__knmiData && window.__knmiData.radiation != null) ? window.__knmiData.radiation : null;
     if(rad != null && isFinite(rad)){
-      rv.innerHTML = Math.round(rad) + ' <span class="mon-unit">W/m\u00b2</span>';
       var rlbl, rcol;
       if(rad < 1)        { rlbl='Night / no sun';  rcol='#64748b'; }
       else if(rad < 200) { rlbl='Low';             rcol='#fde047'; }
@@ -7864,17 +7854,16 @@ function renderMonitor(data){
       else               { rlbl='Very strong';     rcol='#ff8a3d'; }
       rd.textContent = rlbl;
       rd.style.color = rcol;
-      if(rg) rg.innerHTML = buildArcGauge({ value: Math.min(rad,1200), max: 1200, color: rcol, bgColor: 'rgba(255,255,255,0.06)' });
+      rg.innerHTML = buildArcGauge({ value: Math.min(rad,1200), max: 1200, label: Math.round(rad), unit: 'W/m\u00b2', color: rcol, bgColor: 'rgba(255,255,255,0.06)' });
     } else {
-      rv.innerHTML = '\u2014 <span class="mon-unit">W/m\u00b2</span>';
       rd.textContent = 'Source unavailable';
-      if(rg) rg.innerHTML = '';
+      rg.innerHTML = '';
     }
   })();
   // ── Solar power estimate (5 kW array) using live radiation + calibrated model ──
   (function(){
-    var sv = byId('monSolarVal'), sd = byId('monSolarDesc'), sg = byId('monSolarGauge'), sday = byId('monSolarDay');
-    if(!sv) return;
+    var sd = byId('monSolarDesc'), sg = byId('monSolarGauge'), sday = byId('monSolarDay');
+    if(!sg) return;
     var rad = (omCurrent && omCurrent.shortwave_radiation != null) ? omCurrent.shortwave_radiation : null;
     var uvv = (omCurrent && omCurrent.uv_index != null) ? omCurrent.uv_index : null;
     var oktas = (synopP && synopP.cloud_oktas != null) ? synopP.cloud_oktas : null;
@@ -7882,7 +7871,6 @@ function renderMonitor(data){
     var watts = (typeof pwSolarPower === 'function') ? pwSolarPower(elev, oktas, uvv, rad) : null;
     if(watts != null && isFinite(watts)){
       var kw = watts/1000;
-      sv.innerHTML = kw.toFixed(2) + ' <span class="mon-unit">kW</span>';
       var slbl, scol;
       if(watts < 30)       { slbl='Minimal / night'; scol='#64748b'; }
       else if(watts < 200) { slbl='Low output';      scol='#fde047'; }
@@ -7891,7 +7879,7 @@ function renderMonitor(data){
       else                 { slbl='Peak output';      scol='#ff8a3d'; }
       sd.textContent = slbl + (rad!=null ? ' \u00b7 live' : ' \u00b7 est');
       sd.style.color = scol;
-      if(sg) sg.innerHTML = buildArcGauge({ value: watts, max: 800, color: scol, bgColor: 'rgba(255,255,255,0.06)' });
+      sg.innerHTML = buildArcGauge({ value: watts, max: 800, label: kw.toFixed(2), unit: 'kW', color: scol, bgColor: 'rgba(255,255,255,0.06)' });
       // ── Daily total: integrate solar model from sunrise to now (10-min steps) ──
       if(sday && typeof pwSunElevation === 'function' && typeof pwSolarPower === 'function'){
         var now = new Date();
@@ -7911,9 +7899,8 @@ function renderMonitor(data){
         sday.style.color = scol;
       }
     } else {
-      sv.innerHTML = '\u2014 <span class="mon-unit">kW</span>';
       sd.textContent = 'Unavailable';
-      if(sg) sg.innerHTML = '';
+      sg.innerHTML = '';
       if(sday) sday.textContent = '\u2014';
     }
   })();
@@ -7944,7 +7931,6 @@ function renderMonitor(data){
   })();
   if(omCurrent && omCurrent.uv_index != null){
     const uv = omCurrent.uv_index;
-    byId('monUvVal').textContent = uv.toFixed(1);
     let lbl = 'LOW', col = '#2ec97a';
     if(uv >= 11){ lbl='EXTREME';   col='#a78bfa'; }
     else if(uv >= 8){ lbl='VERY HIGH'; col='#ff4f4f'; }
@@ -7966,7 +7952,6 @@ function renderMonitor(data){
       zEl.style.color = zk >= 3 ? col : 'var(--muted)';
     }
   } else {
-    byId('monUvVal').textContent = '\u2014';
     byId('monUvLabel').textContent = 'Loading\u2026';
     byId('monUvGauge').innerHTML = buildRainbowGauge(0);
     const zEl = byId('monZonkracht'); if(zEl) zEl.textContent = '\u2014';
