@@ -552,6 +552,15 @@ tr:last-child td{border-bottom:none;}
   .mon-grid > [style*="grid-column"]{grid-column:1 / -1 !important;}
   .mon-tile{min-height:120px;}
   .mon-stavg{grid-column:1 / -1 !important;}
+  /* Keep the control row (clocks + buttons) on one line down to tablet width */
+  .clks{gap:6px;}
+  .clk-t{font-size:20.5px;}
+  .clk-l{font-size:15px;}
+  .clk-sep{height:20px;}
+  .clk-d{display:none;}
+  .brow{gap:4px;flex-wrap:nowrap;}
+  .bg{min-width:36px;min-height:34px;padding:0;font-size:16.5px;}
+  .lbadge,.fresh-badge{padding:2px 5px;font-size:14.5px;}
 }
 @media(max-width:640px){
   .mon-grid{grid-template-columns:repeat(2,1fr) !important;grid-template-rows:auto !important;}
@@ -2678,20 +2687,20 @@ html,body{max-width:100%;overflow-x:hidden;}
 /* ── ABC Islands conditions strip (header) ── */
 .cstrip{display:flex;align-items:stretch;gap:0;background:var(--bdr);border-bottom:1px solid var(--bdr);width:100%;overflow:hidden;}
 .cstrip::-webkit-scrollbar{display:none;}
-.cstrip-isl{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);white-space:nowrap;overflow:hidden;border-right:1px solid var(--bdr);}
+.cstrip-isl{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:3px;padding:6px 8px;background:var(--bg);white-space:nowrap;overflow:hidden;border-right:1px solid var(--bdr);}
 .cstrip-isl:last-child{border-right:none;}
-.cstrip-flag{font-size:21.5px;flex:0 0 auto;}
-.cstrip-ic{width:24px;height:24px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;}
-.cstrip-ic svg{width:24px;height:24px;}
-.cstrip-temp{font-family:var(--cond);font-size:19.5px;font-weight:800;color:var(--txt);flex:0 0 auto;}
-.cstrip-wind,.cstrip-vis{font-family:var(--mono);font-size:16.5px;color:var(--muted);flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;}
+.cstrip-flag{font-size:18px;flex:0 0 auto;}
+.cstrip-ic{width:20px;height:20px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;}
+.cstrip-ic svg{width:20px;height:20px;}
+.cstrip-temp{font-family:var(--cond);font-size:18px;font-weight:800;color:var(--txt);flex:0 0 auto;}
+.cstrip-wind,.cstrip-vis{font-family:var(--mono);font-size:14.5px;color:var(--muted);flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;}
 .cstrip-vis::before{content:"\1F441\FE0F";font-family:initial;margin-right:2px;opacity:.6;}
 @media(max-width:560px){
-  .cstrip-isl{padding:6px 8px;gap:5px;}
-  .cstrip-flag{font-size:17.5px;}
-  .cstrip-ic,.cstrip-ic svg{width:20px;height:20px;}
-  .cstrip-temp{font-size:17.5px;}
-  .cstrip-wind,.cstrip-vis{font-size:16.5px;}
+  .cstrip-isl{padding:5px 6px;gap:3px;}
+  .cstrip-flag{font-size:16px;}
+  .cstrip-ic,.cstrip-ic svg{width:17px;height:17px;}
+  .cstrip-temp{font-size:16px;}
+  .cstrip-wind,.cstrip-vis{font-size:13px;}
 }
 
 </style>
@@ -2755,9 +2764,7 @@ html,body{max-width:100%;overflow-x:hidden;}
       <div class="lbadge"><span class="lbadge-d"></span>AUTO</div>
       <div id="fresh-badge" class="fresh-badge" title="Time since last successful data fetch"><span class="fresh-dot"></span><span id="fresh-txt">--</span></div>
       <button id="refresh-btn" class="bg" aria-label="Refresh all data" title="Refresh all data (R)">&#8635;</button>
-      <button id="help-btn" class="bg" aria-label="Keyboard shortcuts" title="Show keyboard shortcuts">?</button>
       <button id="mute-btn" class="bg" aria-pressed="false" aria-label="Mute alerts" title="Mute alerts (M)">&#128266;</button>
-      <button id="test-btn" class="bg" aria-label="Test mode" title="Test mode (T)">&#9879;</button>
       <button id="settings-btn" class="bg" aria-label="Settings: theme and icons" title="Settings: Theme &amp; Icons (S)">⚙️</button>
       <button id="pwa-install-btn" class="bg" style="display:none;" aria-label="Install app" title="Install app">&#11015;</button>
       <button id="night-btn" class="bg" aria-pressed="false" aria-label="Toggle night mode" title="Toggle night mode (N)">&#127769;</button>
@@ -6543,13 +6550,12 @@ document.addEventListener('keydown', e=>{
   else if(e.key==='r' || e.key==='R'){ byId('refresh-btn').click(); e.preventDefault(); }
   else if(e.key==='m' || e.key==='M'){ byId('mute-btn').click(); e.preventDefault(); }
   else if(e.key==='n' || e.key==='N'){ byId('night-btn').click(); e.preventDefault(); }
-  else if(e.key==='t' || e.key==='T'){ byId('test-btn').click(); e.preventDefault(); }
-  else if(e.key==='?' || e.key==='/'){ byId('help-btn').click(); e.preventDefault(); }
+  else if(e.key==='t' || e.key==='T'){ toggleTestModeFromSettings(!testMode); e.preventDefault(); }
+  else if(e.key==='?' || e.key==='/'){ byId('help-modal').classList.remove('hidden'); e.preventDefault(); }
   else if(e.key==='s' || e.key==='S'){ byId('settings-btn').click(); e.preventDefault(); }
 });
 
 /* ─── BUTTONS ─── */
-byId('help-btn').addEventListener('click',()=>byId('help-modal').classList.remove('hidden'));
 (function(){
   const modal = byId('help-modal');
   if(!modal) return;
@@ -6600,7 +6606,12 @@ byId('mute-btn').addEventListener('click',()=>{
   try{localStorage.setItem('rwc-mute',mute?'1':'0');}catch(e){}
 });
 try{if(localStorage.getItem('rwc-mute')==='1'){mute=true;byId('mute-btn').textContent='\u{1F507}';byId('mute-btn').setAttribute('aria-pressed','true');}}catch(e){}
-byId('test-btn').addEventListener('click',()=>{testMode=!testMode;byId('test-btn').textContent=testMode?'\u2715':'\u2697';testMode?startTest():stopTest();});
+function toggleTestModeFromSettings(on){
+  testMode = on;
+  const cb = byId('settingsTestToggle'); if(cb) cb.checked = testMode;
+  testMode ? startTest() : stopTest();
+}
+window.toggleTestModeFromSettings = toggleTestModeFromSettings;
 byId('night-btn').addEventListener('click',()=>{
   const n=document.documentElement.classList.toggle('night');
   byId('night-btn').textContent=n?'\u2600':'\u{1F319}';byId('night-btn').setAttribute('aria-pressed',String(n));
@@ -12853,6 +12864,11 @@ function buildSettingsPanel(){
           <div style="font-size:19.5px;margin-bottom:3px;">\u{1F311}</div>Mono
         </div>
       </div>
+    </div>
+    <div>
+      <div class="settings-section-ttl">Tools</div>
+      <button onclick="document.getElementById('help-modal').classList.remove('hidden')" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bdrb);background:rgba(77,184,255,0.08);color:var(--txt);font-family:var(--cond);font-weight:700;font-size:16.5px;letter-spacing:.5px;cursor:pointer;margin-bottom:8px;">&#10067; Keyboard Shortcuts</button>
+      <div class="wxalert-row"><span class="wxa-lbl">Test mode</span><label class="wxa-tog"><input type="checkbox" id="settingsTestToggle" ${testMode?'checked':''} onchange="toggleTestModeFromSettings(this.checked)"><span class="wxa-sl"></span></label></div>
     </div>
     <div>
       <div class="settings-section-ttl">\u{1F514} Weather Alerts</div>
