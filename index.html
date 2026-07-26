@@ -11053,9 +11053,12 @@ var __condSelectedStn = null;   // station whose full info box is currently show
 var CMAP_STNS = [
   // dLat/dLon nudge the ICON away from the true point so nearby islands don't overlap.
   // The true lat/lon still anchors a small dot; the icon is offset and connected.
-  {id:'TNCA', name:'Aruba',    flag:'\u{1F1E6}\u{1F1FC}', lat:12.50, lon:-70.01, dLat:0.55, dLon:-0.55},
-  {id:'TNCC', name:'Cura\u00e7ao', flag:'\u{1F1E8}\u{1F1FC}', lat:12.19, lon:-68.96, dLat:0.75, dLon:0.05},
-  {id:'TNCB', name:'Bonaire',  flag:'\u{1F1E7}\u{1F1F6}', lat:12.13, lon:-68.27, dLat:0.30, dLon:0.65},
+  // vLift raises the WIND VANE further north of the icon (default 0.12) so the
+  // speed badge, which hangs below the vane, stops covering the island itself \u2014
+  // keeping the rain radar over the ABCs readable.
+  {id:'TNCA', name:'Aruba',    flag:'\u{1F1E6}\u{1F1FC}', lat:12.50, lon:-70.01, dLat:0.55, dLon:-0.55, vLift:0.45},
+  {id:'TNCC', name:'Cura\u00e7ao', flag:'\u{1F1E8}\u{1F1FC}', lat:12.19, lon:-68.96, dLat:0.75, dLon:0.05, vLift:0.45},
+  {id:'TNCB', name:'Bonaire',  flag:'\u{1F1E7}\u{1F1F6}', lat:12.13, lon:-68.27, dLat:0.30, dLon:0.65, vLift:0.60},
   {id:'TNCM', name:'St Maarten', flag:'\u{1F1F8}\u{1F1FD}', lat:18.04, lon:-63.11, dLat:0.0, dLon:0.0},
   {id:'SVMI', name:'Caracas', flag:'\u{1F1FB}\u{1F1EA}', lat:10.60, lon:-66.99, dLat:0.3, dLon:1.2},
   {id:'TJSJ', name:'San Juan', flag:'\u{1F1F5}\u{1F1F7}', lat:18.44, lon:-66.00, dLat:0.0, dLon:0.0},
@@ -11768,8 +11771,10 @@ function renderCondMap(){
         // (dispLat/dispLon) rather than the true lat/lon — otherwise closely
         // spaced islands (e.g. Aruba/Curaçao/Bonaire) stack their wind vanes
         // directly on top of each other regardless of the dLat/dLon spacing
-        // already tuned for the icon markers.
-        L.marker([dispLat + 0.12, dispLon], {icon:vaneIcon, interactive:false}).addTo(condMarkerLayer);
+        // already tuned for the icon markers. vLift lifts it further north so
+        // the kt badge hanging below the vane clears the island underneath.
+        var vLift = (s.vLift != null) ? s.vLift : 0.12;
+        L.marker([dispLat + vLift, dispLon], {icon:vaneIcon, interactive:false}).addTo(condMarkerLayer);
       }
     });
 
