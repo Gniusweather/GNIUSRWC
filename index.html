@@ -2739,7 +2739,7 @@ html,body{max-width:100%;overflow-x:hidden;}
   </filter>
 </defs></svg>
 
-<!-- Reload countdown bar — fills over 30s METAR cycle, flashes on refresh -->
+<!-- Reload countdown bar — fills over 60s METAR cycle, flashes on refresh -->
 <div id="reloadBar"><div id="reloadBarFill"></div></div>
 
 <div class="page" id="pageRoot">
@@ -3509,13 +3509,13 @@ html,body{max-width:100%;overflow-x:hidden;}
       <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">T</kbd><span>Toggle test mode</span>
       <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">Esc</kbd><span>Release ADS-B map interaction</span>
     </div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);font-family:var(--sans);font-size:16.5px;color:var(--muted);">All tabs auto-refresh in background &middot; METAR 30s &middot; TAF/SYNOP 5min &middot; Stations 60s &middot; Weather/Monitor 60s</div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);font-family:var(--sans);font-size:16.5px;color:var(--muted);">All tabs auto-refresh in background &middot; METAR 60s &middot; TAF/SYNOP 5min &middot; Stations 60s &middot; Weather/Monitor 60s</div>
   </div>
 </div>
 
 <div class="footer">
   <div class="fbrand">&#11041; GNIUS &middot; RWC</div>
-  <div class="fnote" id="footer-note">Press <kbd style="font-family:var(--mono);padding:1px 5px;border:1px solid var(--bdrb);border-radius:3px;font-size:16.5px;">?</kbd> for shortcuts &middot; METAR 30s &middot; TAF/SYNOP 5min &middot; Stations/Weather 60s &middot; Forecast 10min</div>
+  <div class="fnote" id="footer-note">Press <kbd style="font-family:var(--mono);padding:1px 5px;border:1px solid var(--bdrb);border-radius:3px;font-size:16.5px;">?</kbd> for shortcuts &middot; METAR 60s &middot; TAF/SYNOP 5min &middot; Stations/Weather 60s &middot; Forecast 10min</div>
 </div>
 </div>
 
@@ -12653,7 +12653,7 @@ async function init(){
 
 /* ── Reload countdown bar ── */
 (function(){
-  var CYCLE = 30000; // matches METAR refresh interval
+  var CYCLE = 60000; // matches METAR refresh interval
   var fill = document.getElementById('reloadBarFill');
   var bar  = document.getElementById('reloadBar');
   if(!fill || !bar) return;
@@ -12677,7 +12677,7 @@ async function init(){
 })();
 
 /* Background refresh intervals (NO 60s vis interval — removed per FIX #4) */
-setInterval(() => { if(!testMode && !hidden()) refreshAllMetars(); }, 30000);setInterval(() => { if(!testMode && !hidden()){ loadAllTAFs(); loadAllSynops(); } }, 300000);
+setInterval(() => { if(!testMode && !hidden()) refreshAllMetars(); }, 60000);setInterval(() => { if(!testMode && !hidden()){ loadAllTAFs(); loadAllSynops(); } }, 300000);
 setInterval(() => { if(!testMode && !hidden()) fetchStationsData(); }, 60000);  // always refresh (Monitor island-avg + Stations tab both need fresh data)
 setInterval(() => { if(!testMode && !hidden() && typeof loadKnmiData === 'function') loadKnmiData(false); }, 300000);  // KNMI updates ~10min; refresh every 5min for Graphics + KNMI tab
 setInterval(() => { if(!testMode && !hidden() && forecastTabOpened) updateForecast(); }, 600000);
