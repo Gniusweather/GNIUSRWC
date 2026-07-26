@@ -2571,6 +2571,14 @@ html,body{max-width:100%;overflow-x:hidden;}
 .cond-ir-tiles{mix-blend-mode:screen;transition:opacity 1.2s ease;}
 /* Rain movement / outlook badge on the conditions map */
 .cmap-raininfo{font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:.3px;color:#cfe9ff;background:rgba(5,18,34,0.88);border:1px solid rgba(77,184,255,0.35);border-radius:8px;padding:5px 10px;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,0.4);}
+/* Tropical model spaghetti panel — only shown when the Spaghetti toggle is on */
+.cmap-spag{font-family:var(--cond);background:rgba(5,18,34,0.92);border:1px solid rgba(255,138,61,0.4);border-radius:10px;padding:9px 11px;backdrop-filter:blur(4px);box-shadow:0 2px 12px rgba(0,0,0,0.45);max-width:270px;}
+.cmap-spag-hd{font-size:16.5px;font-weight:700;letter-spacing:.3px;color:#ffb27a;margin-bottom:6px;}
+.cmap-spag-msg{font-size:16.5px;color:var(--muted);letter-spacing:.2px;line-height:1.4;max-width:250px;}
+.cmap-spag-frame-wrap{position:relative;width:250px;height:190px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);margin-top:6px;}
+.cmap-spag-frame-wrap iframe{width:100%;height:100%;border:0;display:block;}
+.cmap-spag-ext{position:absolute;top:4px;right:4px;background:rgba(5,18,34,0.85);color:#fff;border-radius:5px;padding:1px 6px;font-size:14px;text-decoration:none;z-index:2;}
+@media(max-width:640px){.cmap-spag,.cmap-spag-frame-wrap{max-width:200px;width:200px;}.cmap-spag-frame-wrap{height:150px;}}
 
 /* ═══ CLIMATE TAB ═══ */
 .clim-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
@@ -3348,6 +3356,7 @@ html,body{max-width:100%;overflow-x:hidden;}
             <button class="cmap-btn" data-layer="marine" onclick="condMapToggle('marine',this)" title="Wave &amp; swell data">&#127754; Waves</button>
             <button class="cmap-btn active" data-layer="buoys" onclick="condMapToggle('buoys',this)" title="NDBC ocean buoys">&#128679; Buoys</button>
             <button class="cmap-btn active" data-layer="storm" onclick="condMapToggle('storm',this)" title="NOAA NHC storm cone">&#127786; Storm</button>
+            <button class="cmap-btn" data-layer="spaghetti" onclick="condMapToggle('spaghetti',this)" title="Tropical model spaghetti plot (shown when a system is active)">&#127837; Spaghetti</button>
             <button class="cmap-btn" data-layer="flights" onclick="condMapToggle('flights',this)" title="Live aircraft (ADS-B)">&#9992; Flights</button>
             <button class="cmap-btn active" data-layer="info" onclick="condMapToggle('info',this)" title="Tap a station to show its full info box">&#9432; Info</button>
             <button class="cmap-btn" id="cmapPlayBtn" onclick="condMapPlay(this)" title="Animate last hour of rain radar">&#9654; Play</button>
@@ -11036,7 +11045,7 @@ window.__fcDebug = () => __lastForecastData;
 var condMap = null, condMarkerLayer = null, condWindLayer = null;
 var condRainLayer = null, condSatLayer = null, condSatLive = null, condDustCircle = null, condMarineMarker = null, condBuoyLayer = null, __buoyCache = null, condStormLayer = null, __satMode = null;
 var condFlightLayer = null, __flightTimer = null, __flightBusy = false;
-var __condMapLayers = {stations:false, wind:true, rain:true, satellite:false, dust:false, marine:false, buoys:true, storm:true, flights:false, info:true};
+var __condMapLayers = {stations:false, wind:true, rain:true, satellite:false, dust:false, marine:false, buoys:true, storm:true, spaghetti:false, flights:false, info:true};
 var __condMapReady = false;
 var __condSelectedStn = null;   // station whose full info box is currently shown (tap to select)
 
@@ -11082,7 +11091,7 @@ var CMAP_VIEW_BOUNDS = [[9.0,-76.0],[19.5,-58.5]];
 function makeSatLayer(mode){
   return L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
     layers:'GOES-East_ABI_Band13_Clean_Infrared', format:'image/png', transparent:true,
-    opacity:0.85, maxZoom:12, zIndex:200, TIME:_gibsIRTime(),
+    opacity:0.9, maxZoom:12, zIndex:200, TIME:_gibsIRTime(),
     bounds:L.latLngBounds(CMAP_VIEW_BOUNDS), attribution:'NASA GIBS · GOES-East IR'
   });
 }
@@ -11117,6 +11126,26 @@ function initCondMap(){
   };
   rainCtl.addTo(condMap);
 
+  // Tropical model spaghetti panel (top-right): only meaningful with an
+  // active NHC-tracked system, so it stays hidden until the toggle is on
+  // AND CurrentStorms.json reports something active in the Atlantic.
+  var spagCtl = L.control({position:'topright'});
+  spagCtl.onAdd = function(){
+    var d = L.DomUtil.create('div','cmap-spag');
+    d.id = 'cmapSpagPanel';
+    d.style.display = 'none';
+    d.innerHTML = '<div class="cmap-spag-hd">\u{1F35D} Spaghetti Models</div>' +
+      '<div class="cmap-spag-msg" id="cmapSpagMsg">Checking for active systems…</div>' +
+      '<div class="cmap-spag-frame-wrap" id="cmapSpagFrameWrap" style="display:none;">' +
+        '<a class="cmap-spag-ext" href="https://www.tropicaltidbits.com/analysis/tropical/" target="_blank" rel="noopener" title="Open in Tropical Tidbits">↗</a>' +
+        '<iframe loading="lazy" referrerpolicy="no-referrer" title="Tropical model spaghetti plot"></iframe>' +
+      '</div>';
+    L.DomEvent.disableClickPropagation(d);
+    L.DomEvent.disableScrollPropagation(d);
+    return d;
+  };
+  spagCtl.addTo(condMap);
+
   // ── STORM CONE: NOAA NHC tropical weather (forecast cone + track). Auto-empty when no storms. ──
   // Uses the ArcGIS dynamic /export endpoint instead of the cached WMS: the
   // cache only covers certain scales and returns "Zoom level not supported"
@@ -11149,8 +11178,10 @@ function initCondMap(){
         var frame = frames.length ? frames[frames.length-1] : null;
         if(frame && j.host){
           window.__rainFrames = frames.map(function(f){return f.path;}); window.__rainHost = j.host;
-          condRainLayer = L.tileLayer(j.host + frame.path + '/256/{z}/{x}/{y}/8/1_1.png',
-            {opacity:0.75, maxZoom:12, attribution:'RainViewer'});
+          // 512px tiles (vs the previous 256px) roughly double the effective
+          // resolution of the radar image at the same zoom level.
+          condRainLayer = L.tileLayer(j.host + frame.path + '/512/{z}/{x}/{y}/8/1_1.png',
+            {opacity:0.8, maxZoom:12, attribution:'RainViewer'});
           if(__condMapLayers.rain && condMap) condRainLayer.addTo(condMap);
         }
         // Satellite is served by NASA GIBS (condSatLayer) — RainViewer no longer
@@ -11186,7 +11217,7 @@ function initCondMap(){
           var frame=frames.length?frames[frames.length-1]:null;
           if(frame&&j.host){
             window.__rainFrames=frames.map(function(f){return f.path;}); window.__rainHost=j.host;
-            var newRain=L.tileLayer(j.host+frame.path+'/256/{z}/{x}/{y}/8/1_1.png',{opacity:0.75,maxZoom:12,attribution:'RainViewer'});
+            var newRain=L.tileLayer(j.host+frame.path+'/512/{z}/{x}/{y}/8/1_1.png',{opacity:0.8,maxZoom:12,attribution:'RainViewer'});
             // Swap based on the toggle state, not just current attachment, so a
             // freshly-toggled rain layer still gets the newest frame.
             if(__condMapLayers.rain) newRain.addTo(condMap);
@@ -11214,12 +11245,43 @@ function condMapReset(){
   if(condMap) condMap.fitBounds([[9.5,-75.5],[17.5,-59.0]]);
 }
 window.condMapReset = condMapReset;
+
+// Tropical model spaghetti panel — gated on NHC's CurrentStorms feed so it
+// only ever shows real guidance for a genuinely active Atlantic system.
+var __spagTimer = null;
+function refreshSpagPanel(){
+  var msg = byId('cmapSpagMsg');
+  var frameWrap = byId('cmapSpagFrameWrap');
+  if(!msg) return;
+  fetch('https://www.nhc.noaa.gov/CurrentStorms.json')
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var act = (j.activeStorms || []).filter(function(x){ return /^AL/i.test(x.id || ''); });
+      if(act.length){
+        var names = act.map(function(x){ return x.name; }).join(', ');
+        msg.innerHTML = '\u{1F300} Active: <b>' + names + '</b>';
+        if(frameWrap){
+          frameWrap.style.display = '';
+          var f = frameWrap.querySelector('iframe');
+          if(f && !f.src) f.src = 'https://www.tropicaltidbits.com/analysis/tropical/';
+        }
+      } else {
+        msg.textContent = 'No active tropical systems in the Atlantic right now.';
+        if(frameWrap) frameWrap.style.display = 'none';
+      }
+    })
+    .catch(function(){
+      msg.textContent = 'Unable to check tropical activity right now.';
+      if(frameWrap) frameWrap.style.display = 'none';
+    });
+}
+window.refreshSpagPanel = refreshSpagPanel;
 var __rainAnimTimer=null, __rainAnimIdx=0;
 function condMapPlay(btn){
   if(__rainAnimTimer){
     clearInterval(__rainAnimTimer); __rainAnimTimer=null;
     if(btn){btn.classList.remove('active'); btn.innerHTML='&#9654; Play';}
-    try{ var fr=window.__rainFrames; if(fr&&fr.length&&condRainLayer) condRainLayer.setUrl(window.__rainHost+fr[fr.length-1]+'/256/{z}/{x}/{y}/8/1_1.png'); }catch(e){}
+    try{ var fr=window.__rainFrames; if(fr&&fr.length&&condRainLayer) condRainLayer.setUrl(window.__rainHost+fr[fr.length-1]+'/512/{z}/{x}/{y}/8/1_1.png'); }catch(e){}
     return;
   }
   var fr=window.__rainFrames;
@@ -11228,7 +11290,7 @@ function condMapPlay(btn){
   if(btn){btn.classList.add('active'); btn.innerHTML='&#9632; Stop';}
   __rainAnimIdx=0;
   __rainAnimTimer=setInterval(function(){
-    try{ condRainLayer.setUrl(window.__rainHost+fr[__rainAnimIdx]+'/256/{z}/{x}/{y}/8/1_1.png'); }catch(e){}
+    try{ condRainLayer.setUrl(window.__rainHost+fr[__rainAnimIdx]+'/512/{z}/{x}/{y}/8/1_1.png'); }catch(e){}
     __rainAnimIdx=(__rainAnimIdx+1)%fr.length;
   }, 600);
 }
@@ -11714,6 +11776,19 @@ function renderCondMap(){
   if(condStormLayer){
     if(__condMapLayers.storm){ condStormLayer.addTo(condMap); }
     else if(condMap.hasLayer(condStormLayer)){ condMap.removeLayer(condStormLayer); }
+  }
+
+  // Spaghetti models panel — only relevant while the toggle is on.
+  var spagPanel = byId('cmapSpagPanel');
+  if(spagPanel){
+    if(__condMapLayers.spaghetti){
+      spagPanel.style.display = '';
+      refreshSpagPanel();
+      if(!__spagTimer) __spagTimer = setInterval(refreshSpagPanel, 5*60*1000);
+    } else {
+      spagPanel.style.display = 'none';
+      if(__spagTimer){ clearInterval(__spagTimer); __spagTimer = null; }
+    }
   }
 
   // Live aircraft (ADS-B) — poll a free community feed while the layer is on.
