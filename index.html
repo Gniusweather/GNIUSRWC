@@ -734,7 +734,12 @@ tr:last-child td{border-bottom:none;}
 
 /* WEATHER TAB */
 #tab-weather{display:flex;flex-direction:column;gap:10px;}
-.wgrid{display:flex;flex-direction:column;gap:12px;}
+/* Curaçao (full detail) on its own row; Aruba/Bonaire summaries side by side below it. */
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.wgrid .wcard[data-wkey="curacao"]{grid-column:1/-1;order:-1;}
+.wgrid .wcard[data-wkey="aruba"]{order:0;}
+.wgrid .wcard[data-wkey="bonaire"]{order:1;}
+@media(max-width:760px){.wgrid{grid-template-columns:1fr;}}
 .wcard{border-radius:var(--rl);border:1px solid var(--bdr);background:var(--card);position:relative;overflow:auto;transition:border-color .2s,box-shadow .2s;}
 .wcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc2),var(--acc),transparent);z-index:2;}
 .wcard:hover{border-color:var(--bdrb);box-shadow:0 4px 18px rgba(77,184,255,0.08);}
