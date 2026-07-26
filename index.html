@@ -1418,6 +1418,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 /* MID ROW: chart + sunrise */
 .wdb-mid{display:grid;grid-template-columns:1fr 160px;gap:10px;align-items:start;}
 @media(max-width:700px){.wdb-mid{grid-template-columns:1fr;}}
+.wdb-charts-col{display:flex;flex-direction:column;gap:10px;min-width:0;}
 .wdb-chart-wrap{background:rgba(255,255,255,0.03);border:1px solid var(--bdr);border-radius:14px;padding:14px 14px 8px;}
 .wdb-chart-svg{width:100%;height:120px;display:block;overflow:visible;}
 .wdb-sunrise{background:rgba(255,255,255,0.03);border:1px solid var(--bdr);border-radius:14px;padding:14px;}
@@ -6897,13 +6898,11 @@ function renderWxCard(key, P){
     }).join('');
   }
 
-  // ── Forecast line chart ──────────────────────────────────────────────────
+  // ── Forecast line chart (temperature) ──────────────────────────────
   let chartSvg = '';
   if(hr && hr.length >= 2){
     const W=480, H=120, padL=32, padR=20, padT=28, padB=28;
-    // Fewer points than before (8 vs 12) so each merged temp+rain bubble has
-    // room without overlapping its neighbours.
-    const CH = hr.slice(0,8);
+    const CH = hr.slice(0,12);
     const vals = CH.map(d=>d.temp!=null?d.temp:null).filter(v=>v!=null);
     if(vals.length >= 2){
       const mn = Math.min(...vals)-0.5, mx = Math.max(...vals)+0.5;
@@ -6911,19 +6910,16 @@ function renderWxCard(key, P){
         const x = padL + (i/(arr.length-1))*(W-padL-padR);
         const v = d.temp!=null?d.temp:null;
         const y = v!=null ? padT + (1-(v-mn)/(mx-mn))*(H-padT-padB) : null;
-        const rp = d.precip_prob!=null ? Math.round(d.precip_prob) : null;
-        return {x, y, v, rp, day:i===0?'Now':hrLabel(d.hour)};
+        return {x, y, v, day:i===0?'Now':hrLabel(d.hour)};
       });
       const linePts = pts.filter(p=>p.y!=null);
       const path = 'M'+linePts.map(p=>p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' L');
       // gradient fill area
       const area = 'M'+linePts[0].x.toFixed(1)+' '+H+' L'+linePts.map(p=>p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' L')+' L'+linePts[linePts.length-1].x.toFixed(1)+' '+H+' Z';
-      // rain chance merged into the same bubble as the temperature so there's
-      // one label per hour instead of a separate rain-chance list.
       const dots = pts.map(p=>p.y!=null?`
         <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#1a3a6a" stroke="#4db8ff" stroke-width="2"/>
-        <rect x="${(p.x-26).toFixed(1)}" y="${(p.y-20).toFixed(1)}" width="52" height="16" rx="5" fill="#c8720a"/>
-        <text x="${p.x.toFixed(1)}" y="${(p.y-9).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="9.5" font-weight="700" fill="#fff">${Math.round(p.v)}\u00b0${p.rp!=null?' \u{1F4A7}'+p.rp+'%':''}</text>
+        <rect x="${(p.x-22).toFixed(1)}" y="${(p.y-20).toFixed(1)}" width="44" height="16" rx="5" fill="#c8720a"/>
+        <text x="${p.x.toFixed(1)}" y="${(p.y-9).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" font-weight="700" fill="#fff">${p.v.toFixed(1)} \u00b0C</text>
         <text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" fill="rgba(140,180,220,0.7)">${p.day}</text>
       `:'').join('');
       // y-axis labels
@@ -6940,6 +6936,32 @@ function renderWxCard(key, P){
         ${dots}
       </svg>`;
     }
+  }
+
+  // ── Rain-chance bar chart (separate from the temperature chart) ─────────
+  let rainChartSvg = '';
+  if(hr && hr.length){
+    const RW=480, RH=100, rpadL=28, rpadR=20, rpadT=22, rpadB=26;
+    const RC = hr.slice(0,12);
+    const rbarW = (RW-rpadL-rpadR)/RC.length;
+    const rbars = RC.map((d,i)=>{
+      const pct = d.precip_prob!=null ? Math.round(d.precip_prob) : 0;
+      const bx = rpadL + i*rbarW;
+      const bh = Math.max(2, (pct/100)*(RH-rpadT-rpadB));
+      const by = (RH-rpadB) - bh;
+      const cx = bx + rbarW/2;
+      const lbl = i===0?'Now':hrLabel(d.hour);
+      const col = pct>=50?'#4db8ff':pct>=20?'#3b82f6':'#2c5a8a';
+      return `
+        <rect x="${(bx+rbarW*0.18).toFixed(1)}" y="${by.toFixed(1)}" width="${(rbarW*0.64).toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${col}"/>
+        <text x="${cx.toFixed(1)}" y="${(by-5).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" font-weight="700" fill="#adc8e8">${pct}%</text>
+        <text x="${cx.toFixed(1)}" y="${(RH-6).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" fill="rgba(140,180,220,0.7)">${lbl}</text>
+      `;
+    }).join('');
+    rainChartSvg = `<svg viewBox="0 0 ${RW} ${RH}" class="wdb-chart-svg" preserveAspectRatio="none">
+      <line x1="${rpadL}" y1="${RH-rpadB}" x2="${RW-rpadR}" y2="${RH-rpadB}" stroke="rgba(140,180,220,0.2)" stroke-width="1"/>
+      ${rbars}
+    </svg>`;
   }
 
   // ── Air quality (Open-Meteo air quality API, stored in extra.aq) ─────────
@@ -7035,11 +7057,17 @@ function renderWxCard(key, P){
       <div class="wdb-fstrip">${forecastStrip||'<div class="wdb-loading">Loading forecast\u2026</div>'}</div>
     </div>
 
-    <!-- Forecast chart (temp + rain chance merged into one label per hour) + Sunrise -->
+    <!-- Forecast chart + Rain chance chart (kept separate, each easy to read on its own) + Sunrise -->
     <div class="wdb-mid">
-      <div class="wdb-chart-wrap">
-        <div class="wdb-section-ttl">Hourly Forecast</div>
-        ${chartSvg||'<div class="wdb-loading">Loading chart\u2026</div>'}
+      <div class="wdb-charts-col">
+        <div class="wdb-chart-wrap">
+          <div class="wdb-section-ttl">Hourly Forecast \u2014 Temperature</div>
+          ${chartSvg||'<div class="wdb-loading">Loading chart\u2026</div>'}
+        </div>
+        <div class="wdb-chart-wrap">
+          <div class="wdb-section-ttl">Hourly Forecast \u2014 Rain Chance</div>
+          ${rainChartSvg||'<div class="wdb-loading">Loading chart\u2026</div>'}
+        </div>
       </div>
       <div class="wdb-sunrise">
         <div class="wdb-section-ttl">Sunrise &amp; Sunset</div>
