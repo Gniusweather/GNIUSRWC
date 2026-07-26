@@ -11399,21 +11399,23 @@ function ensureAtcWindyMaps(){
   var box = byId('atcWindyMaps');
   if(!box || box.dataset.built) return;
   box.dataset.built = '1';
-  var base = 'https://embed.windy.com/embed2.html?lat=12.2&lon=-69.1&detailLat=12.2&detailLon=-69.1&zoom=10&level=surface&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C';
-  var radarSrc = base + '&overlay=radar&product=radar';
+  // Same lat/lon/zoom as the Monitor tab's Current-view Windy panels
+  // (monRadar/monSatellite) so both places show the same framing.
+  var base = 'https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C';
+  var radarSrc = base + '&overlay=radar&product=radar&radarRange=-1';
   var satSrc   = base + '&overlay=satellite&product=satellite';
   box.innerHTML =
     '<div class="dash-windy-cell">'
       + '<div class="dash-windy-hd">\u{1F326} Radar · ABC Islands</div>'
       + '<div class="dash-windy-frame-wrap">'
-        + '<a class="dash-windy-ext" href="https://www.windy.com/?radar,12.2,-69.1,10" target="_blank" rel="noopener" title="Open radar in Windy">↗</a>'
+        + '<a class="dash-windy-ext" href="https://www.windy.com/?radar,12.3,-69.15,8" target="_blank" rel="noopener" title="Open radar in Windy">↗</a>'
         + '<iframe src="' + radarSrc + '" loading="lazy" frameborder="0" referrerpolicy="no-referrer" allow="fullscreen"></iframe>'
       + '</div>'
     + '</div>'
     + '<div class="dash-windy-cell">'
       + '<div class="dash-windy-hd">\u{1F6F0}️ Satellite · ABC Islands</div>'
       + '<div class="dash-windy-frame-wrap">'
-        + '<a class="dash-windy-ext" href="https://www.windy.com/?satellite,12.2,-69.1,10" target="_blank" rel="noopener" title="Open satellite in Windy">↗</a>'
+        + '<a class="dash-windy-ext" href="https://www.windy.com/?satellite,12.3,-69.15,8" target="_blank" rel="noopener" title="Open satellite in Windy">↗</a>'
         + '<iframe src="' + satSrc + '" loading="lazy" frameborder="0" referrerpolicy="no-referrer" allow="fullscreen"></iframe>'
       + '</div>'
     + '</div>';
