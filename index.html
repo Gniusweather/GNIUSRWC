@@ -11253,6 +11253,11 @@ window.condMapReset = condMapReset;
 // only ever shows real guidance for a genuinely active Atlantic system.
 var __spagTimer = null;
 function refreshSpagPanel(){
+  // Same gap as the flight tracker: the timer driving this keeps running as
+  // long as the Spaghetti toggle is on, regardless of tab/visibility.
+  if(document.hidden) return;
+  var _mapTab = byId('tab-maps');
+  if(_mapTab && _mapTab.classList.contains('hidden')) return;
   var msg = byId('cmapSpagMsg');
   var frameWrap = byId('cmapSpagFrameWrap');
   if(!msg) return;
@@ -11315,6 +11320,14 @@ function planeSvg(col){
     '<path d="M12 2 L13.4 3.2 13.4 9.3 21.5 14 21.5 15.7 13.4 13.4 13.4 19.4 16 21 16 22.3 12 21.2 8 22.3 8 21 10.6 19.4 10.6 13.4 2.5 15.7 2.5 14 10.6 9.3 10.6 3.2 Z"/></svg>';
 }
 async function fetchCondFlights(){
+  // The 15s setInterval that drives this keeps running as long as the Flights
+  // toggle is on, regardless of which tab is showing — unlike the rain/
+  // satellite refresh loop, it had no check for a backgrounded app or a
+  // hidden Maps tab, so it silently kept polling a third-party API every 15s
+  // even when nothing was visible to show it on.
+  if(document.hidden) return;
+  var _mapTab = byId('tab-maps');
+  if(_mapTab && _mapTab.classList.contains('hidden')) return;
   if(__flightBusy || !condFlightLayer || !__condMapLayers.flights) return;
   __flightBusy = true;
   var data = null;
