@@ -1427,9 +1427,9 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .wdb-sun-time{font-family:var(--cond);font-size:22.5px;font-weight:800;color:#fff;}
 .wdb-section-ttl{font-family:var(--cond);font-size:16.5px;font-weight:700;color:#cfe2f5;letter-spacing:.4px;margin-bottom:8px;}
 /* BOTTOM ROW */
-.wdb-bot{display:grid;grid-template-columns:220px 1fr 180px;gap:10px;align-items:start;}
-@media(max-width:900px){.wdb-bot{grid-template-columns:1fr 1fr;}}
-@media(max-width:560px){.wdb-bot{grid-template-columns:1fr;}}
+.wdb-bot{display:grid;grid-template-columns:260px 1fr;gap:10px;align-items:start;}
+@media(max-width:700px){.wdb-bot{grid-template-columns:1fr;}}
+.wdb-summary-metrics{margin-top:2px;}
 /* Metrics 2×3 grid */
 .wdb-metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .wdb-metric{background:rgba(255,255,255,0.04);border:1px solid var(--bdr);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:border-color .2s;}
@@ -1448,13 +1448,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .wdb-aq-val{font-family:var(--cond);font-size:23.5px;font-weight:800;color:#fff;min-width:32px;}
 .wdb-aq-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;}
 /* Rain probability bars */
-.wdb-rain-wrap{background:rgba(255,255,255,0.03);border:1px solid var(--bdr);border-radius:14px;padding:14px;}
-.wdb-rain-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
-.wdb-rain-day{font-family:var(--cond);font-size:16.5px;color:var(--muted);width:46px;flex-shrink:0;letter-spacing:.3px;}
-.wdb-rain-bar-bg{flex:1;height:7px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;}
-.wdb-rain-bar-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:4px;transition:width .6s cubic-bezier(.22,.61,.36,1);}
-.wdb-rain-pct{font-family:var(--mono);font-size:16.5px;color:var(--muted);width:28px;text-align:right;flex-shrink:0;}
-.wdb-rain-scale{display:flex;justify-content:space-between;font-family:var(--cond);font-size:16.5px;color:var(--muted);margin-top:4px;opacity:.6;}
 .wdb-loading{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.5px;padding:12px 0;}
 
 
@@ -6908,7 +6901,9 @@ function renderWxCard(key, P){
   let chartSvg = '';
   if(hr && hr.length >= 2){
     const W=480, H=120, padL=32, padR=20, padT=28, padB=28;
-    const CH = hr.slice(0,12);
+    // Fewer points than before (8 vs 12) so each merged temp+rain bubble has
+    // room without overlapping its neighbours.
+    const CH = hr.slice(0,8);
     const vals = CH.map(d=>d.temp!=null?d.temp:null).filter(v=>v!=null);
     if(vals.length >= 2){
       const mn = Math.min(...vals)-0.5, mx = Math.max(...vals)+0.5;
@@ -6916,16 +6911,19 @@ function renderWxCard(key, P){
         const x = padL + (i/(arr.length-1))*(W-padL-padR);
         const v = d.temp!=null?d.temp:null;
         const y = v!=null ? padT + (1-(v-mn)/(mx-mn))*(H-padT-padB) : null;
-        return {x, y, v, day:i===0?'Now':hrLabel(d.hour)};
+        const rp = d.precip_prob!=null ? Math.round(d.precip_prob) : null;
+        return {x, y, v, rp, day:i===0?'Now':hrLabel(d.hour)};
       });
       const linePts = pts.filter(p=>p.y!=null);
       const path = 'M'+linePts.map(p=>p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' L');
       // gradient fill area
       const area = 'M'+linePts[0].x.toFixed(1)+' '+H+' L'+linePts.map(p=>p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' L')+' L'+linePts[linePts.length-1].x.toFixed(1)+' '+H+' Z';
+      // rain chance merged into the same bubble as the temperature so there's
+      // one label per hour instead of a separate rain-chance list.
       const dots = pts.map(p=>p.y!=null?`
         <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#1a3a6a" stroke="#4db8ff" stroke-width="2"/>
-        <rect x="${(p.x-22).toFixed(1)}" y="${(p.y-20).toFixed(1)}" width="44" height="16" rx="5" fill="#c8720a"/>
-        <text x="${p.x.toFixed(1)}" y="${(p.y-9).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" font-weight="700" fill="#fff">${p.v.toFixed(1)} \u00b0C</text>
+        <rect x="${(p.x-26).toFixed(1)}" y="${(p.y-20).toFixed(1)}" width="52" height="16" rx="5" fill="#c8720a"/>
+        <text x="${p.x.toFixed(1)}" y="${(p.y-9).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="9.5" font-weight="700" fill="#fff">${Math.round(p.v)}\u00b0${p.rp!=null?' \u{1F4A7}'+p.rp+'%':''}</text>
         <text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="10" fill="rgba(140,180,220,0.7)">${p.day}</text>
       `:'').join('');
       // y-axis labels
@@ -6942,20 +6940,6 @@ function renderWxCard(key, P){
         ${dots}
       </svg>`;
     }
-  }
-
-  // ── Rain probability bars ────────────────────────────────────────────────
-  let rainBars = '';
-  if(hr && hr.length){
-    rainBars = hr.slice(0,8).map((d,i)=>{
-      const lbl = i===0?'Now':hrLabel(d.hour);
-      const pct = d.precip_prob!=null ? Math.round(d.precip_prob) : 0;
-      return `<div class="wdb-rain-row">
-        <span class="wdb-rain-day">${lbl}</span>
-        <div class="wdb-rain-bar-bg"><div class="wdb-rain-bar-fill" style="width:${pct}%"></div></div>
-        <span class="wdb-rain-pct">${pct}%</span>
-      </div>`;
-    }).join('');
   }
 
   // ── Air quality (Open-Meteo air quality API, stored in extra.aq) ─────────
@@ -7006,10 +6990,7 @@ function renderWxCard(key, P){
   const stationLbl = s ? s.name : key;
   const lastUpd = `Last Updated, ${now.getDate()} ${MONTHS[now.getMonth()]}`;
 
-  body.innerHTML = `<div class="wdb-wrap">
-
-    <!-- Hero + 7-day strip -->
-    <div class="wdb-top">
+  const heroHtml = `
       <div class="wdb-hero">
         <div class="wdb-hero-hd">
           <div class="wdb-hero-loc">\u{1F4CD} ${stationLbl}</div>
@@ -7026,11 +7007,35 @@ function renderWxCard(key, P){
             return `<div class="wdb-hero-pill ${k===key?'active':''}" onclick="switchWxKey('${k}')">${ks?ks.name:k}<br><span>${kt&&kt.temp_c!=null?Math.round(kt.temp_c)+'\u00b0C':'\u2014'}</span></div>`;
           }).join('')}
         </div>
-      </div>
+      </div>`;
+
+  // Cura\u00e7ao (the primary ABC forecast station) gets the full breakdown;
+  // Aruba/Bonaire show a compact summary card instead.
+  if(key !== 'curacao'){
+    body.innerHTML = `<div class="wdb-wrap wdb-summary">
+    <div class="wdb-top">
+      ${heroHtml}
+      <div class="wdb-fstrip">${forecastStrip||'<div class="wdb-loading">Loading forecast\u2026</div>'}</div>
+    </div>
+    <div class="wdb-metrics-grid wdb-summary-metrics">
+      ${metricTile('\u{1F4A7}','Humidity',rh!=null?rh:'&mdash;','%')}
+      ${metricTile('\u{1F32C}','Wind Speed',windKt!=null?Math.round(windKt):'&mdash;','kt')}
+      ${metricTile('\u{1F441}','Visibility',vis!=null?vis:'&mdash;','Km')}
+      ${metricTile('\u{1F321}','Pressure',slp!=null?Math.round(slp):'&mdash;','mb')}
+    </div>
+  </div>`;
+    return;
+  }
+
+  body.innerHTML = `<div class="wdb-wrap">
+
+    <!-- Hero + 7-day strip -->
+    <div class="wdb-top">
+      ${heroHtml}
       <div class="wdb-fstrip">${forecastStrip||'<div class="wdb-loading">Loading forecast\u2026</div>'}</div>
     </div>
 
-    <!-- Forecast chart + Sunrise -->
+    <!-- Forecast chart (temp + rain chance merged into one label per hour) + Sunrise -->
     <div class="wdb-mid">
       <div class="wdb-chart-wrap">
         <div class="wdb-section-ttl">Hourly Forecast</div>
@@ -7049,7 +7054,7 @@ function renderWxCard(key, P){
       </div>
     </div>
 
-    <!-- Metrics + Air Quality + Rain -->
+    <!-- Metrics + Air Quality -->
     <div class="wdb-bot">
       <div class="wdb-metrics-grid">
         ${metricTile('\u{1F4A7}','Humidity',rh!=null?rh:'&mdash;','%')}
@@ -7072,11 +7077,6 @@ function renderWxCard(key, P){
             ${aqRow(aqColor(no2 ,[40,100,200])  , no2,  'NO2')}
           </div>
         </div>
-      </div>
-      <div class="wdb-rain-wrap">
-        <div class="wdb-section-ttl">Chances of Rain</div>
-        ${rainBars||'<div class="wdb-loading">Loading\u2026</div>'}
-        <div class="wdb-rain-scale"><span>0%</span><span>50%</span><span>100%</span></div>
       </div>
     </div>
 
