@@ -11755,7 +11755,12 @@ function renderCondMap(){
             '<div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-family:monospace;font-size:16.5px;font-weight:700;color:#fff;background:'+wcol+';padding:0 4px;border-radius:4px;white-space:nowrap;">'+windSpd+((mp&&mp.windGust&&mp.windGust>=windSpd+8)?'G'+mp.windGust:'')+'kt</div>'+
           '</div></div>';
         var vaneIcon = L.divIcon({html:vaneHtml, className:'', iconSize:[46,80], iconAnchor:[23,46]});
-        L.marker([lat + 0.12, lon], {icon:vaneIcon, interactive:false}).addTo(condMarkerLayer);
+        // Anchor to the same nudged position as the station's temp/icon bubble
+        // (dispLat/dispLon) rather than the true lat/lon — otherwise closely
+        // spaced islands (e.g. Aruba/Curaçao/Bonaire) stack their wind vanes
+        // directly on top of each other regardless of the dLat/dLon spacing
+        // already tuned for the icon markers.
+        L.marker([dispLat + 0.12, dispLon], {icon:vaneIcon, interactive:false}).addTo(condMarkerLayer);
       }
     });
 

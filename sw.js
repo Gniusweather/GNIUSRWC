@@ -3,7 +3,7 @@
    picked up when the app is opened; cache fallback for offline use.
    Bump CACHE_VERSION on each deploy to force clients to update. */
 
-const CACHE_VERSION = 'rwc-2026-07-26-68';
+const CACHE_VERSION = 'rwc-2026-07-26-69';
 const CACHE_NAME = 'rwc-cache-' + CACHE_VERSION;
 
 // Core assets to pre-cache (the single-file app).
