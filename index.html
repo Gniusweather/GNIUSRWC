@@ -3268,13 +3268,6 @@ html,body{max-width:100%;overflow-x:hidden;}
       <span><span class="sdot"></span>Aruba/Cura&ccedil;ao from SYNOP &middot; Bonaire KNMI live &middot; auto-refresh 60s</span>
       <span style="font-size:16.5px;letter-spacing:1px;text-transform:uppercase;color:rgba(106,138,170,0.3);">trends from last 3 obs</span>
     </div>
-    <div id="wxCurFcWrap" style="margin-top:18px;">
-      <div class="shdr" style="margin-bottom:10px;">
-        <div class="stitle" style="font-size:19.5px;">Next 6 Hours &mdash; ABC Islands</div>
-        <span id="wxCurFcStatus" style="color:var(--muted);font-size:16.5px;font-family:var(--mono);">Loading&hellip;</span>
-      </div>
-      <div id="fcCurrentHourly" class="fc-blocks"></div>
-    </div>
     </div>
     <div class="wx-view" id="wxViewForecast" style="display:none;">
       <div class="shdr">
@@ -5496,10 +5489,6 @@ function switchWxView(view, btn){
   if(el) el.style.display = '';
   if(view==='forecast' && !window.forecastTabOpened){ window.forecastTabOpened=true; updateForecast(); }
   if(view==='climate' && !window.climateTabOpened){ window.climateTabOpened=true; loadClimate(false); }
-  if(view==='current'){
-    if(__lastForecastData){ renderCurrentHourlyForecast(); }
-    else if(typeof updateForecast==='function'){ updateForecast(); }
-  }
   if(view==='written'){
     if(__lastForecastData){ renderWrittenForecast(); }
     else if(typeof updateForecast==='function'){ updateForecast().then(renderWrittenForecast).catch(renderWrittenForecast); }
@@ -7324,9 +7313,6 @@ async function updateWeatherTab(){
   // Now fetch SYNOP — renderWxCard will find WX_EXTRA populated
   await Promise.allSettled([ fetchWeatherAruba(), fetchWeatherCuracao(), fetchWeatherBonaire() ]);
   byId('wx-ts').textContent = 'Last fetched: ' + new Date().toLocaleString();
-  // Populate 6-hour section: use cached data if available, otherwise fetch
-  if(__lastForecastData){ renderCurrentHourlyForecast(); }
-  else if(typeof updateForecast==='function'){ updateForecast(); }
 }
 
 /* ═══ MONITOR TAB ═══ */
@@ -10884,53 +10870,6 @@ function renderForecast(days, allModels){
   });
   grid.innerHTML = summaryHtml + cardsHtml;
   if(gridHome) gridHome.innerHTML = summaryHtml + cardsHtml;
-  renderCurrentHourlyForecast();
-}
-
-function renderCurrentHourlyForecast(){
-  const el = byId('fcCurrentHourly');
-  const status = byId('wxCurFcStatus');
-  if(!el) return;
-  const fc = __lastForecastData && __lastForecastData.days;
-  if(!fc || !fc.length || !fc[0]._hourly){
-    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-family:var(--cond);font-size:16.5px;letter-spacing:1px;padding:12px;">Forecast loading…</div>';
-    return;
-  }
-  const curH = new Date().getHours();
-  let hours = fc[0]._hourly.filter(h => h.hour > curH);
-  if(hours.length < 6 && fc[1] && fc[1]._hourly)
-    hours = hours.concat(fc[1]._hourly.slice(0, 6 - hours.length));
-  hours = hours.slice(0, 6);
-  if(!hours.length){
-    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-family:var(--cond);font-size:16.5px;letter-spacing:1px;padding:12px;">No upcoming hourly data</div>';
-    return;
-  }
-  if(status){
-    const t = __lastForecastData.t ? new Date(__lastForecastData.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
-    const mCount = __lastForecastData.models ? __lastForecastData.models.length : 0;
-    status.textContent = (mCount ? mCount + ' models' : '') + (t ? ' · updated ' + t : '');
-  }
-  el.innerHTML = hours.map(h => {
-    const isNight = h.hour >= 20 || h.hour < 6;
-    const wmo = decodeWmoCode(h.code || 0, isNight, h.pop);
-    const temp = h.temp != null ? Math.round(h.temp) : null;
-    const feels = h.feels != null ? Math.round(h.feels) : null;
-    const pop = h.pop != null ? Math.round(h.pop) : 0;
-    const precip = h.precip || 0;
-    const wind = h.wind != null ? Math.round(h.wind) : null;
-    const blockCls = wmo.sev >= 3 ? 'block-crit' : wmo.sev >= 2 ? 'block-wrn' : precip > 0.3 ? 'block-rain' : '';
-    const tColor = temp != null ? (temp >= 33 ? '#ff8a3d' : temp >= 28 ? '#f59e0b' : temp >= 22 ? '#2ec97a' : '#4db8ff') : 'var(--muted)';
-    return `<div class="fc-block ${blockCls}">
-      <div class="fc-block-hd">⏰ ${String(h.hour).padStart(2,'0')}:00</div>
-      <div class="fc-block-wx">${wxIconStyled(wmo.icon, 74)}</div>
-      <div class="fc-block-temp" style="color:${tColor};">${temp != null ? temp + '°' : '—'}</div>
-      ${feels != null ? `<div class="fc-block-feels">feels ${feels}°</div>` : '<div class="fc-block-feels">&nbsp;</div>'}
-      <div class="fc-block-stats">
-        <span>\u{1F4A7} ${pop}%${precip > 0.1 ? ' · ' + precip.toFixed(1) + 'mm' : ''}</span>
-        <span>\u{1F4A8} ${wind != null ? wind + 'kt' : '—'}</span>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 function openForecastDetail(idx){
