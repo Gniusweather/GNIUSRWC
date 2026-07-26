@@ -11437,13 +11437,21 @@ function parseNdbc(txt){
 // Fetch a single NDBC realtime2 text file. Tries allorigins/raw first (returns
 // plain text directly), then the JSON-wrapped /get endpoint as fallback.
 // NDBC blocks browser CORS so direct fetch always fails.
+function _ndbcTimeout(ms){
+  var ac = new AbortController();
+  var t = setTimeout(function(){ ac.abort(); }, ms);
+  return {signal: ac.signal, clear: function(){ clearTimeout(t); }};
+}
 async function fetchNdbcTxt(id){
   var url = 'https://www.ndbc.noaa.gov/data/realtime2/' + id + '.txt';
-  var ac = new AbortController();
-  setTimeout(function(){ ac.abort(); }, 9000);
+  // Each proxy gets its OWN 9s budget — previously all three shared a single
+  // AbortController/timer started once at the top, so a slow first attempt
+  // could abort the second/third before they ever got a fair chance to run.
   // Method 1: allorigins /raw → returns plain text without JSON wrapping
   try{
-    var r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {signal: ac.signal});
+    var to1 = _ndbcTimeout(9000);
+    var r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {signal: to1.signal});
+    to1.clear();
     if(r.ok){
       var t = await r.text();
       if(t && t.trim() && t.includes('#YY')) return t.trim();
@@ -11451,7 +11459,9 @@ async function fetchNdbcTxt(id){
   }catch(e){}
   // Method 2: allorigins /get → JSON {contents: "..."}
   try{
-    var r2 = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), {signal: ac.signal});
+    var to2 = _ndbcTimeout(9000);
+    var r2 = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), {signal: to2.signal});
+    to2.clear();
     if(r2.ok){
       var j = await r2.json();
       if(j && j.contents && j.contents.trim()) return j.contents.trim();
@@ -11459,7 +11469,9 @@ async function fetchNdbcTxt(id){
   }catch(e){}
   // Method 3: corsproxy.io
   try{
-    var r3 = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {signal: ac.signal});
+    var to3 = _ndbcTimeout(9000);
+    var r3 = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {signal: to3.signal});
+    to3.clear();
     if(r3.ok){
       var t3 = await r3.text();
       if(t3 && t3.trim() && t3.includes('#YY')) return t3.trim();
@@ -11467,6 +11479,7 @@ async function fetchNdbcTxt(id){
   }catch(e){}
   return null;
 }
+window.fetchNdbcTxt = fetchNdbcTxt;
 
 async function loadBuoys(){
   // 10-min cache; an empty result is NOT cached so a transient failure retries.
@@ -11491,11 +11504,7 @@ function renderBuoys(){
   condBuoyLayer = L.layerGroup().addTo(condMap);
   loadBuoys().then(function(buoys){
     if(!__condMapLayers.buoys || !condBuoyLayer) return;
-    if(!buoys || !buoys.length){
-      var note = L.divIcon({html:'<div style="font-family:monospace;font-size:16.5px;color:#ff8a8a;background:rgba(5,18,34,0.9);padding:3px 7px;border-radius:6px;white-space:nowrap;">No live buoy data</div>', className:'', iconAnchor:[50,10]});
-      L.marker([11.5,-69.0],{icon:note,interactive:false}).addTo(condBuoyLayer);
-      return;
-    }
+    if(!buoys || !buoys.length) return; // silently empty, like the storm cone when nothing's active
     buoys.forEach(function(b){
       if(b.lat < 9.0 || b.lat > 19.5 || b.lon < -76.0 || b.lon > -58.5) return;
       var d = b.data;
