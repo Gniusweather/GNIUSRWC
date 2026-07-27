@@ -5402,9 +5402,9 @@ function showAviationSub(which){
 window.showAviationSub = showAviationSub;
 
 // "current" is its own top-level tab (left of Monitor) but its content still
-// physically lives inside #tab-monitor, alongside the other faces and the
-// folded-in Forecast/KNMI/Aviation/Stations sections.
-const MON_FAMILY = ['monitor','current','forecast','knmi','aviation','stations'];
+// physically lives inside #tab-monitor. It shows ONLY the Current dashboard —
+// none of the other faces or folded-in sections, which stay under Monitor.
+const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations'];
 const MON_SUBTABS = ['forecast','knmi','aviation','stations']; // fold into the Monitor tab highlight
 function switchTab(name){
   // Current gets its own top-tab highlight; the folded-in sections highlight
@@ -5415,13 +5415,14 @@ function switchTab(name){
   // top-tab highlight differs between them.
   const panelName = (name === 'current') ? 'monitor' : name;
   Object.entries(panels).forEach(([k,p])=>p&&p.classList.toggle('hidden',k!==panelName));
-  // Monitor sub-nav: visible for the whole family, hidden elsewhere; sync
-  // active states between the face buttons and the section buttons.
+  // Monitor sub-nav (Faces + folded-in sections): visible only for Monitor's
+  // own family, NOT for the standalone Current tab — Current shows just the
+  // dashboard with no other faces to switch to.
   const msw = byId('monSwitcher');
   if(msw){
     msw.style.display = MON_FAMILY.includes(name) ? '' : 'none';
     document.querySelectorAll('.mon-style-btn[data-montab]').forEach(b=>b.classList.toggle('active', b.dataset.montab===name));
-    if(name==='monitor' || name==='current'){
+    if(name==='monitor'){
       const ms = (typeof __monStyle!=='undefined' && __monStyle) ? __monStyle : 'current';
       document.querySelectorAll('.mon-style-btn[data-monstyle]').forEach(b=>{
         const mMatch = b.dataset.monstyle === ms;
@@ -12726,6 +12727,9 @@ try {
     t.classList.toggle('active', on);
     t.setAttribute('aria-selected', on ? 'true' : 'false');
   });
+  // Faces sub-nav only belongs to the Monitor tab, not the standalone Current tab.
+  var __msw0 = byId('monSwitcher');
+  if(__msw0) __msw0.style.display = (__wantTopTab === 'current') ? 'none' : '';
 } catch(e){}
 buildTAFTable();
 buildSynopGrid();
