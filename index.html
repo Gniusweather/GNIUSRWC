@@ -12417,15 +12417,15 @@ function renderStationsAverage(){
   if(!stationData || !stationData.length) return;
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   function parseIso(s){ if(!s)return null; var d=new Date(s); return isNaN(d)?null:d; }
-  function sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
   var now=new Date();
-  // Only count ACTIVE stations: reporting today (not stale) and with a usable wind-dir text
+  var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
+  // Only count ACTIVE stations: updated recently (not stale) and with a usable wind-dir text
   function isActive(r){
     // Prefer the ISO field, but if it's missing/unparseable fall back to the
     // station's own original timestamp rather than treating it as stale —
     // a bad/absent _iso value shouldn't discard perfectly good source data.
     var last = parseIso(r.last_updated_iso) || parseIso(r.last_updated);
-    if(!last || !sameDay(now,last)) return false;          // stale / not from today
+    if(!last || (now - last) > STALE_MS) return false;     // stale: no update in a while
     return true;
   }
   var temps=[], windSpds=[], windDirs=[], hums=[], rains=[], heats=[];
@@ -12562,11 +12562,11 @@ function renderStations(){
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   function escHtml(s){ return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
   function parseIso(s){ if(!s)return null; var d=new Date(s); return isNaN(d)?null:d; }
-  function sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+  var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
   var alertCount=0, staleCount=0, mostRecent=null;
   list.innerHTML = stationData.map(function(r){
     var now=new Date(), last=parseIso(r.last_updated_iso) || parseIso(r.last_updated);
-    var isStale = !last || !sameDay(now,last);
+    var isStale = !last || (now - last) > STALE_MS;
     if(isStale) staleCount++;
     var temp  = r.temperature_c   != null ? safeNum(r.temperature_c)   : null;
     var heat  = r.heat_index_c    != null ? safeNum(r.heat_index_c)    : null;
