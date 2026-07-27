@@ -12561,6 +12561,7 @@ function renderStations(){
   function parseIso(s){ if(!s)return null; var d=new Date(s); return isNaN(d)?null:d; }
   function sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
   var alertCount=0, staleCount=0, mostRecent=null;
+  function fmtLocal(d){ return d ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}) : null; }
   list.innerHTML = stationData.map(function(r){
     var now=new Date(), last=parseIso(r.last_updated_iso||r.last_updated);
     var isStale = !last || !sameDay(now,last);
@@ -12572,8 +12573,8 @@ function renderStations(){
     var windDeg=r.wind_direction_deg!=null ? safeNum(r.wind_direction_deg):null;
     var windTxt=r.wind_direction_text||'';
     var rain  = r.rain_today_mm   != null ? safeNum(r.rain_today_mm)   : null;
-    var obsTime=r.last_updated||'\u2014';
-    if(!mostRecent && r.last_updated) mostRecent=r.last_updated;
+    var obsTime=fmtLocal(last) || r.last_updated || '\u2014';
+    if(!mostRecent && last) mostRecent=last;
     var sev = isStale ? 'stale' : (windKn!=null&&windKn>=34 ? 'crit' : (windKn!=null&&windKn>=22 ? 'wrn' : ''));
     if(sev==='crit'||sev==='wrn'||isStale) alertCount++;
     // Wind rose — same as SYNOP cards (miniRose)
@@ -12622,7 +12623,7 @@ function renderStations(){
   byId('totalCnt').textContent = stationData.length;
   byId('alertCnt').textContent = alertCount;
   byId('staleCnt').textContent = staleCount;
-  var rts=byId('recentTs'); if(rts) rts.textContent=mostRecent||'\u2014';
+  var rts=byId('recentTs'); if(rts) rts.textContent=fmtLocal(mostRecent)||'\u2014';
   if(leafMap) addMapMarkers(byId('mapSearch')?byId('mapSearch').value:'');
 }
 
