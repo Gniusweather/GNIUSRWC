@@ -7864,6 +7864,53 @@ async function fetchMonitorData(){
     }
     return out.length ? out : null;
   }
+  // Live radar check: sample RainViewer's latest precipitation frame at
+  // ABC_LAT/ABC_LON (black & white scheme, so intensity reads straight off
+  // the pixel's alpha/brightness — no color-legend lookup needed). This is
+  // an independent, spatial signal that a model forecast or a single METAR
+  // text report can miss (e.g. a fast-forming convective cell).
+  async function fetchRadarNow(){
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 3000);
+      const res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {signal: ctrl.signal});
+      clearTimeout(t);
+      if(!res.ok) return null;
+      const j = await res.json();
+      const past = j && j.radar && j.radar.past;
+      if(!past || !past.length) return null;
+      const frame = past[past.length - 1];
+      const z = 7, size = 256;
+      const n = Math.pow(2, z);
+      const xFrac = (ABC_LON + 180) / 360 * n;
+      const latRad = ABC_LAT * Math.PI / 180;
+      const yFrac = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+      const tileX = Math.floor(xFrac), tileY = Math.floor(yFrac);
+      const px = Math.min(size - 1, Math.max(0, Math.floor((xFrac - tileX) * size)));
+      const py = Math.min(size - 1, Math.max(0, Math.floor((yFrac - tileY) * size)));
+      const url = `${j.host}${frame.path}/${size}/${z}/${tileX}/${tileY}/0/0_0.png`;
+      const intensity = await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const timer = setTimeout(() => resolve(null), 3000);
+        img.onload = () => {
+          clearTimeout(timer);
+          try {
+            const cv = document.createElement('canvas');
+            cv.width = size; cv.height = size;
+            const cx = cv.getContext('2d');
+            cx.drawImage(img, 0, 0);
+            const d = cx.getImageData(px, py, 1, 1).data;
+            resolve((d[3] / 255) * ((d[0] + d[1] + d[2]) / 3 / 255));
+          } catch(e){ resolve(null); }
+        };
+        img.onerror = () => { clearTimeout(timer); resolve(null); };
+        img.src = url;
+      });
+      if(intensity == null) return null;
+      return {intensity, ts: frame.time * 1000};
+    } catch(e){ return null; }
+  }
   async function fetchSeaTemp(){
     try {
       const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${ABC_LAT}&longitude=${ABC_LON}&current=sea_surface_temperature,wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period&timezone=auto`;
@@ -7886,9 +7933,10 @@ async function fetchMonitorData(){
     fetchURL(KNMI_URL),
     fetchMonitorOM(),
     fetchSeaTemp(),
-    fetchSynopRainWindows('78988')
+    fetchSynopRainWindows('78988'),
+    fetchRadarNow()
   ]);
-  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null;
+  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null, radarNow = null;
   if(tasks[0].status === 'fulfilled' && tasks[0].value && tasks[0].value.ok){
     try { const scraped = scrapeOgimetSynop(tasks[0].value.text); if(scraped){ synopRaw = scraped; synopP = extractWxFromSynop(scraped, '78988'); window.__synopPCur = synopP; window.__synopLoadedAt = Date.now();
       try{ window.__synopPAru = extractWxFromSynop(scraped, '78762'); }catch(_e){}
@@ -7909,7 +7957,10 @@ async function fetchMonitorData(){
   if(tasks[4] && tasks[4].status === 'fulfilled' && tasks[4].value != null){
     synopRain = tasks[4].value;
   }
-  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw, nowcast, synopRain};
+  if(tasks[5] && tasks[5].status === 'fulfilled' && tasks[5].value != null){
+    radarNow = tasks[5].value;
+  }
+  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw, nowcast, synopRain, radarNow};
 }
 
 function renderMonitor(data){
@@ -8288,13 +8339,20 @@ function renderMonitor(data){
     }
     var ncEl = byId('monRainNowcast');
     var ncNoteEl = byId('monRainNcNote');
-    // Calibration: TNCC's own live METAR present-weather is real observed
-    // ground truth; the nowcast bars are a minutely_15 *model* forecast that
-    // can lag behind what's actually falling right now. When TNCC currently
-    // reports rain but the model's next bucket hasn't caught up (still ~0),
-    // flag that first bucket as live-observed instead of silently showing
-    // "no rain" while it's actually raining at the station.
-    var liveRainNow = !!(metarP && metarP.wxToks && metarP.wxToks.some(function(x){ return /RA|SH|TS|DZ/.test(x); }));
+    // Calibration: two independent live signals can catch rain that the
+    // minutely_15 *model* forecast hasn't caught up to yet — TNCC's own
+    // METAR present-weather, and an actual radar reflectivity sample at our
+    // coordinates (RainViewer). Either one flags the nowcast's first bucket
+    // as live-observed instead of silently showing "no rain" while it's
+    // actually raining/storming right now.
+    var metarLiveRain = !!(metarP && metarP.wxToks && metarP.wxToks.some(function(x){ return /RA|SH|TS|DZ/.test(x); }));
+    var radarInfo = (data && data.radarNow) || null;
+    var radarLiveRain = !!(radarInfo && radarInfo.intensity > 0.12);
+    var liveRainNow = metarLiveRain || radarLiveRain;
+    var liveSrcParts = [];
+    if(metarLiveRain) liveSrcParts.push('TNCC');
+    if(radarLiveRain) liveSrcParts.push('radar');
+    var liveSrcLabel = liveSrcParts.join(' + ') || 'live';
     if(ncEl){
       var mins = (data && data.nowcast) || null;
       if(mins && mins.length){
@@ -8304,18 +8362,18 @@ function renderMonitor(data){
           var h = Math.max(3, Math.round((m.precip / maxV) * 34));
           var isLive = idx === 0 && modelMissedIt;
           var barCls = 'mon-rain-nc-bar' + (isLive ? ' mon-rain-nc-bar-live' : '');
-          var title = m.precip.toFixed(2) + ' mm' + (isLive ? ' · TNCC reports rain now; model not yet updated' : '');
-          var dot = isLive ? ' <span class="mon-rain-nc-live-dot" title="Live rain reported at TNCC">●</span>' : '';
+          var title = m.precip.toFixed(2) + ' mm' + (isLive ? ' · ' + liveSrcLabel + ' reports rain now; model not yet updated' : '');
+          var dot = isLive ? ' <span class="mon-rain-nc-live-dot" title="Live rain (' + liveSrcLabel + ')">●</span>' : '';
           return '<div class="mon-rain-nc-col"><div class="' + barCls + '" style="height:34px;" title="' + title + '"><div class="mon-rain-nc-bar-fill" style="height:' + h + 'px;"></div></div><div class="mon-rain-nc-lbl">' + m.label + dot + '</div></div>';
         }).join('');
         if(ncNoteEl){
-          if(modelMissedIt){ ncNoteEl.textContent = '● Rain reported now at TNCC — forecast model updating'; ncNoteEl.classList.add('show'); }
+          if(modelMissedIt){ ncNoteEl.textContent = '● Rain now (' + liveSrcLabel + ') — forecast model updating'; ncNoteEl.classList.add('show'); }
           else { ncNoteEl.textContent = ''; ncNoteEl.classList.remove('show'); }
         }
       } else {
         ncEl.innerHTML = '<span style="color:var(--muted);font-family:var(--cond);font-size:16.5px;">No data</span>';
         if(ncNoteEl){
-          if(liveRainNow){ ncNoteEl.textContent = '● Rain reported now at TNCC — forecast unavailable'; ncNoteEl.classList.add('show'); }
+          if(liveRainNow){ ncNoteEl.textContent = '● Rain now (' + liveSrcLabel + ') — forecast unavailable'; ncNoteEl.classList.add('show'); }
           else { ncNoteEl.textContent = ''; ncNoteEl.classList.remove('show'); }
         }
       }
