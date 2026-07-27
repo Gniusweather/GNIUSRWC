@@ -12501,7 +12501,7 @@ function renderStationsAverage(){
   if(!stationData || !stationData.length) return;
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   var now=new Date();
-  var STALE_MS = 24*60*60*1000; // 1 day: older than this counts as stale/inactive
+  var STALE_MS = 12*60*60*1000; // 12h: older than this counts as stale/inactive
   // Only count ACTIVE stations: updated within the last day and with a usable wind-dir text
   function isActive(r){
     var last = parseStationTime(r.last_updated_iso) || parseStationTime(r.last_updated);
@@ -12641,7 +12641,7 @@ function renderStations(){
   }
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   function escHtml(s){ return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
-  var STALE_MS = 24*60*60*1000; // 1 day: older than this shows as stale
+  var STALE_MS = 12*60*60*1000; // 12h: older than this shows as stale
   var alertCount=0, staleCount=0, mostRecent=null;
   list.innerHTML = stationData.map(function(r){
     var now=new Date(), last=parseStationTime(r.last_updated_iso) || parseStationTime(r.last_updated);
