@@ -7848,7 +7848,14 @@ async function fetchMonitorData(){
     const m = json && json.minutely_15;
     if(!m || !m.time || !m.precipitation) return null;
     const nowMs = Date.now();
-    let startIdx = m.time.findIndex(t => new Date(t + 'Z').getTime() >= nowMs);
+    // The fetch uses timezone=auto, so m.time entries are naive LOCAL
+    // timestamps (no Z/offset) for the request's location — not UTC. Appending
+    // 'Z' and comparing directly against Date.now() silently shifted "now" by
+    // the location's UTC offset, so on a stale/empty match every bucket
+    // looked like it was already in the past and the nowcast picked the wrong
+    // (or no) window. Correct for utc_offset_seconds before comparing.
+    const offsetMs = (json.utc_offset_seconds || 0) * 1000;
+    let startIdx = m.time.findIndex(t => (new Date(t + 'Z').getTime() - offsetMs) >= nowMs);
     if(startIdx < 0) startIdx = 0;
     const out = [];
     for(let i = startIdx; i < Math.min(startIdx + 4, m.time.length); i++){
