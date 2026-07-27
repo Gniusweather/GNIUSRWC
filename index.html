@@ -2922,10 +2922,7 @@ html,body{max-width:100%;overflow-x:hidden;}
 <div class="mon-switcher" id="monSwitcher">
   <span class="mon-switcher-lbl">Faces</span>
   <button class="mon-style-btn" data-monstyle="gauges"><span class="mon-style-btn-ic">&#9201;</span>Gauges</button>
-  <button class="mon-style-btn" data-monstyle="graphics"><span class="mon-style-btn-ic">&#128202;</span>Graphics</button>
   <button class="mon-style-btn" data-monstyle="power"><span class="mon-style-btn-ic">&#9889;</span>Power</button>
-  <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="sky"><span class="mon-style-btn-ic">&#9889;</span>SkySense</button>
-  <button class="mon-style-btn" data-monstyle="dashboards" data-dashstyle="home"><span class="mon-style-btn-ic">&#127968;</span>Dashboard</button>
   <span class="mon-switcher-div"></span>
   <button class="mon-style-btn" data-montab="forecast"><span class="mon-style-btn-ic">&#127782;</span>Forecast</button>
   <button class="mon-style-btn" data-montab="knmi"><span class="mon-style-btn-ic">&#127788;</span>KNMI</button>
@@ -2937,14 +2934,8 @@ html,body{max-width:100%;overflow-x:hidden;}
 
   <!-- MONITOR -->
   <div id="tab-monitor" class="tpanel">
-    <div class="mon-view" id="monViewDash" style="display:none;">
-      <div id="dashboardsContent"></div>
-      <!-- Persistent Windy radar + satellite (built once so the iframes never reload on refresh) -->
-      <div id="dashWindyMaps" class="dash-windy-maps"></div>
-    </div>
     <div class="mon-view" id="monViewSky" style="display:none;"></div>
     <div class="mon-view" id="monViewGauges" style="display:none;"></div>
-    <div class="mon-view" id="monViewGraphics" style="display:none;"></div>
     <div class="mon-view" id="monViewHome" style="display:none;"></div>
     <div class="mon-view" id="monViewPower" style="display:none;">
     <div class="pw-wrap">
@@ -3587,6 +3578,8 @@ html,body{max-width:100%;overflow-x:hidden;}
     <div class="av-subnav">
       <button class="av-sub-btn active" data-knmisub="data" onclick="showKnmiSub('data')">&#127788; KNMI Data</button>
       <button class="av-sub-btn" data-knmisub="graphs" onclick="showKnmiSub('graphs')">&#128202; Graphs</button>
+      <button class="av-sub-btn" data-knmisub="graphics" onclick="showKnmiSub('graphics')">&#128200; Graphics</button>
+      <button class="av-sub-btn" data-knmisub="dashboard" onclick="showKnmiSub('dashboard')">&#127968; Dashboard</button>
     </div>
     <div id="knmi-view-data" class="knmi-view">
       <div class="knmi-wrap">
@@ -3600,6 +3593,17 @@ html,body{max-width:100%;overflow-x:hidden;}
     </div>
     <div id="knmi-view-graphs" class="knmi-view" style="display:none;">
       <div id="graphsContent"></div>
+    </div>
+    <!-- Moved here from the Monitor Faces row: Graphics and Dashboard -->
+    <div id="knmi-view-graphics" class="knmi-view" style="display:none;">
+      <div class="mon-view" id="monViewGraphics"></div>
+    </div>
+    <div id="knmi-view-dashboard" class="knmi-view" style="display:none;">
+      <div class="mon-view" id="monViewDash">
+        <div id="dashboardsContent"></div>
+        <!-- Persistent Windy radar + satellite (built once so the iframes never reload on refresh) -->
+        <div id="dashWindyMaps" class="dash-windy-maps"></div>
+      </div>
     </div>
   </div>
 
@@ -5584,12 +5588,6 @@ function switchTab(name){
       });
     }
   }
-  if(name === 'dashboards'){
-    if(!__monitorOpened){ __monitorOpened = true; updateMonitor(); startMonitorRefresh(); }
-    else { renderDashboardsTab(); }
-    if(!__lastForecastData && typeof updateForecast==='function'){ updateForecast().then(()=>renderDashboardsTab()).catch(()=>renderDashboardsTab()); }
-    renderDashboardsTab();
-  }
   if(name === 'knmi'){
     if(!window.__knmiLoaded){ window.__knmiLoaded = true; if(typeof loadKnmiData==='function') loadKnmiData(false); }
     // default to KNMI Data sub-view if none active
@@ -5598,9 +5596,10 @@ function switchTab(name){
   }
 }
 
-/* KNMI sub-tab switcher (KNMI Data | Graphs) */
+/* KNMI sub-tab switcher (KNMI Data | Graphs | Graphics | Dashboard — the last
+   two were moved here from the Monitor Faces row). */
 function showKnmiSub(which){
-  document.querySelectorAll('#knmi-view-data, #knmi-view-graphs').forEach(function(el){
+  document.querySelectorAll('#knmi-view-data, #knmi-view-graphs, #knmi-view-graphics, #knmi-view-dashboard').forEach(function(el){
     el.style.display = (el.id === 'knmi-view-' + which) ? '' : 'none';
   });
   document.querySelectorAll('.av-sub-btn[data-knmisub]').forEach(function(b){ b.classList.toggle('active', b.dataset.knmisub===which); });
@@ -5608,6 +5607,16 @@ function showKnmiSub(which){
     if(!__monitorOpened){ __monitorOpened = true; updateMonitor().then(()=>renderGraphsTab()).catch(()=>renderGraphsTab()); startMonitorRefresh(); }
     else renderGraphsTab();
     if(!__lastForecastData && typeof updateForecast==='function'){ updateForecast().then(()=>renderGraphsTab()).catch(()=>{}); }
+  }
+  if(which === 'graphics'){
+    if(!__monitorOpened){ __monitorOpened = true; updateMonitor().then(()=>renderGraphicsView(__monLastData||{})).catch(()=>renderGraphicsView(__monLastData||{})); startMonitorRefresh(); }
+    else renderGraphicsView(__monLastData||{});
+    if(!__lastForecastData && typeof updateForecast==='function'){ updateForecast().then(()=>renderGraphicsView(__monLastData||{})).catch(()=>{}); }
+  }
+  if(which === 'dashboard'){
+    if(!__monitorOpened){ __monitorOpened = true; updateMonitor(); startMonitorRefresh(); }
+    if(!__lastForecastData && typeof updateForecast==='function'){ updateForecast().then(()=>renderDashboardsTab()).catch(()=>renderDashboardsTab()); }
+    else renderDashboardsTab();
   }
 }
 window.showKnmiSub = showKnmiSub;
@@ -8345,28 +8354,23 @@ function _checkIsltDayReset(){
 function _persistIsltMinMax(){
   try{ localStorage.setItem('islt-minmax', JSON.stringify({d:__isltTempDay, mx:__isltTempMax, mn:__isltTempMin})); }catch(e){}
 }
-// Dashboard "faces" share the Monitor switcher: each maps to the glass dashboard view.
-const __DASH_FACES = ['aurora','midnight','daylight','metro','dark','aqua'];
-const __MON_FACES = ['sky','gauges','current','graphics','home','power','dashboards'];
-try { const sv = localStorage.getItem('rwc-monstyle'); if(__MON_FACES.indexOf(sv)>=0 || __DASH_FACES.indexOf(sv)>=0) __monStyle = sv; } catch(e){}
+// Monitor's own faces. Graphics and Dashboards moved out to become KNMI
+// sub-tabs (see showKnmiSub) and are no longer valid __monStyle values.
+const __MON_FACES = ['sky','gauges','current','home','power'];
+try { const sv = localStorage.getItem('rwc-monstyle'); if(__MON_FACES.indexOf(sv)>=0) __monStyle = sv; } catch(e){}
 
 function setMonStyle(style){
   __monStyle = style;
   try { localStorage.setItem('rwc-monstyle', style); } catch(e){}
   document.querySelectorAll('.mon-style-btn').forEach(b => {
-    var mMatch = b.dataset.monstyle === style;
-    var dsMatch = b.dataset.dashstyle && (typeof __dashStyle !== 'undefined') && b.dataset.dashstyle === __dashStyle;
-    b.classList.toggle('active', mMatch && (!b.dataset.dashstyle || dsMatch));
+    b.classList.toggle('active', b.dataset.monstyle === style);
   });
-  const isDash = __DASH_FACES.indexOf(style) >= 0;
-  const vc = byId('monViewCurrent'), vs = byId('monViewSky'), vg = byId('monViewGauges'), vgr = byId('monViewGraphics'), vh = byId('monViewHome'), vp = byId('monViewPower'), vd = byId('monViewDash');
+  const vc = byId('monViewCurrent'), vs = byId('monViewSky'), vg = byId('monViewGauges'), vh = byId('monViewHome'), vp = byId('monViewPower');
   if(vc) vc.style.display = style === 'current' ? '' : 'none';
   if(vs) vs.style.display = style === 'sky'     ? '' : 'none';
   if(vg) vg.style.display = style === 'gauges'  ? '' : 'none';
-  if(vgr) vgr.style.display = style === 'graphics' ? '' : 'none';
   if(vh) vh.style.display = style === 'home' ? '' : 'none';
   if(vp) vp.style.display = style === 'power' ? '' : 'none';
-  if(vd) vd.style.display = (isDash || style === 'dashboards') ? '' : 'none';
   // Power sub-view: render + run the clock; stop clock when leaving
   if(style === 'power'){
     if(typeof renderPowerStation === 'function') renderPowerStation();
@@ -8374,18 +8378,9 @@ function setMonStyle(style){
   } else {
     if(typeof stopPowerClock === 'function') stopPowerClock();
   }
-  // Dashboard faces: apply the palette class + render
-  if(isDash && typeof setDashStyle === 'function'){
-    setDashStyle(style);
-  }
-  // Dashboards sub-tab: render the active dashboard style
-  if(style === 'dashboards' && typeof renderDashboardsTab === 'function'){
-    if(!__lastForecastData) updateForecast().then(()=>renderDashboardsTab()).catch(()=>renderDashboardsTab());
-    else renderDashboardsTab();
-  }
   if(__monLastData) renderMonitorViews(__monLastData);
   // if switching into a forecast-backed view and the cache is empty, fetch it now
-  if((style === 'sky' || style === 'gauges' || style === 'graphics' || style === 'home' || isDash) && !__lastForecastData){
+  if((style === 'sky' || style === 'gauges' || style === 'home') && !__lastForecastData){
     updateForecast().then(() => { if(__monLastData) renderMonitorViews(__monLastData); }).catch(()=>{});
   }
 }
@@ -8400,7 +8395,6 @@ document.querySelectorAll('.mon-style-btn').forEach(btn => {
       if((mp && mp.classList.contains('hidden')) || onCurrentTop) switchTab('monitor');
       setMonStyle(btn.dataset.monstyle);
     }
-    if(btn.dataset.dashstyle) setTimeout(()=>{ if(typeof setDashStyle==='function') setDashStyle(btn.dataset.dashstyle); }, 0);
   });
 });
 
@@ -8409,12 +8403,16 @@ function renderMonitorViews(data){
   __monLastData = data;
   if(__monStyle === 'sky')      renderSkyView(data);
   if(__monStyle === 'gauges')   renderGaugesView(data);
-  if(__monStyle === 'graphics') renderGraphicsView(data);
   if(__monStyle === 'home')     renderHomeView(data);
   if(__monStyle === 'power' && typeof renderPowerStation === 'function') renderPowerStation();
-  // Keep the Dashboards sub-tab live too
-  if(__monStyle === 'dashboards' && typeof renderDashboardsTab === 'function') try{ renderDashboardsTab(); }catch(e){}
-  try{ var gv = byId('knmi-view-graphs'); if(gv && gv.style.display !== 'none' && !byId('tab-knmi').classList.contains('hidden')) renderGraphsTab(); }catch(e){}
+  // Keep the KNMI tab's Graphs/Graphics/Dashboard sub-views live too, when open
+  try{
+    if(!byId('tab-knmi').classList.contains('hidden')){
+      var gv = byId('knmi-view-graphs'); if(gv && gv.style.display !== 'none') renderGraphsTab();
+      var gxv = byId('knmi-view-graphics'); if(gxv && gxv.style.display !== 'none') renderGraphicsView(data);
+      var dbv = byId('knmi-view-dashboard'); if(dbv && dbv.style.display !== 'none' && typeof renderDashboardsTab === 'function') renderDashboardsTab();
+    }
+  }catch(e){}
 }
 
 /* ═══════════ DASHBOARDS TAB ═══════════
