@@ -12478,10 +12478,28 @@ function addMapMarkers(filter){
   });
 }
 
+var STN_TS_MONTHS = {January:0,February:1,March:2,April:3,May:4,June:5,July:6,August:7,September:8,October:9,November:10,December:11};
+
 function renderStationsAverage(){
   if(!stationData || !stationData.length) return;
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
-  function parseIso(s){ if(!s)return null; var d=new Date(s); return isNaN(d)?null:d; }
+  function parseIso(s){
+    if(!s) return null;
+    // Station last_updated comes as "D Month YYYY H:MM" (e.g. "27 July 2026
+    // 3:07"), the station's own Curaçao/Bonaire local clock (AST, UTC-4, no
+    // DST) — not ISO. That exact non-standard format isn't reliably parsed
+    // by every browser's native Date constructor (Safari/WebKit in
+    // particular can reject it outright, returning Invalid Date), which
+    // made every station look permanently stale regardless of how fresh it
+    // actually was. Parse it explicitly instead of trusting `new Date(s)`.
+    var m = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(String(s).trim());
+    if(m){
+      var mon = STN_TS_MONTHS[m[2]];
+      if(mon != null) return new Date(Date.UTC(+m[3], mon, +m[1], +m[4], +m[5]) + 4*3600*1000);
+    }
+    var d = new Date(s);
+    return isNaN(d) ? null : d;
+  }
   var now=new Date();
   var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
   // Only count ACTIVE stations: updated recently (not stale) and with a usable wind-dir text
@@ -12626,7 +12644,23 @@ function renderStations(){
   }
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   function escHtml(s){ return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
-  function parseIso(s){ if(!s)return null; var d=new Date(s); return isNaN(d)?null:d; }
+  function parseIso(s){
+    if(!s) return null;
+    // Station last_updated comes as "D Month YYYY H:MM" (e.g. "27 July 2026
+    // 3:07"), the station's own Curaçao/Bonaire local clock (AST, UTC-4, no
+    // DST) — not ISO. That exact non-standard format isn't reliably parsed
+    // by every browser's native Date constructor (Safari/WebKit in
+    // particular can reject it outright, returning Invalid Date), which
+    // made every station look permanently stale regardless of how fresh it
+    // actually was. Parse it explicitly instead of trusting `new Date(s)`.
+    var m = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(String(s).trim());
+    if(m){
+      var mon = STN_TS_MONTHS[m[2]];
+      if(mon != null) return new Date(Date.UTC(+m[3], mon, +m[1], +m[4], +m[5]) + 4*3600*1000);
+    }
+    var d = new Date(s);
+    return isNaN(d) ? null : d;
+  }
   var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
   var alertCount=0, staleCount=0, mostRecent=null;
   list.innerHTML = stationData.map(function(r){
