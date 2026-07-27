@@ -3313,7 +3313,6 @@ html,body{max-width:100%;overflow-x:hidden;}
       <div class="sumrow">
         <div class="pill">Total: <span id="totalCnt">0</span></div>
         <div class="pill">Alerts: <span id="alertCnt">0</span></div>
-        <div class="pill">Stale: <span id="staleCnt">0</span></div>
         <div class="pill">Recent: <span id="recentTs">&mdash;</span></div>
       </div>
       <div id="mapCard" class="hidden" style="margin-top:11px;">
@@ -12483,34 +12482,8 @@ var STN_TS_MONTHS = {January:0,February:1,March:2,April:3,May:4,June:5,July:6,Au
 function renderStationsAverage(){
   if(!stationData || !stationData.length) return;
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
-  function parseIso(s){
-    if(!s) return null;
-    // Station last_updated comes as "D Month YYYY H:MM" (e.g. "27 July 2026
-    // 3:07"), the station's own Curaçao/Bonaire local clock (AST, UTC-4, no
-    // DST) — not ISO. That exact non-standard format isn't reliably parsed
-    // by every browser's native Date constructor (Safari/WebKit in
-    // particular can reject it outright, returning Invalid Date), which
-    // made every station look permanently stale regardless of how fresh it
-    // actually was. Parse it explicitly instead of trusting `new Date(s)`.
-    var m = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(String(s).trim());
-    if(m){
-      var mon = STN_TS_MONTHS[m[2]];
-      if(mon != null) return new Date(Date.UTC(+m[3], mon, +m[1], +m[4], +m[5]) + 4*3600*1000);
-    }
-    var d = new Date(s);
-    return isNaN(d) ? null : d;
-  }
-  var now=new Date();
-  var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
-  // Only count ACTIVE stations: updated recently (not stale) and with a usable wind-dir text
-  function isActive(r){
-    // Prefer the ISO field, but if it's missing/unparseable fall back to the
-    // station's own original timestamp rather than treating it as stale —
-    // a bad/absent _iso value shouldn't discard perfectly good source data.
-    var last = parseIso(r.last_updated_iso) || parseIso(r.last_updated);
-    if(!last || (now - last) > STALE_MS) return false;     // stale: no update in a while
-    return true;
-  }
+  // Staleness gating removed — every reporting station counts as active.
+  function isActive(r){ return true; }
   var temps=[], windSpds=[], windDirs=[], hums=[], rains=[], heats=[];
   var activeCount=0, totalCount=stationData.length;
   // Reference wind = Curaçao International Airport (the official METAR station).
@@ -12639,34 +12612,14 @@ function renderStations(){
   const list = byId('stn-list');
   if(!stationData.length){
     list.innerHTML='<div style="padding:20px;color:var(--muted);font-family:var(--cond);letter-spacing:1px;text-transform:uppercase;font-size:16.5px;">No stations available</div>';
-    byId('totalCnt').textContent='0'; byId('alertCnt').textContent='0'; byId('staleCnt').textContent='0';
+    byId('totalCnt').textContent='0'; byId('alertCnt').textContent='0';
     return;
   }
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
   function escHtml(s){ return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
-  function parseIso(s){
-    if(!s) return null;
-    // Station last_updated comes as "D Month YYYY H:MM" (e.g. "27 July 2026
-    // 3:07"), the station's own Curaçao/Bonaire local clock (AST, UTC-4, no
-    // DST) — not ISO. That exact non-standard format isn't reliably parsed
-    // by every browser's native Date constructor (Safari/WebKit in
-    // particular can reject it outright, returning Invalid Date), which
-    // made every station look permanently stale regardless of how fresh it
-    // actually was. Parse it explicitly instead of trusting `new Date(s)`.
-    var m = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(String(s).trim());
-    if(m){
-      var mon = STN_TS_MONTHS[m[2]];
-      if(mon != null) return new Date(Date.UTC(+m[3], mon, +m[1], +m[4], +m[5]) + 4*3600*1000);
-    }
-    var d = new Date(s);
-    return isNaN(d) ? null : d;
-  }
-  var STALE_MS = 3*60*60*1000; // no update in 3h+ = offline, not merely "wrong calendar day"
-  var alertCount=0, staleCount=0, mostRecent=null;
+  // Staleness gating removed — every reporting station shows as live.
+  var alertCount=0, mostRecent=null;
   list.innerHTML = stationData.map(function(r){
-    var now=new Date(), last=parseIso(r.last_updated_iso) || parseIso(r.last_updated);
-    var isStale = !last || (now - last) > STALE_MS;
-    if(isStale) staleCount++;
     var temp  = r.temperature_c   != null ? safeNum(r.temperature_c)   : null;
     var heat  = r.heat_index_c    != null ? safeNum(r.heat_index_c)    : null;
     var hum   = r.humidity_percent!= null ? safeNum(r.humidity_percent): null;
@@ -12676,8 +12629,8 @@ function renderStations(){
     var rain  = r.rain_today_mm   != null ? safeNum(r.rain_today_mm)   : null;
     var obsTime=r.last_updated||'\u2014';
     if(!mostRecent && r.last_updated) mostRecent=r.last_updated;
-    var sev = isStale ? 'stale' : (windKn!=null&&windKn>=34 ? 'crit' : (windKn!=null&&windKn>=22 ? 'wrn' : ''));
-    if(sev==='crit'||sev==='wrn'||isStale) alertCount++;
+    var sev = windKn!=null&&windKn>=34 ? 'crit' : (windKn!=null&&windKn>=22 ? 'wrn' : '');
+    if(sev==='crit'||sev==='wrn') alertCount++;
     // Wind rose — same as SYNOP cards (miniRose)
     var dir = (typeof windDeg==='number'&&isFinite(windDeg)) ? windDeg : null;
     var sp  = (typeof windKn ==='number'&&isFinite(windKn))  ? windKn  : null;
@@ -12688,7 +12641,7 @@ function renderStations(){
       +'<div class="srow-hd">'
         +'<div class="sname">\uD83C\uDDE8\uD83C\uDDFC '+escHtml(r.station||'\u2014')+'</div>'
         +'<div class="srow-time-box"><span class="stime-s">'+escHtml(obsTime)+'</span>'
-        +'<span class="stime-lbl">'+(isStale?'\u26a0 stale':'live')+'</span></div>'
+        +'<span class="stime-lbl">live</span></div>'
       +'</div>'
       +'<div class="srow-body">'
         +'<div class="srow-row" style="align-items:center;">'
@@ -12723,7 +12676,6 @@ function renderStations(){
   }).join('');
   byId('totalCnt').textContent = stationData.length;
   byId('alertCnt').textContent = alertCount;
-  byId('staleCnt').textContent = staleCount;
   var rts=byId('recentTs'); if(rts) rts.textContent=mostRecent||'\u2014';
   if(leafMap) addMapMarkers(byId('mapSearch')?byId('mapSearch').value:'');
 }
