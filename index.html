@@ -12421,7 +12421,10 @@ function renderStationsAverage(){
   var now=new Date();
   // Only count ACTIVE stations: reporting today (not stale) and with a usable wind-dir text
   function isActive(r){
-    var last = parseIso(r.last_updated_iso || r.last_updated);
+    // Prefer the ISO field, but if it's missing/unparseable fall back to the
+    // station's own original timestamp rather than treating it as stale —
+    // a bad/absent _iso value shouldn't discard perfectly good source data.
+    var last = parseIso(r.last_updated_iso) || parseIso(r.last_updated);
     if(!last || !sameDay(now,last)) return false;          // stale / not from today
     return true;
   }
@@ -12563,7 +12566,7 @@ function renderStations(){
   var alertCount=0, staleCount=0, mostRecent=null;
   function fmtLocal(d){ return d ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}) : null; }
   list.innerHTML = stationData.map(function(r){
-    var now=new Date(), last=parseIso(r.last_updated_iso||r.last_updated);
+    var now=new Date(), last=parseIso(r.last_updated_iso) || parseIso(r.last_updated);
     var isStale = !last || !sameDay(now,last);
     if(isStale) staleCount++;
     var temp  = r.temperature_c   != null ? safeNum(r.temperature_c)   : null;
@@ -12655,7 +12658,6 @@ async function fetchStationsData(){
     r.wind_direction_deg = r.wind_direction_deg!=null ? safeNum(r.wind_direction_deg)
       : (r.wind_direction&&!isNaN(Number(r.wind_direction))?Number(r.wind_direction):null);
     r.rain_today_mm = safeNum(r.rain_today_mm);
-    if(r.last_updated_iso) r.last_updated = r.last_updated_iso;
   });
   stationData = rows;
   window.__rwcStations = rows;
