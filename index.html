@@ -12503,7 +12503,15 @@ function renderStationsAverage(){
     } else { feelsVal = _tmpF; }
   }
   // Feels-like is the headline number; the measured average is the sub-line.
-  if(iT) iT.textContent = feelsVal !== null ? feelsVal.toFixed(1) : (cuAvgTemp !== null ? cuAvgTemp.toFixed(1) : '\u2014');
+  // Colour-code it the same way temps are bucketed elsewhere in the app
+  // (Forecast detail modal's tCol): red/orange/amber/green/blue by severity.
+  if(iT){
+    iT.textContent = feelsVal !== null ? feelsVal.toFixed(1) : (cuAvgTemp !== null ? cuAvgTemp.toFixed(1) : '\u2014');
+    var _isltFv = feelsVal !== null ? feelsVal : cuAvgTemp;
+    iT.style.color = _isltFv != null
+      ? (_isltFv>=33?'#ff4f4f':_isltFv>=30?'#ff8a3d':_isltFv>=27?'#f59e0b':_isltFv>=22?'#2ec97a':'#4db8ff')
+      : '';
+  }
   if(iF) iF.textContent = cuAvgTemp !== null ? cuAvgTemp.toFixed(1) : '\u2014';
   if(iMx) iMx.textContent = __isltTempMax !== null ? __isltTempMax.toFixed(1) : '\u2014';
   if(iMn) iMn.textContent = __isltTempMin !== null ? __isltTempMin.toFixed(1) : '\u2014';
