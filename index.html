@@ -664,6 +664,11 @@ tr:last-child td{border-bottom:none;}
 .mon-rain-nc-bar-fill{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,#4db8ff,#0ea5e9);min-height:2px;box-shadow:0 0 6px rgba(77,184,255,0.5);}
 .mon-rain-nc-lbl{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center;margin-top:2px;}
 .mon-rain-nc-col{display:flex;flex-direction:column;align-items:center;}
+.mon-rain-nc-bar-live .mon-rain-nc-bar-fill{background:linear-gradient(180deg,#ffd24d,#f59e0b);box-shadow:0 0 7px rgba(245,158,11,0.65);}
+.mon-rain-nc-live-dot{color:#f59e0b;font-size:9px;vertical-align:1px;margin-left:2px;animation:monRainLivePulse 1.6s ease-in-out infinite;}
+@keyframes monRainLivePulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.mon-rain-nc-note{font-family:var(--cond);font-size:14px;color:#f59e0b;letter-spacing:.2px;margin-top:2px;display:none;}
+.mon-rain-nc-note.show{display:block;}
 .mon-rain-grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;}
 .mon-rain-cell{display:flex;flex-direction:column;align-items:center;gap:1px;}
 .mon-rain-cell-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
@@ -3136,6 +3141,7 @@ html,body{max-width:100%;overflow-x:hidden;}
           <div class="mon-rain-sec">
             <span class="mon-rain-lbl">Nowcast &middot; next 1h</span>
             <div class="mon-rain-nc-bars" id="monRainNowcast"></div>
+            <div class="mon-rain-nc-note" id="monRainNcNote"></div>
           </div>
           <div class="mon-rain-sec">
             <span class="mon-rain-lbl">SYNOP 78988 &middot; Precip</span>
@@ -8274,16 +8280,37 @@ function renderMonitor(data){
       }
     }
     var ncEl = byId('monRainNowcast');
+    var ncNoteEl = byId('monRainNcNote');
+    // Calibration: TNCC's own live METAR present-weather is real observed
+    // ground truth; the nowcast bars are a minutely_15 *model* forecast that
+    // can lag behind what's actually falling right now. When TNCC currently
+    // reports rain but the model's next bucket hasn't caught up (still ~0),
+    // flag that first bucket as live-observed instead of silently showing
+    // "no rain" while it's actually raining at the station.
+    var liveRainNow = !!(metarP && metarP.wxToks && metarP.wxToks.some(function(x){ return /RA|SH|TS|DZ/.test(x); }));
     if(ncEl){
       var mins = (data && data.nowcast) || null;
       if(mins && mins.length){
         var maxV = Math.max(0.2, Math.max.apply(null, mins.map(function(m){ return m.precip; })));
-        ncEl.innerHTML = mins.map(function(m){
+        var modelMissedIt = liveRainNow && mins[0].precip <= 0.2;
+        ncEl.innerHTML = mins.map(function(m, idx){
           var h = Math.max(3, Math.round((m.precip / maxV) * 34));
-          return '<div class="mon-rain-nc-col"><div class="mon-rain-nc-bar" style="height:34px;" title="' + m.precip.toFixed(2) + ' mm"><div class="mon-rain-nc-bar-fill" style="height:' + h + 'px;"></div></div><div class="mon-rain-nc-lbl">' + m.label + '</div></div>';
+          var isLive = idx === 0 && modelMissedIt;
+          var barCls = 'mon-rain-nc-bar' + (isLive ? ' mon-rain-nc-bar-live' : '');
+          var title = m.precip.toFixed(2) + ' mm' + (isLive ? ' · TNCC reports rain now; model not yet updated' : '');
+          var dot = isLive ? ' <span class="mon-rain-nc-live-dot" title="Live rain reported at TNCC">●</span>' : '';
+          return '<div class="mon-rain-nc-col"><div class="' + barCls + '" style="height:34px;" title="' + title + '"><div class="mon-rain-nc-bar-fill" style="height:' + h + 'px;"></div></div><div class="mon-rain-nc-lbl">' + m.label + dot + '</div></div>';
         }).join('');
+        if(ncNoteEl){
+          if(modelMissedIt){ ncNoteEl.textContent = '● Rain reported now at TNCC — forecast model updating'; ncNoteEl.classList.add('show'); }
+          else { ncNoteEl.textContent = ''; ncNoteEl.classList.remove('show'); }
+        }
       } else {
         ncEl.innerHTML = '<span style="color:var(--muted);font-family:var(--cond);font-size:16.5px;">No data</span>';
+        if(ncNoteEl){
+          if(liveRainNow){ ncNoteEl.textContent = '● Rain reported now at TNCC — forecast unavailable'; ncNoteEl.classList.add('show'); }
+          else { ncNoteEl.textContent = ''; ncNoteEl.classList.remove('show'); }
+        }
       }
     }
     var synRain = (data && data.synopRain) || null;
