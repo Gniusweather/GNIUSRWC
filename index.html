@@ -2806,10 +2806,10 @@ html,body{max-width:100%;overflow-x:hidden;}
 <!-- TABS -->
 <nav class="tabs" role="tablist">
   <button class="tab active" role="tab" aria-selected="true" data-tab="current"><span class="tab-i">&#9632;</span>Current</button>
-  <button class="tab" role="tab" aria-selected="false" data-tab="monitor"><span class="tab-i">&#9889;</span>Monitor</button>
   <button class="tab" role="tab" aria-selected="false" data-tab="weather"><span class="tab-i">&#127777;</span>WX<span class="tbadge">3</span></button>
   <button class="tab" role="tab" aria-selected="false" data-tab="maps"><span class="tab-i">&#127752;</span>Maps</button>
   <button class="tab" role="tab" aria-selected="false" data-tab="atc"><span class="tab-i">&#127897;</span>ATC</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="monitor"><span class="tab-i">&#9889;</span>Monitor</button>
 </nav>
 
 <!-- Monitor sub-nav: faces + the sections folded in from the old top-level
@@ -3511,7 +3511,7 @@ html,body{max-width:100%;overflow-x:hidden;}
       <button id="help-modal-close" style="background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;">&#10005;</button>
     </div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-family:var(--cond);font-size:16.5px;color:var(--txt);">
-      <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">1 &ndash; 8</kbd><span>Switch tabs (Monitor &middot; KNMI &middot; Aviation &middot; Stations &middot; Weather &middot; Maps &middot; ATC &middot; Dashboards)</span>
+      <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">1 &ndash; 9</kbd><span>Switch tabs (Current &middot; WX &middot; Maps &middot; ATC &middot; Monitor &middot; Forecast &middot; KNMI &middot; Aviation &middot; Stations)</span>
       <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">R</kbd><span>Refresh all data</span>
       <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">M</kbd><span>Toggle mute (alerts)</span>
       <kbd style="font-family:var(--mono);font-size:16.5px;padding:2px 8px;border:1px solid var(--bdrb);border-radius:4px;background:rgba(255,255,255,0.04);text-align:center;">N</kbd><span>Toggle night mode</span>
@@ -5407,6 +5407,9 @@ window.showAviationSub = showAviationSub;
 const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations'];
 const MON_SUBTABS = ['forecast','knmi','aviation','stations']; // fold into the Monitor tab highlight
 function switchTab(name){
+  // Guard: an unknown name would hide every panel AND deselect every tab,
+  // leaving a blank page with no way back. Ignore it instead.
+  if(name !== 'current' && !panels[name]){ return; }
   // Current gets its own top-tab highlight; the folded-in sections highlight
   // Monitor instead (matches the panel they actually show).
   const topName = (name === 'current') ? 'current' : (MON_SUBTABS.includes(name) ? 'monitor' : name);
@@ -6552,7 +6555,10 @@ document.querySelectorAll('.mon-islt, .mon-stavg').forEach(function(t){
 document.addEventListener('keydown', e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
   if(e.ctrlKey||e.metaKey||e.altKey) return;
-  const map={'1':'monitor','2':'knmi','3':'aviation','4':'stations','5':'weather','6':'maps','7':'atc','8':'dashboards'};
+  // Order mirrors the tab bar (Current · WX · Maps · ATC · Monitor), then the
+  // sections folded under Monitor. 'dashboards' was listed here but is a face,
+  // not a panel — switchTab('dashboards') matched nothing and blanked the page.
+  const map={'1':'current','2':'weather','3':'maps','4':'atc','5':'monitor','6':'forecast','7':'knmi','8':'aviation','9':'stations'};
   if(map[e.key]){ switchTab(map[e.key]); e.preventDefault(); }
   else if(e.key==='r' || e.key==='R'){ byId('refresh-btn').click(); e.preventDefault(); }
   else if(e.key==='m' || e.key==='M'){ byId('mute-btn').click(); e.preventDefault(); }
@@ -12495,12 +12501,15 @@ async function fetchStationsData(){
     if(!res.ok) throw new Error('HTTP '+res.status);
     rows = await res.json();
   } catch(e) {
+    // Do NOT fabricate readings here. This used to fall back to three
+    // hard-coded stations stamped last_updated:now, which sailed past the
+    // "reporting today" freshness gate and rendered invented temperature /
+    // wind / humidity in the Current tab's Island Average tiles as if they
+    // were live. An empty list is correct: renderStations() shows
+    // "No stations available" and renderStationsAverage() early-returns,
+    // leaving the last known-good values (or placeholders) in place.
     console.warn('[RWC] Worker fetch failed:', e.message);
-    rows = [
-      {station:'Cura\u00e7ao Intl Airport',temperature_c:29.1,heat_index_c:31.0,humidity_percent:74,wind_speed_knots:12,wind_direction_deg:140,wind_direction_text:'SE',rain_today_mm:0,last_updated:new Date().toISOString()},
-      {station:'Santa Maria',temperature_c:29.6,heat_index_c:31.2,humidity_percent:72,wind_speed_knots:10,wind_direction_deg:150,wind_direction_text:'SSE',rain_today_mm:0,last_updated:new Date().toISOString()},
-      {station:'Savonet',temperature_c:27.2,heat_index_c:27.8,humidity_percent:68,wind_speed_knots:6,wind_direction_deg:120,wind_direction_text:'ESE',rain_today_mm:0,last_updated:new Date().toISOString()}
-    ];
+    rows = [];
   }
   rows.forEach(function(r){
     r.temperature_c    = safeNum(r.temperature_c);
