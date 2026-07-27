@@ -1831,6 +1831,106 @@ body.tab-hidden *{animation-play-state:paused !important;}
 :root.mono .mon-hum-bar-fill { background: linear-gradient(180deg,#7dd3fc,#475569); box-shadow: 0 0 8px rgba(56,189,248,0.45),inset 0 1px 0 rgba(255,255,255,0.15); }
 :root.mono .theme-swatch.active { border-color: #38bdf8; box-shadow: 0 0 14px rgba(56,189,248,0.38); }
 
+/* ── Spectrum theme (near-black CMS dashboard — magenta / violet / cyan gradient accents) ── */
+:root.spectrum {
+  --bg:    #0a0a0e;
+  --card:  rgba(22,22,28,0.94);
+  --bdr:   rgba(150,150,170,0.14);
+  --bdrb:  rgba(236,72,153,0.38);
+  --txt:   #f5f5fb;
+  --muted: #8b8b9c;
+  --acc:   #ec4899;
+  --acc2:  #22d3ee;
+  --accd:  rgba(236,72,153,0.13);
+  --red:   #ef4444;
+  --redd:  rgba(239,68,68,0.12);
+  --grn:   #10b981;
+  --grnd:  rgba(16,185,129,0.10);
+  --ylw:   #f97316;
+  --ylwd:  rgba(249,115,22,0.10);
+  --pur:   #8b5cf6;
+  --purd:  rgba(139,92,246,0.12);
+  --gauge-track: rgba(255,255,255,0.08);
+  --gauge-halo:  rgba(236,72,153,0.24);
+}
+:root.spectrum body { background: #0a0a0e !important; }
+:root.spectrum body::before {
+  background:
+    radial-gradient(ellipse 1000px 700px at 6% 0%,   rgba(236,72,153,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 800px  620px at 96% 96%,  rgba(34,211,238,0.14) 0%, transparent 58%),
+    radial-gradient(ellipse 560px  460px at 50% 50%,  rgba(139,92,246,0.08) 0%, transparent 55%) !important;
+}
+:root.spectrum .topbar  { background: rgba(14,14,18,0.92); border-bottom: 1px solid rgba(236,72,153,0.22); }
+:root.spectrum nav.tabs { background: rgba(12,12,16,0.94); }
+:root.spectrum .tab     { color: rgba(180,180,200,0.55); }
+:root.spectrum .tab.active { background: linear-gradient(120deg,rgba(236,72,153,0.90),rgba(139,92,246,0.85),rgba(34,211,238,0.85)); border-color: rgba(236,72,153,0.5); box-shadow: 0 5px 18px rgba(139,50,180,0.4), 0 0 22px rgba(34,211,238,0.14), inset 0 1px 0 rgba(255,255,255,0.18); color: #fff; }
+:root.spectrum .tab:hover:not(.active) { background: rgba(236,72,153,0.12); color: #f0abfc; }
+:root.spectrum .mon-tile,:root.spectrum .mcard,:root.spectrum .tcard,:root.spectrum .wcard,:root.spectrum .srow,:root.spectrum .gfx-card,:root.spectrum .gfx-tile,:root.spectrum .map-cell,:root.spectrum .wdb-metric,:root.spectrum .wdb-hero,:root.spectrum .wdb-chart-wrap,:root.spectrum .wdb-sunrise,:root.spectrum .wdb-aq-wrap,:root.spectrum .wdb-rain-wrap,:root.spectrum .wdb-fstrip-card,:root.spectrum .sycard,:root.spectrum .sforecast {
+  background: linear-gradient(135deg, rgba(30,30,38,0.75), rgba(14,14,18,0.90));
+  border-color: rgba(150,150,170,0.18);
+}
+:root.spectrum .chip      { background: rgba(60,40,60,0.35); border-color: rgba(236,72,153,0.28); }
+:root.spectrum .chip.cred { background: rgba(160,30,60,0.30); }
+:root.spectrum .chip.cwrn { background: rgba(150,80,20,0.30); }
+:root.spectrum .chip.cinf { background: rgba(20,90,140,0.28); }
+:root.spectrum .hdr-ttl { background: linear-gradient(90deg,#ec4899,#8b5cf6,#22d3ee); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:none; }
+:root.spectrum .mon-style-btn.active { background: linear-gradient(120deg,rgba(236,72,153,0.85),rgba(139,92,246,0.8),rgba(34,211,238,0.8)); border-color: rgba(236,72,153,0.5); }
+:root.spectrum .srow-hd { background: linear-gradient(90deg,rgba(236,72,153,0.12),transparent); border-color: rgba(236,72,153,0.20); }
+:root.spectrum .wdb-rain-bar-fill { background: linear-gradient(90deg,#8b5cf6,#22d3ee); }
+:root.spectrum .gau-tile { background: linear-gradient(180deg,rgba(236,72,153,0.06),rgba(255,255,255,0.004)),rgba(22,22,28,0.94); border-color: rgba(236,72,153,0.20); }
+:root.spectrum .mon-hum-bar-fill { background: linear-gradient(180deg,#f0abfc,#8b5cf6); box-shadow: 0 0 8px rgba(236,72,153,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
+:root.spectrum .theme-swatch.active { border-color: #ec4899; box-shadow: 0 0 14px rgba(236,72,153,0.42); }
+
+/* ── Nebula theme (deep indigo / blue / violet gradient glass) ── */
+:root.nebula {
+  --bg:    #0b1437;
+  --card:  rgba(22,34,78,0.72);
+  --bdr:   rgba(120,150,255,0.18);
+  --bdrb:  rgba(140,170,255,0.40);
+  --txt:   #eef2ff;
+  --muted: #93a2c9;
+  --acc:   #3b82f6;
+  --acc2:  #7c3aed;
+  --accd:  rgba(59,130,246,0.14);
+  --red:   #fb7185;
+  --redd:  rgba(251,113,133,0.12);
+  --grn:   #34d399;
+  --grnd:  rgba(52,211,153,0.10);
+  --ylw:   #fbbf24;
+  --ylwd:  rgba(251,191,36,0.10);
+  --pur:   #a78bfa;
+  --purd:  rgba(167,139,250,0.12);
+  --gauge-track: rgba(120,150,255,0.18);
+  --gauge-halo:  rgba(124,58,237,0.28);
+}
+:root.nebula body { background: linear-gradient(135deg,#0b1437 0%,#16215c 48%,#241a5e 100%) !important; }
+:root.nebula body::before {
+  background:
+    radial-gradient(ellipse 1100px 750px at 8% 0%,   rgba(59,130,246,0.28) 0%, transparent 62%),
+    radial-gradient(ellipse 820px  650px at 94% 96%,  rgba(124,58,237,0.26) 0%, transparent 60%),
+    radial-gradient(ellipse 600px  480px at 50% 45%,  rgba(34,211,238,0.10) 0%, transparent 55%) !important;
+}
+:root.nebula .topbar  { background: rgba(14,22,55,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(120,150,255,0.24); }
+:root.nebula nav.tabs { background: rgba(14,22,55,0.7); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+:root.nebula .tab     { color: rgba(150,170,220,0.6); }
+:root.nebula .tab.active { background: linear-gradient(135deg,rgba(30,100,255,0.88),rgba(110,50,230,0.90)); border-color: rgba(140,170,255,0.5); box-shadow: 0 5px 18px rgba(30,80,220,0.45), 0 0 22px rgba(124,58,237,0.18), inset 0 1px 0 rgba(200,215,255,0.22); color: #f0f4ff; }
+:root.nebula .tab:hover:not(.active) { background: rgba(59,130,246,0.14); color: #93c5fd; }
+:root.nebula .mon-tile,:root.nebula .mcard,:root.nebula .tcard,:root.nebula .wcard,:root.nebula .srow,:root.nebula .gfx-card,:root.nebula .gfx-tile,:root.nebula .map-cell,:root.nebula .wdb-metric,:root.nebula .wdb-hero,:root.nebula .wdb-chart-wrap,:root.nebula .wdb-sunrise,:root.nebula .wdb-aq-wrap,:root.nebula .wdb-rain-wrap,:root.nebula .wdb-fstrip-card,:root.nebula .sycard,:root.nebula .sforecast {
+  background: linear-gradient(135deg, rgba(30,45,100,0.55), rgba(14,20,50,0.75));
+  border-color: rgba(120,150,255,0.22);
+}
+:root.nebula .chip      { background: rgba(40,60,140,0.32); border-color: rgba(120,150,255,0.30); }
+:root.nebula .chip.cred { background: rgba(160,30,70,0.28); }
+:root.nebula .chip.cwrn { background: rgba(140,90,10,0.28); }
+:root.nebula .chip.cinf { background: rgba(30,90,200,0.30); }
+:root.nebula .hdr-ttl { background: linear-gradient(90deg,#3b82f6,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:none; }
+:root.nebula .mon-style-btn.active { background: linear-gradient(135deg,rgba(30,100,255,0.85),rgba(110,50,230,0.88)); border-color: rgba(140,170,255,0.48); }
+:root.nebula .srow-hd { background: linear-gradient(90deg,rgba(59,130,246,0.14),transparent); border-color: rgba(120,150,255,0.22); }
+:root.nebula .wdb-rain-bar-fill { background: linear-gradient(90deg,#3b82f6,#7c3aed); }
+:root.nebula .gau-tile { background: linear-gradient(180deg,rgba(59,130,246,0.08),rgba(255,255,255,0.004)),rgba(20,30,70,0.85); border-color: rgba(120,150,255,0.22); }
+:root.nebula .mon-hum-bar-fill { background: linear-gradient(180deg,#93c5fd,#7c3aed); box-shadow: 0 0 8px rgba(59,130,246,0.5),inset 0 1px 0 rgba(255,255,255,0.15); }
+:root.nebula .theme-swatch.active { border-color: #3b82f6; box-shadow: 0 0 14px rgba(59,130,246,0.42); }
+
 /* ── Theme polish (added depth, sheen & glow) ───────────────────────────── */
 /* Glass: frosted top-edge highlight + soft violet drop shadow for real depth */
 :root.glass .mon-tile, :root.glass .mcard, :root.glass .tcard, :root.glass .wcard,
@@ -2260,6 +2360,8 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .theme-swatch[data-theme="aurora"]{ background: linear-gradient(160deg,#04140f,#0a4a3a); color: #2dd4bf; border-color: rgba(45,212,191,0.22); }
 .theme-swatch[data-theme="sunset"]{ background: linear-gradient(160deg,#16080f,#7a2030); color: #fb923c; border-color: rgba(251,146,60,0.24); }
 .theme-swatch[data-theme="mono"]  { background: linear-gradient(160deg,#0a0e14,#28323f); color: #38bdf8; border-color: rgba(120,140,170,0.26); }
+.theme-swatch[data-theme="spectrum"] { background: linear-gradient(160deg,#0a0a0e,#3a1030,#0a2a30); color: #ec4899; border-color: rgba(236,72,153,0.24); }
+.theme-swatch[data-theme="nebula"]   { background: linear-gradient(160deg,#0b1437,#3a2a8a); color: #7c9cff; border-color: rgba(120,150,255,0.26); }
 .theme-swatch.active { box-shadow: 0 0 14px var(--accd); }
 .theme-swatch:hover:not(.active) { filter: brightness(1.15); }
 .icon-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -12834,7 +12936,7 @@ function applyTheme(t){
   localStorage.setItem('rwc-theme', t);
   const root = document.documentElement;
   // Only remove theme classes, never touch 'night'
-  root.classList.remove('glass','neon','storm','aurora','sunset','mono');
+  root.classList.remove('glass','neon','storm','aurora','sunset','mono','spectrum','nebula');
   // 'navy' is the base (no class); every other theme is a single class toggle.
   if(t !== 'navy') root.classList.add(t);
   // Update swatch active state
@@ -13010,6 +13112,12 @@ function buildSettingsPanel(){
         </div>
         <div class="theme-swatch ${__currentTheme==='mono'?'active':''}" data-theme="mono" onclick="applyTheme('mono')">
           <div style="font-size:19.5px;margin-bottom:3px;">\u{1F311}</div>Mono
+        </div>
+        <div class="theme-swatch ${__currentTheme==='spectrum'?'active':''}" data-theme="spectrum" onclick="applyTheme('spectrum')">
+          <div style="font-size:19.5px;margin-bottom:3px;">\u{1F3A8}</div>Spectrum
+        </div>
+        <div class="theme-swatch ${__currentTheme==='nebula'?'active':''}" data-theme="nebula" onclick="applyTheme('nebula')">
+          <div style="font-size:19.5px;margin-bottom:3px;">\u{1F52D}</div>Nebula
         </div>
       </div>
     </div>
