@@ -11576,6 +11576,14 @@ function renderRainVector(vec){
   condRainVectorLayer.clearLayers();
   if(!vec || !__condMapLayers.rain) return;
   var comp = COMPASS16_MAP[Math.round(vec.bearingDeg / 22.5) % 16];
+  // The centroid always lands somewhere within the single tile sampled around
+  // ABC_LAT/ABC_LON — i.e. right in the same small cluster already crowded
+  // with the Curaçao/Bonaire wind-vane and buoy markers. Rather than draw the
+  // arrow exactly on the true centroid (guaranteed overlap), nudge its
+  // *display* position south into open water and connect it back with a
+  // dashed leader line — the same nudge+leader pattern already used for the
+  // station icons on this same map.
+  var dispLat = vec.toLat - 0.55, dispLon = vec.toLon;
   var arrowHtml =
     '<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.85));">' +
       '<svg width="40" height="40" viewBox="0 0 40 40" style="transform:rotate(' + vec.bearingDeg + 'deg);">' +
@@ -11586,9 +11594,11 @@ function renderRainVector(vec){
       '</div>' +
     '</div>';
   var icon = L.divIcon({html: arrowHtml, className:'', iconSize:[40,58], iconAnchor:[20,20]});
-  L.polyline([[vec.fromLat, vec.fromLon], [vec.toLat, vec.toLon]],
-    {color:'#4db8ff', weight:1.5, opacity:0.5, dashArray:'2 4', interactive:false}).addTo(condRainVectorLayer);
-  L.marker([vec.toLat, vec.toLon], {icon: icon, interactive:false, zIndexOffset: 900})
+  L.polyline([[vec.toLat, vec.toLon], [dispLat, dispLon]],
+    {color:'#4db8ff', weight:1, opacity:0.4, dashArray:'2 3', interactive:false}).addTo(condRainVectorLayer);
+  L.circleMarker([vec.toLat, vec.toLon], {radius:3, color:'#4db8ff', weight:1, fillColor:'#4db8ff', fillOpacity:0.7, interactive:false})
+    .addTo(condRainVectorLayer);
+  L.marker([dispLat, dispLon], {icon: icon, interactive:false, zIndexOffset: 900})
     .bindTooltip('Rain echo moving toward ' + comp + ' at ~' + Math.round(vec.speedKmh) + ' km/h (' + vec.ageMin + 'm old)', {direction:'top'})
     .addTo(condRainVectorLayer);
 }
