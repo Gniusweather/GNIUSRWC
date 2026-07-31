@@ -659,7 +659,10 @@ tr:last-child td{border-bottom:none;}
 .mon-rain-lbl{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
 .mon-rain-lbl small{font-size:14px;opacity:.7;text-transform:none;margin-left:4px;}
 .mon-rain-wxwrap{display:flex;flex-wrap:wrap;gap:2px;}
-.mon-rain-nc-bars{display:flex;gap:5px;align-items:flex-end;height:38px;}
+/* No fixed height: each column is bar (34px) + its own +15m/+30m label, so a
+   hard 38px cap made the 52px columns overflow upward past the wrapper and
+   collide with the "Nowcast · next 1h" heading above. Size to content. */
+.mon-rain-nc-bars{display:flex;gap:5px;align-items:flex-end;}
 .mon-rain-nc-bar{width:16px;border-radius:3px 3px 1px 1px;background:rgba(255,255,255,0.06);position:relative;min-height:3px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;}
 .mon-rain-nc-bar-fill{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,#4db8ff,#0ea5e9);min-height:2px;box-shadow:0 0 6px rgba(77,184,255,0.5);}
 .mon-rain-nc-lbl{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center;margin-top:2px;}
@@ -3169,13 +3172,13 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="mon-radar-grid">
           <div class="mon-radar-body" id="monRadarBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127928; Radar</div>
-            <iframe id="monRadar" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monRadar" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-blocker"></div>
             <a href="https://www.windy.com/?radar,12.3,-69.15,8" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
           </div>
           <div class="mon-radar-body" id="monSatBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127760; Satellite</div>
-            <iframe id="monSatellite" src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monSatellite" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.3&lon=-69.15&detailLat=12.15&detailLon=-69.0&zoom=8&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-blocker"></div>
             <a href="https://www.windy.com/?satellite,12.3,-69.15,8" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
           </div>
@@ -5560,8 +5563,13 @@ function switchTab(name){
     setTimeout(()=>{if(leafMap&&!byId('mapCard').classList.contains('hidden'))leafMap.invalidateSize(); if(condMap) condMap.invalidateSize();},250);
   }
   if(name==='forecast'){
-    if(!forecastTabOpened){ forecastTabOpened = true; updateForecast(); }
-    else if(__lastForecastData){ renderForecast(__lastForecastData.days, __lastForecastData.models); }
+    forecastTabOpened = true;
+    if(__lastForecastData) renderForecast(__lastForecastData.days, __lastForecastData.models);
+    // Always ask for fresh data on open: updateForecast() self-guards with a
+    // 15-min in-memory cache, so this is a cheap no-op when data is current
+    // and a real refresh when the background timer has been idle (it now only
+    // runs while a forecast-consuming view is actually on screen).
+    updateForecast();
   }
   if(name==='weather'){
     if(!weatherTabOpened){ weatherTabOpened = true; updateWeatherTab(); }
@@ -12917,6 +12925,27 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   });
 })();
 
+/* ═══ CURRENT TAB — defer the two Windy embeds until scrolled near ═══
+   Current is the default tab, and its Radar/Satellite windows sit well below
+   the fold (past Wind / Island Avg / Forecast / Rain). Loading two full Windy
+   map embeds eagerly on first paint competes with the live data the user
+   actually sees first. Hold them at about:blank and swap in the real src once
+   they come within a screen of the viewport; once loaded they stay loaded, so
+   tab switches never re-fetch them. Falls back to loading immediately where
+   IntersectionObserver is unavailable. */
+(function(){
+  var frames = [byId('monRadar'), byId('monSatellite')].filter(Boolean);
+  if(!frames.length) return;
+  function load(f){ if(f.dataset.src){ f.src = f.dataset.src; delete f.dataset.src; } }
+  if(typeof IntersectionObserver !== 'function'){ frames.forEach(load); return; }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ load(e.target); io.unobserve(e.target); }
+    });
+  }, {rootMargin: '100% 0px'});
+  frames.forEach(function(f){ io.observe(f); });
+})();
+
 /* ═══ MONITOR WINDY WINDOWS — lock ═══
    A transparent blocker over each window swallows pan/zoom while locked
    (default) so scrolling past the maps can't move them; the external link
@@ -13017,7 +13046,21 @@ async function init(){
 setInterval(() => { if(!testMode && !hidden()) refreshAllMetars(); }, 60000);setInterval(() => { if(!testMode && !hidden()){ loadAllTAFs(); loadAllSynops(); } }, 300000);
 setInterval(() => { if(!testMode && !hidden()) fetchStationsData(); }, 60000);  // always refresh (Monitor island-avg + Stations tab both need fresh data)
 setInterval(() => { if(!testMode && !hidden() && typeof loadKnmiData === 'function') loadKnmiData(false); }, 300000);  // KNMI updates ~10min; refresh every 5min for Graphics + KNMI tab
-setInterval(() => { if(!testMode && !hidden() && forecastTabOpened) updateForecast(); }, 600000);
+/* Is a view that actually displays the multi-model ensemble on screen?
+   The idle prefetch sets forecastTabOpened=true even for a user who never
+   leaves the Current tab, which made this timer re-download the full
+   5-model x 11-variable x 5-day ensemble forever in the background. Current's
+   own "next 12 h" tile uses updateWxTileForecast() (one light single-model
+   call), so it needs none of that. Refresh only while it's really being shown;
+   switchTab('forecast') pulls fresh data on open. */
+function __forecastViewVisible(){
+  const vis = id => { const el = byId(id); return el && !el.classList.contains('hidden'); };
+  if(vis('tab-forecast')) return true;
+  if(vis('tab-knmi')) return true;              // graphs / graphics / dashboard sub-views
+  if(vis('tab-monitor') && (__monStyle === 'sky' || __monStyle === 'gauges' || __monStyle === 'home')) return true;
+  return false;
+}
+setInterval(() => { if(!testMode && !hidden() && forecastTabOpened && __forecastViewVisible()) updateForecast(); }, 600000);
 setInterval(() => { if(!testMode && !hidden() && weatherTabOpened) updateWeatherTab(); }, 600000);
 
 function updateTitle(){
