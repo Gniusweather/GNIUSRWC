@@ -4062,7 +4062,7 @@ function parseMetar(raw){
    Aviation convention: the arrow points TOWARD the centre FROM the direction the
    wind originates (i.e. a wind FROM 270° / west shows an arrow on the west side
    pointing inward toward the hub). The arrowhead sits at the FROM bearing. */
-function miniRose(dir, spd){
+function miniRose(dir, spd, gust){
   const gid = 'wg' + Math.random().toString(36).slice(2, 7);
 
   // No direction → variable / unknown
@@ -4164,10 +4164,15 @@ function miniRose(dir, spd){
       <circle cx="0" cy="0" r="2.5" fill="${col}"/>
     </g>
 
-    <g>
-      <rect x="21" y="71" width="58" height="19" rx="4.5" fill="rgba(5,18,34,0.88)" stroke="${col}" stroke-width="0.7" stroke-opacity="0.55"/>
-      <text x="50" y="84.5" fill="${col}" font-size="14" font-weight="800" text-anchor="middle" font-family="JetBrains Mono,monospace" letter-spacing="0.2">${s !== null ? Math.round(s) + ' kt' : '\u2014'}</text>
-    </g>
+    ${(function(){
+      var g = (typeof gust === 'number' && isFinite(gust) && s !== null && gust > s) ? Math.round(gust) : null;
+      var label = s !== null ? (Math.round(s) + (g !== null ? 'G' + g : '') + ' kt') : '\u2014';
+      var w = g !== null ? 74 : 58;   // widen the pill when a gust value is packed in
+      var x = 50 - w / 2;
+      var fs = g !== null ? 12.5 : 14;
+      return '<rect x="' + x + '" y="71" width="' + w + '" height="19" rx="4.5" fill="rgba(5,18,34,0.88)" stroke="' + col + '" stroke-width="0.7" stroke-opacity="0.55"/>' +
+        '<text x="50" y="84.5" fill="' + col + '" font-size="' + fs + '" font-weight="800" text-anchor="middle" font-family="JetBrains Mono,monospace" letter-spacing="0.2">' + label + '</text>';
+    })()}
   </svg>`;
 }
 
@@ -4275,10 +4280,9 @@ function buildMetarGrid(){
         <div class="crow">
           <div class="mwind-block" data-field="wind-chip">
             <span class="chip-l" style="align-self:flex-start;padding-left:2px;">Wind</span>
-            <div data-field="wind-rose">${miniRose(null,null)}</div>
+            <div data-field="wind-rose">${miniRose(null,null,null)}</div>
             <span class="chip-s" data-field="wind-dir" style="font-size:16.5px;color:var(--txt);font-family:var(--cond);font-weight:700;"></span>
-            <span class="chip-s" data-field="wind-txt" style="font-size:16.5px;"></span>
-            <span class="chip-s" data-field="wind-bft" style="font-size:16.5px;opacity:.6;"></span>
+            <span class="chip-s wrap" data-field="wind-bft" style="font-size:14.5px;opacity:.65;text-align:center;line-height:1.2;"></span>
           </div>
           <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
             <div class="crow">
@@ -4393,8 +4397,8 @@ function renderMetarCard(icao, rawLine){
   }
 
   const bft = p.windSpd===null ? '' : p.windSpd<=1?'Bft 0 Calm':p.windSpd<=3?'Bft 1 Light air':p.windSpd<=6?'Bft 2 Light breeze':p.windSpd<=10?'Bft 3 Gentle breeze':p.windSpd<=16?'Bft 4 Moderate breeze':p.windSpd<=21?'Bft 5 Fresh breeze':p.windSpd<=27?'Bft 6 Strong breeze':p.windSpd<=33?'Bft 7 Near gale':p.windSpd<=40?'Bft 8 Gale':p.windSpd<=47?'Bft 9 Strong gale':p.windSpd<=55?'Bft 10 Storm':p.windSpd<=63?'Bft 11 Violent storm':'Bft 12 Hurricane';
-  cf(card,'wind-rose').innerHTML = miniRose(p.windDir, p.windSpd);
-  cf(card,'wind-rose').title = bft;
+  cf(card,'wind-rose').innerHTML = miniRose(p.windDir, p.windSpd, p.windGust);
+  cf(card,'wind-rose').title = p.windGust ? `${bft} \u00b7 gusting ${p.windGust} kt` : bft;
   const COMPASS16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   let dirLabel = '\u2014';
   if(p.windDir !== null){
@@ -4402,11 +4406,12 @@ function renderMetarCard(icao, rawLine){
     dirLabel = `${p.windDir}\u00b0 ${comp}`;
   } else if(p.windStr.startsWith('VRB')) { dirLabel = 'Variable'; }
   cf(card,'wind-dir').textContent = dirLabel;
-  let spdLabel = p.windSpd === 0 ? 'Calm' : p.windSpd !== null ? `${p.windSpd} kt` : '\u2014';
-  if(p.windGust) spdLabel += ` G${p.windGust}`;
-  cf(card,'wind-txt').textContent = spdLabel;
   const wBft = cf(card,'wind-bft');
-  if(wBft) wBft.textContent = bft;
+  // Speed (and gust, when reported) are already shown compactly inside the
+  // rose pill itself \u2014 the description here only needs the plain-language
+  // part ("Moderate breeze"), not the repeated "Bft 4" prefix, so it wraps
+  // cleanly in the narrow 100px column instead of overflowing past it.
+  if(wBft) wBft.textContent = bft.replace(/^Bft \d+ /, '');
   const wChip = cf(card,'wind-chip');
   wChip.className = 'mwind-block' + (p.windGust>=25?' cred-bl':p.windGust>0?' cwrn-bl':'');
 
@@ -8361,8 +8366,9 @@ function renderMonitor(data){
     if(metarLiveRain) liveSrcParts.push('TNCC');
     if(radarLiveRain) liveSrcParts.push('radar');
     var liveSrcLabel = liveSrcParts.join(' + ') || 'live';
+    var mins = (data && data.nowcast) || null;
+    checkNowcastRainAlert(mins);
     if(ncEl){
-      var mins = (data && data.nowcast) || null;
       if(mins && mins.length){
         var maxV = Math.max(0.2, Math.max.apply(null, mins.map(function(m){ return m.precip; })));
         var modelMissedIt = liveRainNow && mins[0].precip <= 0.2;
@@ -13206,6 +13212,40 @@ function updateWxAlertStatus(){
 }
 window.enableWxAlerts = enableWxAlerts;
 window.updateWxAlertStatus = updateWxAlertStatus;
+
+/* Rain-nowcast notification — fires from the RAIN tile's own next-1h
+   nowcast (buildNowcast()/renderMonitor()'s `mins` array), the same 4×15min
+   bars shown on screen, rather than the SW's separate hourly-probability
+   fetch. Runs in-page on the existing ~60s Monitor refresh cadence, so it
+   only checks while a Monitor/Current view is actually open and fetching.
+   0.3mm/15min matches the "real rain, not model noise" floor already used
+   by the tile's own live-calibration logic. Dedup: once fired, stays quiet
+   for an hour, and resets as soon as the nowcast drops back under the
+   threshold so the *next* onset can alert again. */
+function checkNowcastRainAlert(mins){
+  try {
+    if(!mins || !mins.length) return;
+    if(localStorage.getItem('rwc-alerts') !== 'on') return;
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    var prefs = (typeof getAlertPrefs === 'function') ? getAlertPrefs() : null;
+    if(!prefs || !prefs.rain) return;
+    var NOWCAST_RAIN_MM = 0.3;
+    var key = 'rwc-nowcast-alert-until';
+    var hit = null;
+    for(var i = 0; i < mins.length; i++){ if(mins[i].precip > NOWCAST_RAIN_MM){ hit = mins[i]; break; } }
+    if(!hit){ try{ localStorage.removeItem(key); }catch(e){} return; }
+    var until = 0;
+    try{ until = parseInt(localStorage.getItem(key) || '0', 10) || 0; }catch(e){}
+    if(Date.now() < until) return;
+    var body = 'Rain expected ' + hit.label + ' (' + hit.precip.toFixed(1) + ' mm/15min) at your location.';
+    navigator.serviceWorker.ready.then(function(reg){
+      reg.showNotification('Rain in the forecast', {
+        body: body, icon: './icon-192.png', badge: './icon-192.png', tag: 'rwc-nowcast-rain', data: {url: './'}
+      });
+    }).catch(function(){});
+    try{ localStorage.setItem(key, String(Date.now() + 60 * 60 * 1000)); }catch(e){}
+  } catch(e){}
+}
 
 /* While the app is open, ping the SW checker every 15 min (all platforms). */
 setInterval(function(){
