@@ -11422,6 +11422,7 @@ function initCondMap(){
       }catch(e){}
     })
     .catch(function(){});
+  refreshRainVector();
 
   // ── DUST: CAMS circle overlay — size/colour driven by live dust µg/m³ ──
   // Built later in renderCondMap when data is available
@@ -11463,7 +11464,137 @@ function initCondMap(){
     if(condSatLayer && typeof condSatLayer.setParams === 'function'){
       condSatLayer.setParams({ TIME: _gibsIRTime() });
     }
+    refreshRainVector();
   }, 3*60*1000);
+}
+
+/* ── RAIN MOTION VECTOR: direction + speed of the nearest rain echo ──
+   Samples two consecutive RainViewer *observed* radar frames (not the
+   nowcast frames, which are already model-extrapolated) at the same tile,
+   using the same alpha*brightness-weighted centroid technique as
+   fetchRadarNow(). The shift in that weighted centroid between frames gives
+   an approximate direction + speed for the rain mass in view — a simple,
+   robust stand-in for full image cross-correlation motion tracking. */
+var condRainVectorLayer = null;
+var __lastRainVector = null;
+var COMPASS16_MAP = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
+function _tileFracToLonLat(xFrac, yFrac, n){
+  var lon = xFrac / n * 360 - 180;
+  var yy = Math.PI - 2 * Math.PI * yFrac / n;
+  var lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(yy) - Math.exp(-yy)));
+  return {lat: lat, lon: lon};
+}
+
+function _sampleTileCentroid(url, size){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    var timer = setTimeout(function(){ resolve(null); }, 4000);
+    img.onload = function(){
+      clearTimeout(timer);
+      try {
+        var cv = document.createElement('canvas');
+        cv.width = size; cv.height = size;
+        var cx = cv.getContext('2d');
+        cx.drawImage(img, 0, 0);
+        var d = cx.getImageData(0, 0, size, size).data;
+        var sumW = 0, sumX = 0, sumY = 0;
+        for(var y = 0; y < size; y += 2){       // stride 2: 4x fewer samples, negligible precision loss for a centroid
+          for(var x = 0; x < size; x += 2){
+            var i = (y * size + x) * 4;
+            var a = d[i+3] / 255;
+            if(a <= 0) continue;
+            var gray = (d[i] + d[i+1] + d[i+2]) / 3 / 255;
+            var w = a * gray;
+            if(w <= 0.02) continue;
+            sumW += w; sumX += w * x; sumY += w * y;
+          }
+        }
+        if(sumW <= 0){ resolve(null); return; }
+        resolve({cx: sumX / sumW, cy: sumY / sumW, weight: sumW});
+      } catch(e){ resolve(null); }
+    };
+    img.onerror = function(){ clearTimeout(timer); resolve(null); };
+    img.src = url;
+  });
+}
+
+function _haversineKm(lat1, lon1, lat2, lon2){
+  var R = 6371, toRad = Math.PI / 180;
+  var dLat = (lat2 - lat1) * toRad, dLon = (lon2 - lon1) * toRad;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function _bearingDeg(lat1, lon1, lat2, lon2){
+  var toRad = Math.PI/180, toDeg = 180/Math.PI;
+  var y = Math.sin((lon2-lon1)*toRad) * Math.cos(lat2*toRad);
+  var x = Math.cos(lat1*toRad)*Math.sin(lat2*toRad) - Math.sin(lat1*toRad)*Math.cos(lat2*toRad)*Math.cos((lon2-lon1)*toRad);
+  return (toDeg * Math.atan2(y, x) + 360) % 360;
+}
+
+async function fetchRainMotionVector(){
+  try {
+    var res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    if(!res.ok) return null;
+    var j = await res.json();
+    var past = (j.radar && j.radar.past) || [];
+    if(past.length < 2 || !j.host) return null;
+    var prev = past[past.length - 2], curr = past[past.length - 1];
+    var z = 7, size = 256;
+    var n = Math.pow(2, z);
+    var xFrac = (ABC_LON + 180) / 360 * n;
+    var latRad = ABC_LAT * Math.PI / 180;
+    var yFrac = (1 - Math.log(Math.tan(latRad) + 1/Math.cos(latRad)) / Math.PI) / 2 * n;
+    var tileX = Math.floor(xFrac), tileY = Math.floor(yFrac);
+    var urlPrev = j.host + prev.path + '/' + size + '/' + z + '/' + tileX + '/' + tileY + '/0/0_0.png';
+    var urlCurr = j.host + curr.path + '/' + size + '/' + z + '/' + tileX + '/' + tileY + '/0/0_0.png';
+    var samples = await Promise.all([_sampleTileCentroid(urlPrev, size), _sampleTileCentroid(urlCurr, size)]);
+    var sPrev = samples[0], sCurr = samples[1];
+    if(!sPrev || !sCurr) return null;   // no rain in view at one or both times -> no motion signal
+    var llPrev = _tileFracToLonLat(tileX + sPrev.cx/size, tileY + sPrev.cy/size, n);
+    var llCurr = _tileFracToLonLat(tileX + sCurr.cx/size, tileY + sCurr.cy/size, n);
+    var distKm = _haversineKm(llPrev.lat, llPrev.lon, llCurr.lat, llCurr.lon);
+    var dtSec = curr.time - prev.time;
+    if(dtSec <= 0) return null;
+    var speedKmh = distKm / (dtSec / 3600);
+    // Below the noise floor (centroid jitter from a coarse/blocky tile) or an
+    // implausible spike (mis-sampled edge case) -> no reliable vector this
+    // cycle, rather than showing a jittery or wrong arrow.
+    if(distKm < 3 || speedKmh > 120) return null;
+    return {
+      fromLat: llPrev.lat, fromLon: llPrev.lon, toLat: llCurr.lat, toLon: llCurr.lon,
+      bearingDeg: _bearingDeg(llPrev.lat, llPrev.lon, llCurr.lat, llCurr.lon),
+      speedKmh: speedKmh, ageMin: Math.round((Date.now()/1000 - curr.time) / 60)
+    };
+  } catch(e){ return null; }
+}
+
+function renderRainVector(vec){
+  if(!condMap) return;
+  if(!condRainVectorLayer) condRainVectorLayer = L.layerGroup().addTo(condMap);
+  condRainVectorLayer.clearLayers();
+  if(!vec || !__condMapLayers.rain) return;
+  var comp = COMPASS16_MAP[Math.round(vec.bearingDeg / 22.5) % 16];
+  var arrowHtml =
+    '<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.85));">' +
+      '<svg width="40" height="40" viewBox="0 0 40 40" style="transform:rotate(' + vec.bearingDeg + 'deg);">' +
+        '<polygon points="20,3 27,26 20,20 13,26" fill="#4db8ff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>' +
+      '</svg>' +
+      '<div style="margin-top:-2px;font-family:monospace;font-size:15px;font-weight:700;color:#fff;background:#0ea5e9;padding:1px 5px;border-radius:4px;white-space:nowrap;">' +
+        Math.round(vec.speedKmh) + ' km/h ' + comp +
+      '</div>' +
+    '</div>';
+  var icon = L.divIcon({html: arrowHtml, className:'', iconSize:[40,58], iconAnchor:[20,20]});
+  L.polyline([[vec.fromLat, vec.fromLon], [vec.toLat, vec.toLon]],
+    {color:'#4db8ff', weight:1.5, opacity:0.5, dashArray:'2 4', interactive:false}).addTo(condRainVectorLayer);
+  L.marker([vec.toLat, vec.toLon], {icon: icon, interactive:false, zIndexOffset: 900})
+    .bindTooltip('Rain echo moving toward ' + comp + ' at ~' + Math.round(vec.speedKmh) + ' km/h (' + vec.ageMin + 'm old)', {direction:'top'})
+    .addTo(condRainVectorLayer);
+}
+
+function refreshRainVector(){
+  fetchRainMotionVector().then(function(vec){ __lastRainVector = vec; renderRainVector(vec); }).catch(function(){});
 }
 
 function condMapToggle(layer, btn){
@@ -11889,6 +12020,10 @@ function renderCondMap(){
   // METAR (30s) and KNMI (5min) refresh loops call this regardless of tab.
   var _mapsTab = byId('tab-maps');
   if(_mapsTab && _mapsTab.classList.contains('hidden')) return;
+  // Redraw the rain motion arrow from last-known data (cheap, no network) —
+  // this is what makes toggling the Rain layer back on show it immediately
+  // instead of waiting up to 3 min for the next fetch cycle.
+  renderRainVector(__lastRainVector);
   // Station condition markers
   condMarkerLayer.clearLayers();
   if(__condMapLayers.stations || __condMapLayers.wind){
