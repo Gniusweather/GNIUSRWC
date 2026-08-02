@@ -702,9 +702,21 @@ tr:last-child td{border-bottom:none;}
 .mon-temp-divider{height:1px;background:var(--bdr);margin:11px 0 8px;}
 .mon-temp-meta{display:flex;flex-direction:column;gap:5px;width:100%;}
 .mon-temp-body > *{width:100%;}
-.mon-temp-meta-row{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--cond);font-size:21.5px;}
-.mon-temp-meta-l{color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:21.5px;}
-.mon-temp-meta-v{color:#cce4ff;font-weight:700;font-size:21.5px;text-align:right;flex:1;margin-left:9px;}
+.mon-temp-meta-row{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--cond);font-size:21.5px;min-width:0;}
+/* max-width caps the label's share of the row. Without it the label keeps its
+   full natural width (flex-basis:auto, nothing forcing it to shrink) and the
+   value — flex-basis:0 — only gets the leftovers: 158px vs 47px in a 214px
+   row, narrow enough that even "1,600 ft" broke mid-number. The cap is inert
+   at the one-column widths (natural label width is already under it) and only
+   engages in the cramped two-column range. */
+.mon-temp-meta-l{color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:21.5px;min-width:0;max-width:52%;}
+/* min-width:0 + overflow-wrap: without them a flex item keeps min-width:auto
+   and can't shrink below its longest word, so real values built by the app —
+   "Ovrcst · 8/8 (SYNOP)" and WW descriptions up to 31 chars like
+   "Slight rain + thunderstorm past" — pushed straight out past the tile edge
+   (measured 153px over at 390px wide, still 88px over at 520px) instead of
+   wrapping inside it. */
+.mon-temp-meta-v{color:#cce4ff;font-weight:700;font-size:21.5px;text-align:right;flex:1;margin-left:9px;min-width:0;overflow-wrap:break-word;}
 .wrose-mon{width:100%;height:100%;display:block;}
 .mon-radar{padding:0;overflow:hidden;}
 .mon-radar .mon-tile-hd{padding:10px 12px 6px;margin-bottom:0;background:linear-gradient(180deg,rgba(8,18,32,0.92),rgba(8,18,32,0.6));backdrop-filter:blur(4px);position:relative;z-index:2;}
@@ -2543,6 +2555,15 @@ html,body{max-width:100%;overflow-x:hidden;}
   .tab-i{font-size:15px;}
   .mon-style-btn{font-size:16.5px;padding:4px 8px;}
   .pw-gauge-val{font-size:25.5px;}
+  .cw-tile.mon-stavg{grid-column:auto !important;}
+}
+/* Curaçao Weather tiles carry dense label/value rows (Cloud base, Cover,
+   Weather, Rain). Two-up they were only ~183px wide on the most common phone
+   sizes — iPhone 12-16 are 390-393px, Pixel is 412px — which wrapped even
+   short labels onto two lines ("CLOUD"/"BASE"). Collapsing to one column up
+   to 430px keeps them readable; this used to cut over at 380px, leaving
+   exactly those devices in the cramped range. */
+@media(max-width:430px){
   .cw-grid{grid-template-columns:1fr !important;}
   .cw-tile.mon-stavg{grid-column:auto !important;}
 }
