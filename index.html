@@ -13068,14 +13068,12 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   function scheduleRetry(){
     if(!want || retryTimer) return;
     clearWatchdog();
-    if(retries >= MAX_RETRIES){
-      setState('error');
-      want = false;
-      retries = 0;   // next manual tap starts from a clean budget
-      return;
-    }
-    setState('loading');
-    // 1.5s, 3s, 6s, 12s, then hold at 15s
+    // Never give up on its own — these channels do come back. After
+    // MAX_RETRIES straight failures just be honest in the UI ("Offline")
+    // but keep retrying at the capped interval forever; only a manual tap
+    // (stopStream) actually stops it.
+    setState(retries >= MAX_RETRIES ? 'error' : 'loading');
+    // 1.5s, 3s, 6s, 12s, then hold at 15s indefinitely
     const delay = Math.min(15000, 1500 * Math.pow(2, Math.min(retries, 4)));
     retries++;
     retryTimer = setTimeout(() => { retryTimer = null; if(want) connect(); }, delay);
@@ -13086,18 +13084,25 @@ document.querySelectorAll('.atcplayer').forEach(player => {
     clearRetry(); clearWatchdog();
     connect();
   }
+  // Force an immediate reconnect attempt, discarding any pending backoff
+  // timer — used when we regain a signal (foreground/online) that the old,
+  // possibly browser-throttled retry timer can't be trusted to have kept
+  // ticking accurately through.
+  function forceResume(){
+    if(!want || player.classList.contains('playing')) return;
+    clearRetry(); clearWatchdog();
+    retries = 0;
+    connect();
+  }
   // Reconnect immediately when connectivity returns (wifi/cell handoff).
-  window.addEventListener('online', () => {
-    if(want && !player.classList.contains('playing')){
-      retries = 0; clearRetry(); connect();
-    }
-  });
-  // A backgrounded stream can be torn down with no event fired; when the tab
-  // comes back, resume anything that should be playing but isn't.
-  document.addEventListener('visibilitychange', () => {
-    if(document.hidden || !want || retryTimer) return;
-    if(audio && audio.paused){ retries = 0; connect(); }
-  });
+  window.addEventListener('online', forceResume);
+  // Backgrounding a not-yet-playing stream can freeze/throttle its pending
+  // retry timer for an arbitrary length of time (mobile background tab
+  // suspension) — bailing here whenever a retry was already scheduled (the
+  // old behaviour) meant coming back to the foreground usually did nothing
+  // and just waited on that stale timer. Force a fresh attempt instead.
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) forceResume(); });
+  window.addEventListener('pageshow', forceResume);
   btn.addEventListener('click', () => { want ? stopStream() : startStream(); });
   if(volSlider){ volSlider.addEventListener('input', () => { if(audio) audio.volume = volSlider.value/100; }); }
 });
