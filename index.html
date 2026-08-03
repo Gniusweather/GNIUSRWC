@@ -12992,6 +12992,12 @@ document.querySelectorAll('.atcplayer').forEach(player => {
   }
   function clearWatchdog(){ if(watchdog){ clearTimeout(watchdog); watchdog = null; } }
   function clearRetry(){ if(retryTimer){ clearTimeout(retryTimer); retryTimer = null; } }
+  let stalling = false;
+  /* Arms a fresh 12s deadline for a NEW connection attempt / stall episode.
+     Do not call this from every waiting/stalled event — a marginal stream
+     that fires those repeatedly without ever reaching "playing" would keep
+     pushing the deadline out and the watchdog would never fire, leaving the
+     channel stuck on "Connecting" forever. */
   function armWatchdog(){
     clearWatchdog();
     watchdog = setTimeout(() => {
@@ -13000,6 +13006,16 @@ document.querySelectorAll('.atcplayer').forEach(player => {
       if(audio && !audio.paused && player.classList.contains('playing')) return;
       scheduleRetry();   // stuck connecting/buffering — re-point and try again
     }, 12000);
+  }
+  /* One watchdog deadline per stall episode: the first waiting/stalled event
+     since the last confirmed "playing" arms it; further events during the
+     same episode just update the UI and leave the existing countdown alone. */
+  function onStallEvent(){
+    if(!want) return;
+    setState('loading');
+    if(stalling) return;
+    stalling = true;
+    armWatchdog();
   }
   /* Built once, on the first user tap, then reused for every reconnect so the
      element keeps its autoplay permission. Handlers live on this one element
@@ -13010,10 +13026,10 @@ document.querySelectorAll('.atcplayer').forEach(player => {
     a.volume = (volSlider ? volSlider.value : 80) / 100;
     a.addEventListener('playing', () => {
       if(!want) return;
-      retries = 0; clearWatchdog(); setState('playing'); mediaSession();
+      retries = 0; stalling = false; clearWatchdog(); setState('playing'); mediaSession();
     });
-    a.addEventListener('waiting', () => { if(!want) return; setState('loading'); armWatchdog(); });
-    a.addEventListener('stalled', () => { if(!want) return; setState('loading'); armWatchdog(); });
+    a.addEventListener('waiting', onStallEvent);
+    a.addEventListener('stalled', onStallEvent);
     a.addEventListener('error',   () => { if(!want) return; scheduleRetry(); });
     a.addEventListener('ended',   () => { if(!want) return; scheduleRetry(); });   // live streams never end - reconnect
     // iOS pauses audio on interruptions (calls, Siri); resume if still wanted.
@@ -13034,6 +13050,7 @@ document.querySelectorAll('.atcplayer').forEach(player => {
     setState('loading');
     try{ a.pause(); }catch(e){}
     a.src = streamUrl + (streamUrl.indexOf('?') < 0 ? '?' : '&') + 'nocache=' + Date.now();
+    stalling = true;
     armWatchdog();   // if not live within 12 s, rebuild the connection
     const p = a.play();
     if(p && p.catch) p.catch(() => { if(want && a === audio) scheduleRetry(); });
