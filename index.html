@@ -13290,7 +13290,7 @@ window.switchWxKey = switchWxKey;
 /* Alert preferences — which conditions notify, and at what thresholds.
    Read by the in-page ping and cached in the service worker so background/
    closed-app checks honour them too. Defaults mirror the built-in thresholds. */
-var ALERT_PREFS_DEFAULT = {wind:true, windKt:30, storm:true, showers:true, rain:true, rainPct:70, tropical:true};
+var ALERT_PREFS_DEFAULT = {wind:true, windKt:34, storm:true, showers:true, rain:true, rainPct:70, nowcast:true, tropical:true};
 function getAlertPrefs(){
   var d = Object.assign({}, ALERT_PREFS_DEFAULT);
   try{ var p = JSON.parse(localStorage.getItem('rwc-alert-prefs') || 'null'); if(p && typeof p === 'object'){ for(var k in d){ if(p[k] != null) d[k] = p[k]; } } }catch(e){}
@@ -13373,7 +13373,7 @@ function updateWxAlertStatus(){
       : 'Active while the app is open. For closed-app alerts on iPhone: install the free <b>ntfy</b> app and subscribe to topic <b>rwc-abc-wx-gnius21-4q7kp2</b> — a GitHub cron checks every 30 min and pushes storm/wind/rain alerts.';
   } else {
     if(btn) btn.textContent = 'Enable notifications';
-    st.innerHTML = 'Alerts for strong wind, thunderstorms, heavy showers, high rain chance and active tropical systems.<br>Closed-app push on any phone: subscribe to topic <b>rwc-abc-wx-gnius21-4q7kp2</b> in the free <b>ntfy</b> app.';
+    st.innerHTML = 'Alerts for strong METAR wind gusts (TNCA/TNCC), thunderstorms, heavy showers, nowcast &amp; high-chance rain, and active tropical systems.<br>Closed-app push on any phone: subscribe to topic <b>rwc-abc-wx-gnius21-4q7kp2</b> in the free <b>ntfy</b> app.';
   }
 }
 window.enableWxAlerts = enableWxAlerts;
