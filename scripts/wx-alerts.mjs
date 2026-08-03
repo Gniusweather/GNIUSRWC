@@ -16,7 +16,7 @@ const stateFile = stateDir + '/last.txt';
 
 // Alert preferences — defaults mirror the in-app ones (sw.js DEFAULT_PREFS);
 // wx-alerts.config.json overrides them when present.
-const DEFAULTS = { wind: true, windKt: 30, storm: true, showers: true, rain: true, rainPct: 70, tropical: true };
+const DEFAULTS = { wind: true, windKt: 34, storm: true, showers: true, rain: true, rainPct: 70, nowcast: true, tropical: true };
 function loadConfig(){
   const cfg = { ...DEFAULTS };
   try{
@@ -26,20 +26,68 @@ function loadConfig(){
   return cfg;
 }
 
+// Real station gusts (not modeled) for TNCA (Aruba) / TNCC (Curaçao) — a
+// single aviationweather.gov call returns both raw METARs, one per line.
+async function fetchMetarGusts(){
+  const url = 'https://aviationweather.gov/api/data/metar?ids=TNCA,TNCC&format=raw';
+  let txt = '';
+  try{ txt = await (await fetch(url)).text(); }catch(e){ console.error('METAR fetch failed:', e.message); return []; }
+  const out = [];
+  txt.split(/\r?\n/).forEach((line) => {
+    const icao = (line.match(/^(TNCA|TNCC)\b/) || [])[1];
+    if(!icao) return;
+    const wbTok = line.trim().split(/\s+/).find((x) => /^(VRB|\d{3})\d{2}(G\d{2,3})?KT$/.test(x));
+    const gm = wbTok && wbTok.match(/G(\d{2,3})/);
+    if(gm) out.push({ icao, gust: parseInt(gm[1], 10) });
+  });
+  return out;
+}
+
+// Next-1h nowcast (Open-Meteo minutely_15) — same signal and threshold the
+// in-app RAIN tile alerts on (checkNowcastRainAlert), so closed-app users
+// get the same real near-term rain heads-up, not just the 3h rain-chance %.
+async function fetchNowcastRain(){
+  try{
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.15&longitude=-69.0' +
+      '&minutely_15=precipitation&timezone=auto&forecast_days=1';
+    const j = await (await fetch(url)).json();
+    const m = j.minutely_15;
+    if(!m || !m.time || !m.precipitation) return null;
+    const offsetMs = (j.utc_offset_seconds || 0) * 1000;
+    const nowMs = Date.now();
+    let startIdx = m.time.findIndex((t) => (new Date(t + 'Z').getTime() - offsetMs) >= nowMs);
+    if(startIdx < 0) startIdx = 0;
+    for(let i = startIdx; i < Math.min(startIdx + 4, m.time.length); i++){
+      const v = m.precipitation[i];
+      if(v != null && v > 0.3) return { label: '+' + ((i - startIdx + 1) * 15) + 'm', precip: v };
+    }
+  }catch(e){ console.error('nowcast fetch failed:', e.message); }
+  return null;
+}
+
 async function main(){
   const P = loadConfig();
   console.log('Alert config:', JSON.stringify(P));
   const alerts = [];
 
+  if(P.wind){
+    const gusts = await fetchMetarGusts();
+    gusts.filter(g => g.gust >= P.windKt).forEach(g => alerts.push('Strong wind: METAR gust ' + g.gust + ' kt at ' + g.icao));
+  }
+
+  if(P.nowcast){
+    const nc = await fetchNowcastRain();
+    if(nc) alerts.push('Rain expected ' + nc.label + ' (' + nc.precip.toFixed(1) + ' mm/15min)');
+  }
+
   // Live conditions + next-3h rain chance (Open-Meteo, Hato/Curaçao)
   try{
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.19&longitude=-68.96' +
-      '&current=wind_gusts_10m,weather_code,precipitation' +
+      '&current=weather_code,precipitation' +
       '&hourly=precipitation_probability&forecast_days=1' +
       '&timezone=America%2FCuracao&wind_speed_unit=kn';
     const j = await (await fetch(url)).json();
     const cur = j.current || {};
-    if(P.wind && cur.wind_gusts_10m >= P.windKt) alerts.push('Strong wind: gusts ' + Math.round(cur.wind_gusts_10m) + ' kt');
     if(P.storm && cur.weather_code >= 95) alerts.push('Thunderstorm activity near Curacao');
     else if(P.showers && cur.weather_code >= 80 && cur.precipitation >= 2) alerts.push('Heavy showers now (' + cur.precipitation + ' mm)');
     const h = new Date(Date.now() - 4 * 3600e3).getUTCHours();   // AST hour
