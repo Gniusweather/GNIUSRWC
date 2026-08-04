@@ -1261,15 +1261,6 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .gau-compass{max-width:190px;}
 .gau-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .gau-mini{border-radius:16px;padding:14px;background:rgba(10,14,22,0.9);border:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;min-height:150px;justify-content:center;}
-.gau-week{border-radius:16px;padding:14px 16px;background:linear-gradient(180deg,rgba(20,30,55,0.4),rgba(10,14,22,0.9));border:1px solid var(--bdr);}
-.gau-week-row{display:flex;justify-content:space-between;gap:6px;}
-.gau-week-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px;border-radius:11px;transition:background .2s;}
-.gau-week-day:hover{background:rgba(45,212,191,0.07);}
-.gau-week-day.today{background:rgba(45,212,191,0.12);border:1px solid rgba(45,212,191,0.25);}
-.gau-week-dname{font-family:var(--cond);font-size:16.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
-.gau-week-ic{width:30px;height:30px;}
-.gau-week-tmp{font-family:var(--cond);font-size:16.5px;font-weight:800;color:#fff;}
-.gau-week-tmp small{font-size:16.5px;color:var(--muted);font-weight:500;}
 .gau-cap{font-family:var(--cond);font-size:16.5px;color:var(--muted);letter-spacing:.4px;text-align:center;}
 .gau-cap b{color:#e2effb;font-weight:800;}
 
@@ -9674,19 +9665,31 @@ function renderSkyView(data, hostEl){
 
 /* ─── Gauges view render ─── */
 function _gauArc(opts){
-  // generic 270° arc gauge: value within [min,max], colored, with center label
+  // generic 270° arc gauge: value within [min,max], colored, with center label,
+  // graduated tick marks around the track, and a pointer dot at the live value.
   const {value,min,max,unit,big,color,sub,size=200} = opts;
   const cx=size/2, cy=size/2, r=size*0.36;
   const startA=135, sweep=270;
   const pct = (value!=null && max>min) ? Math.max(0,Math.min(1,(value-min)/(max-min))) : 0;
-  const pol=(ang)=>{ const a=ang*Math.PI/180; return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}; };
+  const pol=(ang,rad)=>{ const a=ang*Math.PI/180; const rr=rad!=null?rad:r; return {x:cx+rr*Math.cos(a), y:cy+rr*Math.sin(a)}; };
   const sp=pol(startA), ep=pol(startA+sweep);
   const vp=pol(startA+sweep*pct);
   const lgBg = sweep>180?1:0;
   const lgV  = (sweep*pct)>180?1:0;
+  let ticks='';
+  const TICKS=20;
+  for(let i=0;i<=TICKS;i++){
+    const major = i%5===0;
+    const ang = startA + sweep*(i/TICKS);
+    const t1=pol(ang,r+7), t2=pol(ang,r+(major?13:10));
+    ticks+=`<line x1="${t1.x.toFixed(1)}" y1="${t1.y.toFixed(1)}" x2="${t2.x.toFixed(1)}" y2="${t2.y.toFixed(1)}" stroke="rgba(255,255,255,${major?0.32:0.13})" stroke-width="${major?1.6:1}"/>`;
+  }
   return `<svg class="gau-svg" viewBox="0 0 ${size} ${size}">
+    ${value!=null?`<circle cx="${cx}" cy="${cy}" r="${(r*0.6).toFixed(1)}" fill="${color}" opacity="0.08"/>`:''}
+    ${ticks}
     <path class="g-track" d="M ${sp.x.toFixed(1)} ${sp.y.toFixed(1)} A ${r} ${r} 0 ${lgBg} 1 ${ep.x.toFixed(1)} ${ep.y.toFixed(1)}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9" stroke-linecap="round"/>
     ${value!=null?`<path d="M ${sp.x.toFixed(1)} ${sp.y.toFixed(1)} A ${r} ${r} 0 ${lgV} 1 ${vp.x.toFixed(1)} ${vp.y.toFixed(1)}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round" style="filter:drop-shadow(0 0 5px ${color}88);"/>`:''}
+    ${value!=null?`<circle cx="${vp.x.toFixed(1)}" cy="${vp.y.toFixed(1)}" r="5.5" fill="${color}" stroke="#0a0e16" stroke-width="2" style="filter:drop-shadow(0 0 4px ${color});"/>`:''}
     <text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="900" font-size="${size*0.22}" fill="#fff">${big}</text>
     ${unit?`<text x="${cx}" y="${cy+size*0.13}" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="600" font-size="${size*0.075}" fill="${color}">${unit}</text>`:''}
     <text x="${(cx-r*0.72).toFixed(0)}" y="${(cy+r*0.78).toFixed(0)}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="${size*0.05}" fill="rgba(255,255,255,0.4)">${min}</text>
@@ -9736,18 +9739,34 @@ function renderGaugesView(data){
   const uv = om.uv_index!=null?om.uv_index:(fc&&fc[0]&&fc[0].uvMax!=null?fc[0].uvMax:null);
   const rain1h = om.rain!=null?om.rain:(om.precipitation!=null?om.precipitation:null);
   const tempCol = temp==null?'#2dd4bf':temp>=33?'#ff8a3d':temp>=28?'#f59e0b':temp>=22?'#2dd4bf':'#4db8ff';
-  // weekly strip from forecast
-  let weekHtml='';
-  if(fc && fc.length){
-    weekHtml = fc.slice(0,7).map((day,i)=>{
-      const w=decodeWmoCode(day.code,false,day.pop);
-      const dn=new Date(day.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});
-      return `<div class="gau-week-day ${i===0?'today':''}"><span class="gau-week-dname">${dn}</span><span class="gau-week-ic">${wxIconStyled(w.icon,30)}</span><span class="gau-week-tmp">${day.tempHigh!=null?Math.round(day.tempHigh):'\u2014'}\u00b0<small> ${day.tempLow!=null?Math.round(day.tempLow):'\u2014'}\u00b0</small></span></div>`;
-    }).join('');
-  } else {
-    weekHtml = '<div style="color:var(--muted);font-family:var(--cond);font-size:16.5px;padding:14px;">Weekly outlook loads with Forecast tab</div>';
-  }
   const uvCol = uv==null?'#2dd4bf':uv>=11?'#a78bfa':uv>=8?'#ff4f4f':uv>=6?'#ff8a3d':uv>=3?'#f59e0b':'#2ec97a';
+
+  // Visibility \u2014 live KNMI Bonaire observation (meters -> km)
+  const visKm = d.bonaireVisM!=null ? d.bonaireVisM/1000 : null;
+  const visCol = visKm==null?'#2dd4bf':visKm<3?'#ff4f4f':visKm<6?'#ff8a3d':visKm<9?'#f59e0b':'#2dd4bf';
+
+  // Feels like \u2014 averaged across the live stations network (heat index per
+  // station), falling back to the app's own heat-index formula off the
+  // SYNOP reading if the station network has no data yet.
+  const feelsLike = window.__islandAvgFeelsLike!=null ? window.__islandAvgFeelsLike
+    : (typeof calcFeelsLike==='function' ? calcFeelsLike(temp, rh, windKt) : temp);
+  const feelsCol = feelsLike==null?'#2dd4bf':feelsLike>=41?'#ff4f4f':feelsLike>=36?'#ff8a3d':feelsLike>=30?'#f59e0b':feelsLike>=24?'#2dd4bf':'#4db8ff';
+
+  // Next-2h wind + rain chance \u2014 from the multi-model forecast's hourly timeline.
+  let hrs2 = [];
+  if(fc && fc.length){
+    const curHr = new Date().getHours();
+    let hrsAll = ((fc[0]&&fc[0]._hourly)||[]).filter(h => h.hour >= curHr);
+    if(hrsAll.length < 2 && fc[1] && fc[1]._hourly) hrsAll = hrsAll.concat(fc[1]._hourly);
+    hrs2 = hrsAll.slice(0,2);
+  }
+  function _avgField(arr, key){ const vals = arr.map(h=>h[key]).filter(v=>v!=null); return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null; }
+  const windNext2h = _avgField(hrs2, 'wind');
+  const gustNext2h = _avgField(hrs2, 'gust');
+  const popNext2h  = hrs2.length ? Math.max(...hrs2.map(h => h.pop||0)) : null;
+  const windNextCol = windNext2h==null?'#2dd4bf':windNext2h>=25?'#ff4f4f':windNext2h>=18?'#ff8a3d':windNext2h>=10?'#f59e0b':'#a78bfa';
+  const popCol = popNext2h==null?'#2dd4bf':popNext2h>=60?'#4db8ff':popNext2h>=30?'#38bdf8':'#67e8f9';
+
   host.innerHTML = `
   <div class="gau-grid">
     <div class="gau-tile">
@@ -9757,6 +9776,11 @@ function renderGaugesView(data){
     <div class="gau-tile">
       <div class="gau-hd">\u{1F321} Temperature</div>
       ${_gauArc({value:temp,min:6,max:40,unit:'\u00b0C',big:temp!=null?temp.toFixed(1):'\u2014',color:tempCol})}
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F975} Feels Like</div>
+      ${_gauArc({value:feelsLike,min:15,max:48,unit:'\u00b0C',big:feelsLike!=null?feelsLike.toFixed(1):'\u2014',color:feelsCol})}
+      <div class="gau-cap">Avg. live stations</div>
     </div>
     <div class="gau-tile">
       <div class="gau-hd">\u2600 UV Index</div>
@@ -9778,9 +9802,20 @@ function renderGaugesView(data){
       ${_gauArc({value:rh,min:0,max:100,unit:'%',big:rh!=null?rh:'\u2014',color:'#22d3ee'})}
       <div class="gau-cap">${p.dew_c!=null?'<b>'+Math.round(p.dew_c)+'\u00b0</b> dew point':'\u2014'}</div>
     </div>
-    <div class="gau-tile span2">
-      <div class="gau-hd">\u{1F4C5} 7-Day Outlook</div>
-      <div class="gau-week" style="width:100%;margin-top:18px;"><div class="gau-week-row">${weekHtml}</div></div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F441} Visibility</div>
+      ${_gauArc({value:visKm,min:0,max:20,unit:'km',big:visKm!=null?visKm.toFixed(1):'\u2014',color:visCol})}
+      <div class="gau-cap">KNMI \u00b7 Bonaire</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F4A8} Wind \u00b7 Next 2h</div>
+      ${_gauArc({value:windNext2h,min:0,max:40,unit:'kt',big:windNext2h!=null?Math.round(windNext2h):'\u2014',color:windNextCol})}
+      <div class="gau-cap">${gustNext2h!=null?'Gusts to <b>'+Math.round(gustNext2h)+' kt</b>':'\u2014'}</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F327} Rain Chance \u00b7 2h</div>
+      ${_gauArc({value:popNext2h,min:0,max:100,unit:'%',big:popNext2h!=null?Math.round(popNext2h):'\u2014',color:popCol})}
+      <div class="gau-cap">Peak in next 2 hours</div>
     </div>
   </div>`;
 }
@@ -10632,7 +10667,7 @@ function hourlyTimeline(forecasts, info){
   if(!info || !info.hours) return [];
   const out = [];
   for(const hr of info.hours){
-    let precip = [], temp = [], pop = [], code = [];
+    let precip = [], temp = [], pop = [], code = [], wind = [], gust = [];
     for(const fc of forecasts){
       const h = fc.data.hourly;
       if(!h || h.time[hr.i] !== hr.t) continue;
@@ -10640,13 +10675,17 @@ function hourlyTimeline(forecasts, info){
       if(h.temperature_2m && h.temperature_2m[hr.i] != null) temp.push(h.temperature_2m[hr.i]);
       if(h.precipitation_probability && h.precipitation_probability[hr.i] != null) pop.push(h.precipitation_probability[hr.i]);
       if(h.weather_code && h.weather_code[hr.i] != null) code.push(h.weather_code[hr.i]);
+      if(h.wind_speed_10m && h.wind_speed_10m[hr.i] != null) wind.push(h.wind_speed_10m[hr.i]);
+      if(h.wind_gusts_10m && h.wind_gusts_10m[hr.i] != null) gust.push(h.wind_gusts_10m[hr.i]);
     }
     out.push({
       hour: hr.hour, time: hr.t,
       precip: precip.length ? precip.reduce((a,b)=>a+b,0)/precip.length : 0,
       temp: temp.length ? temp.reduce((a,b)=>a+b,0)/temp.length : null,
       pop: pop.length ? pop.reduce((a,b)=>a+b,0)/pop.length : 0,
-      code: code.length ? code[0] : null
+      code: code.length ? code[0] : null,
+      wind: wind.length ? wind.reduce((a,b)=>a+b,0)/wind.length : null,
+      gust: gust.length ? gust.reduce((a,b)=>a+b,0)/gust.length : null
     });
   }
   return out;
@@ -12726,10 +12765,10 @@ function renderStationsAverage(){
     windDirs.forEach(function(d){sinS+=Math.sin(d*Math.PI/180);cosS+=Math.cos(d*Math.PI/180);});
     avgDir=(Math.atan2(sinS/windDirs.length,cosS/windDirs.length)*180/Math.PI+360)%360;
   }
-  var avgTemp  = avg(temps);
-  var avgWind  = avg(windSpds);
+  var avgTemp  = avg(temps); window.__islandAvgTemp = avgTemp;
+  var avgWind  = avg(windSpds); window.__islandAvgWind = avgWind;
   var avgHum   = avg(hums); window.__islandAvgHum = avgHum;
-  var avgHeat  = avg(heats);
+  var avgHeat  = avg(heats); window.__islandAvgFeelsLike = avgHeat;
   var totalRain= rains.length ? rains.reduce(function(a,b){return a+b;},0) : null;
   var COMP=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   var dirTxt = avgDir!==null ? COMP[Math.round(avgDir/22.5)%16] : '';
