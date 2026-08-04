@@ -3097,7 +3097,7 @@ html,body{max-width:100%;overflow-x:hidden;}
       </div>
       <div class="mon-tile mon-solar">
         <div class="mon-tile-hd"><span class="mon-tile-ttl">Solar</span><span class="mon-tile-sub">LIVE</span></div>
-        <div class="mon-wx-body mon-wx-body-2">
+        <div class="mon-wx-body">
           <div class="mon-wx-item">
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monRadGauge"></svg>
             <div class="mon-wx-item-desc" id="monRadDesc">&mdash;</div>
@@ -3107,6 +3107,16 @@ html,body{max-width:100%;overflow-x:hidden;}
             <svg class="mon-gauge" viewBox="0 0 80 80" id="monSolarGauge"></svg>
             <div class="mon-wx-item-desc" id="monSolarDesc">&mdash;</div>
             <div class="mon-wx-item-lbl">Power</div>
+          </div>
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monHeatGauge"></svg>
+            <div class="mon-wx-item-desc" id="monHeatDesc">&mdash;</div>
+            <div class="mon-wx-item-lbl">Heat Index</div>
+          </div>
+          <div class="mon-wx-item">
+            <svg class="mon-gauge" viewBox="0 0 80 80" id="monCloudGauge"></svg>
+            <div class="mon-wx-item-desc" id="monCloudDesc">&mdash;</div>
+            <div class="mon-wx-item-lbl">Cloud Cover</div>
           </div>
         </div>
         <div class="mon-sm" id="monSolarDay" style="text-align:center;margin-top:2px;">&mdash;</div>
@@ -8153,6 +8163,50 @@ function renderMonitor(data){
       sd.textContent = 'Unavailable';
       sg.innerHTML = '';
       if(sday) sday.textContent = '\u2014';
+    }
+  })();
+  // Heat index: same source/formula as the Island Avg Temp tile's "Feels
+  // like" (avg. of live stations' own heat-index sensors), falling back to
+  // the Steadman formula off the live SYNOP reading.
+  (function(){
+    var hd = byId('monHeatDesc'), hg = byId('monHeatGauge');
+    if(!hg) return;
+    var heat = window.__islandAvgFeelsLike != null ? window.__islandAvgFeelsLike
+      : (typeof calcFeelsLike === 'function' ? calcFeelsLike(synopP && synopP.temp_c, synopP && synopP.rh, synopP && synopP.wind_kt) : null);
+    if(heat != null && isFinite(heat)){
+      var hlbl, hcol;
+      if(heat >= 41)      { hlbl='Extreme caution'; hcol='#ff4f4f'; }
+      else if(heat >= 33) { hlbl='High caution';     hcol='#ff8a3d'; }
+      else if(heat >= 27) { hlbl='Caution';          hcol='#f59e0b'; }
+      else                { hlbl='Comfortable';      hcol='#2ec97a'; }
+      hd.textContent = hlbl;
+      hd.style.color = hcol;
+      hg.innerHTML = buildArcGauge({ value: heat, max: 48, label: heat.toFixed(1), unit: '\u00b0C', color: hcol, bgColor: 'rgba(255,255,255,0.06)' });
+    } else {
+      hd.textContent = 'Unavailable';
+      hg.innerHTML = '';
+    }
+  })();
+  // Cloud cover: live SYNOP oktas (0-8), the same source already used by
+  // the solar-power model above.
+  (function(){
+    var cd = byId('monCloudDesc'), cg = byId('monCloudGauge');
+    if(!cg) return;
+    var oktas = (synopP && synopP.cloud_oktas != null) ? synopP.cloud_oktas : null;
+    if(oktas != null && isFinite(oktas)){
+      var pct = Math.round(oktas/8*100);
+      var clbl, ccol;
+      if(oktas <= 0)      { clbl='Clear sky';   ccol='#4db8ff'; }
+      else if(oktas <= 2) { clbl='Few clouds';   ccol='#2ec97a'; }
+      else if(oktas <= 4) { clbl='Scattered';    ccol='#fde047'; }
+      else if(oktas <= 7) { clbl='Broken';       ccol='#f59e0b'; }
+      else                { clbl='Overcast';     ccol='#94a3b8'; }
+      cd.textContent = clbl;
+      cd.style.color = ccol;
+      cg.innerHTML = buildArcGauge({ value: pct, max: 100, label: pct, unit: '%', color: ccol, bgColor: 'rgba(255,255,255,0.06)' });
+    } else {
+      cd.textContent = 'Unavailable';
+      cg.innerHTML = '';
     }
   })();
   // ── Curaçao SYNOP (Ogimet Live) card ──
