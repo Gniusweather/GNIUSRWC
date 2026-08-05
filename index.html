@@ -8192,12 +8192,29 @@ function renderMonitor(data){
       hg.innerHTML = '';
     }
   })();
-  // Cloud cover: live SYNOP oktas (0-8), the same source already used by
-  // the solar-power model above.
+  // Cloud cover: live TNCC METAR cloud layers (FEW/SCT/BKN/OVC -> oktas,
+  // same convention used by the Aviation tab's sky widget), falling back to
+  // live SYNOP oktas, then KNMI, when TNCC has no current METAR.
   (function(){
     var cd = byId('monCloudDesc'), cg = byId('monCloudGauge');
     if(!cg) return;
-    var oktas = (synopP && synopP.cloud_oktas != null) ? synopP.cloud_oktas : null;
+    var oktas = null, src = '';
+    var _tnccRaw = (typeof mState === 'object' && mState && mState.TNCC) ? mState.TNCC.lastRaw : null;
+    var _cldToks = null;
+    if(_tnccRaw){ try { _cldToks = parseMetar(_tnccRaw).cldToks; } catch(e){} }
+    if(_cldToks){
+      var oktaByCover = {SKC:0,FEW:2,SCT:4,BKN:6,OVC:8};
+      oktas = 0;
+      _cldToks.forEach(function(cld){
+        var m = cld.match(/^(FEW|SCT|BKN|OVC)/i);
+        if(m && oktaByCover[m[1].toUpperCase()] > oktas) oktas = oktaByCover[m[1].toUpperCase()];
+      });
+      src = 'TNCC';
+    } else if(synopP && synopP.cloud_oktas != null){
+      oktas = synopP.cloud_oktas; src = 'SYNOP';
+    } else if(window.__knmiData && window.__knmiData.cloud_octa != null){
+      oktas = window.__knmiData.cloud_octa; src = 'KNMI';
+    }
     if(oktas != null && isFinite(oktas)){
       var pct = Math.round(oktas/8*100);
       var clbl, ccol;
@@ -8206,7 +8223,7 @@ function renderMonitor(data){
       else if(oktas <= 4) { clbl='Scattered';    ccol='#fde047'; }
       else if(oktas <= 7) { clbl='Broken';       ccol='#f59e0b'; }
       else                { clbl='Overcast';     ccol='#94a3b8'; }
-      cd.textContent = clbl;
+      cd.textContent = clbl + (src ? ' · ' + src : '');
       cd.style.color = ccol;
       cg.innerHTML = buildArcGauge({ value: pct, max: 100, label: pct, unit: '%', color: ccol, bgColor: 'rgba(255,255,255,0.06)' });
     } else {
