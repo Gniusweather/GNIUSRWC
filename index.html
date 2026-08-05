@@ -8192,26 +8192,37 @@ function renderMonitor(data){
       hg.innerHTML = '';
     }
   })();
-  // Cloud cover: live TNCC METAR cloud layers (FEW/SCT/BKN/OVC -> oktas,
-  // same convention used by the Aviation tab's sky widget), falling back to
-  // live SYNOP oktas, then KNMI, when TNCC has no current METAR.
+  // Cloud cover: blends live TNCC METAR cloud layers (FEW/SCT/BKN/OVC ->
+  // oktas, same convention used by the Aviation tab's sky widget) with live
+  // SYNOP Curaçao (78988) oktas when both are available — averaged, rather
+  // than picking one over the other — falling back to whichever one is
+  // available, then KNMI, when only one (or neither) source has data.
   (function(){
     var cd = byId('monCloudDesc'), cg = byId('monCloudGauge');
     if(!cg) return;
-    var oktas = null, src = '';
+    var tnccOktas = null;
     var _tnccRaw = (typeof mState === 'object' && mState && mState.TNCC) ? mState.TNCC.lastRaw : null;
-    var _cldToks = null;
-    if(_tnccRaw){ try { _cldToks = parseMetar(_tnccRaw).cldToks; } catch(e){} }
-    if(_cldToks){
-      var oktaByCover = {SKC:0,FEW:2,SCT:4,BKN:6,OVC:8};
-      oktas = 0;
-      _cldToks.forEach(function(cld){
-        var m = cld.match(/^(FEW|SCT|BKN|OVC)/i);
-        if(m && oktaByCover[m[1].toUpperCase()] > oktas) oktas = oktaByCover[m[1].toUpperCase()];
-      });
-      src = 'TNCC';
-    } else if(synopP && synopP.cloud_oktas != null){
-      oktas = synopP.cloud_oktas; src = 'SYNOP';
+    if(_tnccRaw){
+      try {
+        var _cldToks = parseMetar(_tnccRaw).cldToks;
+        if(_cldToks){
+          var oktaByCover = {SKC:0,FEW:2,SCT:4,BKN:6,OVC:8};
+          tnccOktas = 0;
+          _cldToks.forEach(function(cld){
+            var m = cld.match(/^(FEW|SCT|BKN|OVC)/i);
+            if(m && oktaByCover[m[1].toUpperCase()] > tnccOktas) tnccOktas = oktaByCover[m[1].toUpperCase()];
+          });
+        }
+      } catch(e){}
+    }
+    var synopOktas = (synopP && synopP.cloud_oktas != null) ? synopP.cloud_oktas : null;
+    var oktas = null, src = '';
+    if(tnccOktas != null && synopOktas != null){
+      oktas = (tnccOktas + synopOktas) / 2; src = 'TNCC+SYNOP avg';
+    } else if(tnccOktas != null){
+      oktas = tnccOktas; src = 'TNCC';
+    } else if(synopOktas != null){
+      oktas = synopOktas; src = 'SYNOP';
     } else if(window.__knmiData && window.__knmiData.cloud_octa != null){
       oktas = window.__knmiData.cloud_octa; src = 'KNMI';
     }
