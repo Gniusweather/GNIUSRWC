@@ -8170,21 +8170,44 @@ function renderMonitor(data){
       if(sday) sday.textContent = '\u2014';
     }
   })();
-  // Heat index: same source/formula as the Island Avg Temp tile's "Feels
-  // like" (avg. of live stations' own heat-index sensors), falling back to
-  // the Steadman formula off the live SYNOP reading.
+  // Heat index: averages the Steadman feels-like formula computed
+  // independently off live TNCC METAR (temp/dewpoint -> RH via Magnus
+  // formula, same conversion used by the METAR cards) and live SYNOP
+  // Curaçao (78988), rather than picking one source over the other —
+  // same blend pattern as the Cloud Cover gauge above.
   (function(){
     var hd = byId('monHeatDesc'), hg = byId('monHeatGauge');
     if(!hg) return;
-    var heat = window.__islandAvgFeelsLike != null ? window.__islandAvgFeelsLike
-      : (typeof calcFeelsLike === 'function' ? calcFeelsLike(synopP && synopP.temp_c, synopP && synopP.rh, synopP && synopP.wind_kt) : null);
+    var heatTncc = null;
+    var _tnccRaw = (typeof mState === 'object' && mState && mState.TNCC) ? mState.TNCC.lastRaw : null;
+    if(_tnccRaw && typeof calcFeelsLike === 'function'){
+      try {
+        var _mp = parseMetar(_tnccRaw);
+        if(_mp.tempC != null && _mp.dewC != null){
+          var _rh = Math.round(100*Math.exp(17.625*_mp.dewC/(243.04+_mp.dewC))/Math.exp(17.625*_mp.tempC/(243.04+_mp.tempC)));
+          heatTncc = calcFeelsLike(_mp.tempC, _rh, _mp.windSpd);
+        }
+      } catch(e){}
+    }
+    var heatSynop = (typeof calcFeelsLike === 'function' && synopP && synopP.temp_c != null)
+      ? calcFeelsLike(synopP.temp_c, synopP.rh, synopP.wind_kt) : null;
+    var heat = null, hSrc = '';
+    if(heatTncc != null && heatSynop != null){
+      heat = (heatTncc + heatSynop) / 2; hSrc = 'TNCC+SYNOP avg';
+    } else if(heatTncc != null){
+      heat = heatTncc; hSrc = 'TNCC';
+    } else if(heatSynop != null){
+      heat = heatSynop; hSrc = 'SYNOP';
+    } else if(window.__islandAvgFeelsLike != null){
+      heat = window.__islandAvgFeelsLike; hSrc = 'stations';
+    }
     if(heat != null && isFinite(heat)){
       var hlbl, hcol;
       if(heat >= 41)      { hlbl='Extreme caution'; hcol='#ff4f4f'; }
       else if(heat >= 33) { hlbl='High caution';     hcol='#ff8a3d'; }
       else if(heat >= 27) { hlbl='Caution';          hcol='#f59e0b'; }
       else                { hlbl='Comfortable';      hcol='#2ec97a'; }
-      hd.textContent = hlbl;
+      hd.textContent = hlbl + (hSrc ? ' \u00b7 ' + hSrc : '');
       hd.style.color = hcol;
       hg.innerHTML = buildArcGauge({ value: heat, max: 48, label: heat.toFixed(1), unit: '\u00b0C', color: hcol, bgColor: 'rgba(255,255,255,0.06)' });
     } else {
