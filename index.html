@@ -644,11 +644,13 @@ tr:last-child td{border-bottom:none;}
 .mon-wind-dir-line{font-family:var(--mono);font-size:21.5px;color:var(--acc);font-weight:700;letter-spacing:.5px;margin-top:2px;}
 .mon-wind-bft{margin-top:auto;padding-top:8px;border-top:1px solid rgba(77,184,255,0.15);font-family:var(--cond);font-size:21.5px;font-weight:900;color:#cce4ff;letter-spacing:.8px;text-align:center;text-transform:uppercase;}
 /* ── WEATHER tile (gauges: pressure · sea temp · dust · uv) ── */
-.mon-wx-body{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px;flex:1;align-content:center;min-height:0;}
+.mon-wx-body{display:grid;grid-template-columns:repeat(2,1fr);gap:1px 8px;flex:1;align-content:center;min-height:0;}
 .mon-wx-item{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;}
-.mon-wx-item .mon-gauge{width:clamp(84px,10.5vw,110px);height:clamp(84px,10.5vw,110px);}
-.mon-wx-item-lbl{font-family:var(--cond);font-size:18px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-top:2px;white-space:nowrap;}
-.mon-wx-item-desc{font-family:var(--cond);font-size:16px;color:var(--muted);text-align:center;line-height:1.2;max-height:2.4em;overflow:hidden;}
+.mon-wx-item .mon-gauge{width:clamp(96px,12vw,124px);height:clamp(96px,12vw,124px);}
+.mon-wx-item-lbl{font-family:var(--cond);font-size:15px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-top:0;white-space:nowrap;}
+.mon-wx-item-desc{font-family:var(--cond);font-size:13.5px;color:var(--muted);text-align:center;line-height:1.15;max-height:2em;overflow:hidden;}
+.mon-weather,.mon-solar{padding-top:9px;padding-bottom:9px;}
+.mon-weather .mon-tile-hd,.mon-solar .mon-tile-hd{margin-bottom:3px;}
 /* Variant for 2-item tiles (Solar): more room per item, bigger gauge */
 .mon-wx-body-2{grid-template-columns:repeat(2,1fr);gap:4px 16px;}
 .mon-wx-body-2 .mon-gauge{width:clamp(100px,13vw,132px);height:clamp(100px,13vw,132px);}
@@ -688,11 +690,13 @@ tr:last-child td{border-bottom:none;}
 .mon-hum-bar-fill{width:100%;background:linear-gradient(180deg,#7bc4f5,#1e6dd6);border-radius:5px;transition:height .7s cubic-bezier(0.22,0.61,0.36,1);box-shadow:0 0 8px rgba(77,184,255,0.5),inset 0 1px 0 rgba(255,255,255,0.15);}
 /* 12-hour Curaçao weather forecast columns (hour, feels-like, rain, dust) */
 .mon-wxfc-leg{flex:none;display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:flex-start;padding-right:2px;}
-.mon-wxfc-l{font-family:var(--cond);font-size:20px;color:var(--muted);font-weight:600;letter-spacing:.1px;line-height:1.25;text-transform:uppercase;}
+.mon-wxfc-l{font-family:var(--cond);font-size:22px;color:var(--muted);font-weight:600;letter-spacing:.1px;line-height:1.25;text-transform:uppercase;}
 .mon-wxfc-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:center;}
-.mon-wxfc-hr{font-family:var(--mono);font-size:19px;color:var(--muted);line-height:1.25;}
-.mon-wxfc-v{font-family:var(--cond);font-size:20px;font-weight:800;line-height:1.25;white-space:nowrap;text-align:center;}
-.mon-wxfc-v small{font-size:16px;font-weight:600;opacity:.85;}
+.mon-wxfc-hr{font-family:var(--mono);font-size:20.5px;color:var(--muted);line-height:1.25;}
+.mon-wxfc-v{font-family:var(--cond);font-size:22px;font-weight:800;line-height:1.25;white-space:nowrap;text-align:center;}
+.mon-wxfc-v small{font-size:17.5px;font-weight:600;opacity:.85;}
+/* Peak value per row (Feels/Rain%/Wind/Dust) across the 12h strip */
+.mon-wxfc-v.peak{font-size:1.2em;font-weight:900;background:rgba(255,255,255,0.12);border-radius:6px;padding:0 4px;box-shadow:0 0 0 1px rgba(255,255,255,0.2),0 0 8px rgba(255,255,255,0.15);}
 .mon-hum-stats{flex-shrink:0;width:88px;display:flex;flex-direction:column;justify-content:center;gap:1px;}
 .mon-hum-val{font-family:var(--cond);font-weight:900;font-size:clamp(30px,3.5vw,39px);line-height:1;color:#fff;letter-spacing:-0.5px;}
 .mon-hum-unit{font-family:var(--cond);font-size:21.5px;font-weight:600;color:var(--muted);margin-left:1px;}
@@ -7710,6 +7714,13 @@ function renderWxTileForecast(hours){
     '<div class="mon-wxfc-l">Wind</div>' +
     '<div class="mon-wxfc-l">Dust</div>' +
   '</div>';
+  // Peak hour per row (Feels/Rain chance/Wind/Dust) gets highlighted below —
+  // ties (equal max) all get the highlight rather than picking one arbitrarily.
+  function maxOf(vals){ var v = vals.filter(function(n){ return n != null && isFinite(n); }); return v.length ? Math.max.apply(null, v) : null; }
+  var maxFeels = maxOf(hours.map(function(x){ return x.feels != null ? Math.round(x.feels) : null; }));
+  var maxPop   = maxOf(hours.map(function(x){ return x.pop   != null ? Math.round(x.pop)   : null; }));
+  var maxWind  = maxOf(hours.map(function(x){ return x.wind  != null ? Math.round(x.wind)  : null; }));
+  var maxDust  = maxOf(hours.map(function(x){ return x.dust  != null ? Math.round(x.dust)  : null; }));
   el.innerHTML = legend + hours.map(function(x){
     var feels = x.feels != null ? Math.round(x.feels) : null;
     var fCol = feels == null ? 'var(--muted)' : feels >= 38 ? '#ff4f4f' : feels >= 34 ? '#ff8a3d' : feels >= 30 ? '#f59e0b' : '#2ec97a';
@@ -7720,13 +7731,17 @@ function renderWxTileForecast(hours){
     var dCol = dust == null ? 'var(--muted)' : dust >= 150 ? '#ff4f4f' : dust >= 75 ? '#ff8a3d' : dust >= 25 ? '#f59e0b' : '#2ec97a';
     var wind = x.wind != null ? Math.round(x.wind) : null;
     var wCol = wind == null ? 'var(--muted)' : wind >= 34 ? '#ff4f4f' : wind >= 25 ? '#ff8a3d' : wind >= 17 ? '#f59e0b' : '#2ec97a';
+    var fPeak = feels != null && feels === maxFeels ? ' peak' : '';
+    var rPeak = pop   != null && pop   === maxPop   ? ' peak' : '';
+    var wPeak = wind  != null && wind  === maxWind  ? ' peak' : '';
+    var dPeak = dust  != null && dust  === maxDust  ? ' peak' : '';
     return '<div class="mon-wxfc-col">' +
       '<div class="mon-wxfc-hr">' + String(x.h).padStart(2,'0') + 'h</div>' +
-      '<div class="mon-wxfc-v" style="color:' + fCol + '">' + (feels != null ? feels + '°' : '—') + '</div>' +
-      '<div class="mon-wxfc-v" style="color:' + rCol + '">' + (pop != null ? pop + '%' : '—') + '</div>' +
+      '<div class="mon-wxfc-v' + fPeak + '" style="color:' + fCol + '">' + (feels != null ? feels + '°' : '—') + '</div>' +
+      '<div class="mon-wxfc-v' + rPeak + '" style="color:' + rCol + '">' + (pop != null ? pop + '%' : '—') + '</div>' +
       '<div class="mon-wxfc-v" style="color:' + rCol + '"><small>' + (mm >= 0.1 ? mm.toFixed(1) : '—') + '</small></div>' +
-      '<div class="mon-wxfc-v" style="color:' + wCol + '">' + (wind != null ? wind + '<small>kt</small>' : '—') + '</div>' +
-      '<div class="mon-wxfc-v" style="color:' + dCol + '">' + (dust != null ? dust : '—') + '</div>' +
+      '<div class="mon-wxfc-v' + wPeak + '" style="color:' + wCol + '">' + (wind != null ? wind + '<small>kt</small>' : '—') + '</div>' +
+      '<div class="mon-wxfc-v' + dPeak + '" style="color:' + dCol + '">' + (dust != null ? dust : '—') + '</div>' +
     '</div>';
   }).join('');
 }
