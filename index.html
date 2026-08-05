@@ -627,6 +627,11 @@ tr:last-child td{border-bottom:none;}
 .mon-tile-hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:2px;font-family:var(--cond);margin-bottom:7px;}
 .mon-tile-ttl{font-size:21.5px;font-weight:800;color:var(--acc);letter-spacing:1.1px;text-transform:uppercase;}
 .mon-tile-sub{font-family:var(--mono);font-size:21.5px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;}
+/* Wind tile's sub-badge is a full KNMI observation timestamp (e.g. "Mon, 3
+   Aug 2026 15:00 UTC"), much longer than the short LIVE/status badges the
+   base .mon-tile-sub size was tuned for — shrink it so it doesn't crowd out
+   the "WIND" title on the same row. */
+#monWindTime{font-size:13.5px;letter-spacing:.2px;text-transform:none;}
 .mon-wind-body{display:flex;align-items:center;gap:14px;flex:1;min-height:0;}
 .mon-wind-compass{width:clamp(130px,15vw,170px);aspect-ratio:1/1;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .mon-wind-compass svg{width:100%;height:100%;}
