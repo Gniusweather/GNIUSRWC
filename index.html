@@ -5971,17 +5971,17 @@ function renderMeteoForecast(host, fc){
   var DIR_EN = {N:'Northerly',NNE:'North-northeasterly',NE:'Northeasterly',ENE:'East-northeasterly',E:'Easterly',ESE:'East-southeasterly',SE:'Southeasterly',SSE:'South-southeasterly',S:'Southerly',SSW:'South-southwesterly',SW:'Southwesterly',WSW:'West-southwesterly',W:'Westerly',WNW:'West-northwesterly',NW:'Northwesterly',NNW:'North-northwesterly'};
   var DIR_NL = {N:'Noordelijk',NNE:'Noord-noordoostelijk',NE:'Noordoostelijk',ENE:'Oost-noordoostelijk',E:'Oostelijk',ESE:'Oost-zuidoostelijk',SE:'Zuidoostelijk',SSE:'Zuid-zuidoostelijk',S:'Zuidelijk',SSW:'Zuid-zuidwestelijk',SW:'Zuidwestelijk',WSW:'West-zuidwestelijk',W:'Westelijk',WNW:'West-noordwestelijk',NW:'Noordwestelijk',NNW:'Noord-noordwestelijk'};
   var DIRN_NL = {N:'noord',NNE:'noord-noordoost',NE:'noordoost',ENE:'oost-noordoost',E:'oost',ESE:'oost-zuidoost',SE:'zuidoost',SSE:'zuid-zuidoost',S:'zuid',SSW:'zuid-zuidwest',SW:'zuidwest',WSW:'west-zuidwest',W:'west',WNW:'west-noordwest',NW:'noordwest',NNW:'noord-noordwest'};
-  var DIR_PAP = {N:'nort',NNE:'nort-nordost',NE:'nordost',ENE:'ost-nordost',E:'ost',ESE:'ost-sudost',SE:'sudost',SSE:'sur-sudost',S:'sur',SSW:'sur-sudwest',SW:'sudwest',WSW:'west-sudwest',W:'west',WNW:'west-nordwest',NW:'nordwest',NNW:'nort-nordwest'};
+  var DIR_PAP = {N:'nort',NNE:'nort-nortost',NE:'nortost',ENE:'ost-nortost',E:'ost',ESE:'ost-sùitost',SE:'sùitost',SSE:'sùit-sùitost',S:'sùit',SSW:'sùit-sùitwest',SW:'sùitwest',WSW:'west-sùitwest',W:'west',WNW:'west-nortwest',NW:'nortwest',NNW:'nort-nortwest'};
   var c0 = d0.windDir != null ? COMP[Math.round(d0.windDir/22.5)%16] : 'E';
   var c1 = d1.windDir != null ? COMP[Math.round(d1.windDir/22.5)%16] : c0;
   var kmhLo = BFT[fLo][0], kmhHi = BFT[fHi][1], knLo = BFT[fLo][2], knHi = BFT[fHi][3];
   var windTxt;
   if(isPap){
-    windTxt = 'Generalmente for di ' + DIR_PAP[c0] + (c1 !== c0 ? ', okashonalmente for di ' + DIR_PAP[c1] : '') +
+    windTxt = 'Generalmente for di ' + DIR_PAP[c0] + (c1 !== c0 ? ', di bes en kuando for di ' + DIR_PAP[c1] : '') +
       ' i ' + FN_PAP[fLo] + (fHi > fLo && FN_PAP[fHi] !== FN_PAP[fLo] ? ' te ' + FN_PAP[fHi] : '') +
       '; forsa ' + fLo + (fHi > fLo ? ' te ' + fHi : '') +
       ' (' + kmhLo + ' te ' + kmhHi + ' km/ora, ' + knLo + ' te ' + knHi + ' nudo).';
-    if(fG != null && fG > fHi) windTxt += ' De bes en kuando ' + FN_PAP[fG] + ' den ráfaga; forsa ' + fG + ' (' + BFT[fG][0] + ' te ' + BFT[fG][1] + ' km/ora, ' + BFT[fG][2] + ' te ' + BFT[fG][3] + ' nudo).';
+    if(fG != null && fG > fHi) windTxt += ' Ráfaga, de bes en kuando ' + FN_PAP[fG] + '; forsa ' + fG + ' (' + BFT[fG][0] + ' te ' + BFT[fG][1] + ' km/ora, ' + BFT[fG][2] + ' te ' + BFT[fG][3] + ' nudo).';
   } else if(isNL){
     windTxt = DIR_NL[c0] + (c1 !== c0 ? ', soms overgaand naar ' + DIRN_NL[c1] : '') +
       ' en ' + FN_NL[fLo] + (fHi > fLo && FN_NL[fHi] !== FN_NL[fLo] ? ' tot ' + FN_NL[fHi] : '') +
