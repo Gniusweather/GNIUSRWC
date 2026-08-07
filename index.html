@@ -1271,6 +1271,27 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .gau-cap b{color:#e2effb;font-weight:800;}
 
 
+/* ─── Trend dashboard (METAR / SYNOP graph tabs): station header, metric
+   tiles, and the 9-chart -6h→now→+6h history/forecast grid ─── */
+.trd-hdr{display:flex;align-items:center;gap:8px;font-family:var(--cond);font-size:18px;font-weight:700;letter-spacing:.5px;color:var(--acc);text-transform:uppercase;margin-bottom:9px;flex-wrap:wrap;}
+.trd-hdr small{color:var(--muted);font-family:var(--mono);font-weight:600;letter-spacing:.3px;text-transform:none;font-size:16.5px;}
+.trd-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+@media(max-width:700px){.trd-tiles{grid-template-columns:repeat(2,1fr);}}
+.trd-tile{background:rgba(10,14,22,0.85);border:1px solid var(--bdr);border-radius:11px;padding:9px 12px;min-width:0;}
+.trd-tile-l{font-family:var(--cond);font-size:14.5px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.trd-tile-v{font-family:var(--cond);font-weight:800;font-size:22px;color:#fff;line-height:1.3;white-space:nowrap;}
+.trd-tile-v small{font-size:14.5px;font-weight:600;color:var(--muted);margin-left:2px;}
+.trd-note{font-family:var(--cond);font-size:15px;color:var(--muted);letter-spacing:.2px;margin:2px 0 14px;}
+.trd-note b{color:#cce4ff;font-weight:700;}
+.trd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+@media(max-width:700px){.trd-grid{grid-template-columns:1fr;}}
+.trd-card{background:linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.004)),rgba(10,14,22,0.9);border:1px solid var(--bdr);border-radius:14px;padding:12px 14px 8px;}
+.trd-card-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+.trd-ttl{font-family:var(--cond);font-size:15.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.trd-val{font-family:var(--cond);font-size:19px;font-weight:800;}
+.trd-svg{width:100%;height:auto;display:block;}
+.trd-empty{padding:24px 0;text-align:center;font-family:var(--cond);font-size:15px;color:var(--muted);}
+
 /* ─── Graphics view (Home Assistant style, Images IMG_6881 + IMG_6879) ─── */
 .gfx-wrap{display:flex;flex-direction:column;gap:11px;}
 .gfx-tilegrid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;}
@@ -2954,6 +2975,8 @@ html,body{max-width:100%;overflow-x:hidden;}
   <button class="mon-style-btn" data-montab="knmi"><span class="mon-style-btn-ic">&#127788;</span>KNMI</button>
   <button class="mon-style-btn" data-montab="aviation"><span class="mon-style-btn-ic">&#9992;</span>Aviation</button>
   <button class="mon-style-btn" data-montab="stations"><span class="mon-style-btn-ic">&#8862;</span>Stations</button>
+  <button class="mon-style-btn" data-montab="metarsgraph"><span class="mon-style-btn-ic">&#128225;</span>METAR Graph</button>
+  <button class="mon-style-btn" data-montab="synopgraph"><span class="mon-style-btn-ic">&#127760;</span>SYNOP Graph</button>
 </div>
 
 <div class="content">
@@ -3362,6 +3385,28 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
         <div class="mapwrap"><div id="map"></div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- METAR TRENDS -->
+  <div id="tab-metarsgraph" class="tpanel hidden">
+    <div class="shdr">
+      <div class="trd-hdr">&#128225; METAR Trends &mdash; TNCC <small id="metarsTrendTime">&mdash;</small></div>
+    </div>
+    <div id="metarsTrendBody"><div class="trd-empty">Loading&hellip;</div></div>
+    <div class="sbar" style="margin-top:4px;">
+      <span><span class="sdot"></span>Live TNCC METAR &middot; forecast KNMI HARMONIE &middot; auto-refresh 30s</span>
+    </div>
+  </div>
+
+  <!-- SYNOP TRENDS -->
+  <div id="tab-synopgraph" class="tpanel hidden">
+    <div class="shdr">
+      <div class="trd-hdr">&#127760; SYNOP Trends &mdash; 78988 <small id="synopTrendTime">&mdash;</small></div>
+    </div>
+    <div id="synopTrendBody"><div class="trd-empty">Loading&hellip;</div></div>
+    <div class="sbar" style="margin-top:4px;">
+      <span><span class="sdot"></span>Live SYNOP 78988 &middot; forecast KNMI HARMONIE &middot; auto-refresh 30s</span>
     </div>
   </div>
 
@@ -5526,6 +5571,8 @@ const panels = {
   forecast: byId('tab-forecast'),
   aviation: byId('tab-aviation'),
   stations: byId('tab-stations'),
+  metarsgraph: byId('tab-metarsgraph'),
+  synopgraph: byId('tab-synopgraph'),
   weather: byId('tab-weather'), atc: byId('tab-atc'), maps: byId('tab-maps'),
   knmi: byId('tab-knmi')
 };
@@ -5552,8 +5599,8 @@ window.showAviationSub = showAviationSub;
 // "current" is its own top-level tab (left of Monitor) but its content still
 // physically lives inside #tab-monitor. It shows ONLY the Current dashboard —
 // none of the other faces or folded-in sections, which stay under Monitor.
-const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations'];
-const MON_SUBTABS = ['forecast','knmi','aviation','stations']; // fold into the Monitor tab highlight
+const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations','metarsgraph','synopgraph'];
+const MON_SUBTABS = ['forecast','knmi','aviation','stations','metarsgraph','synopgraph']; // fold into the Monitor tab highlight
 function switchTab(name){
   // Guard: an unknown name would hide every panel AND deselect every tab,
   // leaving a blank page with no way back. Ignore it instead.
@@ -5588,6 +5635,19 @@ function switchTab(name){
   // Stop the ADS-B flight poll (15s) when leaving the Maps tab — it otherwise
   // keeps hitting a third-party API forever once the flights layer was enabled.
   if(name!=='maps' && typeof __flightTimer!=='undefined' && __flightTimer){ clearInterval(__flightTimer); __flightTimer=null; }
+  // Trend-dashboard tabs poll their own live+forecast data every 30s while
+  // open; stop polling the moment the user leaves so they don't keep
+  // hitting aviationweather.gov/ogimet/open-meteo forever in the background.
+  if(name!=='metarsgraph' && window.__metarsTrendTimer){ clearInterval(window.__metarsTrendTimer); window.__metarsTrendTimer=null; }
+  if(name!=='synopgraph' && window.__synopTrendTimer){ clearInterval(window.__synopTrendTimer); window.__synopTrendTimer=null; }
+  if(name==='metarsgraph'){
+    loadMetarTrendTab();
+    if(!window.__metarsTrendTimer) window.__metarsTrendTimer = setInterval(loadMetarTrendTab, 30000);
+  }
+  if(name==='synopgraph'){
+    loadSynopTrendTab();
+    if(!window.__synopTrendTimer) window.__synopTrendTimer = setInterval(loadSynopTrendTab, 30000);
+  }
   if(name==='atc'){
     if(typeof ensureAtcWindyMaps==='function') ensureAtcWindyMaps();
   }
@@ -6514,6 +6574,316 @@ async function fetchSynopRainWindows(wmo){
   if(h24 == null) h24 = windowSum(24);
   return {h3: h3, h6: h6, h12: h12, h24: h24};
 }
+
+/* ═══════════ TREND DASHBOARD (METAR / SYNOP graph tabs) ═══════════
+   -6h recorded history → now (live obs, ♦) → +6h forecast, matching the
+   reference layout: solid line = history (real obs; SYNOP's sparse 3-6h
+   native cadence is model-filled between real points so it reads as a
+   smooth line, same as METAR's naturally-hourly cadence), dashed line =
+   forecast from the KNMI HARMONIE Caribbean model (Open-Meteo). */
+const TREND_WINDOW_H = 6;
+
+/* KNMI HARMONIE past+forecast hourly series for the trend charts' model
+   fill (SYNOP gaps) and forecast tail (both tabs). One fetch covers both:
+   past_hours gives the model's short-range hindcast (used only to fill
+   between real obs), forecast_hours gives the actual forecast tail. */
+async function fetchHarmonieTrend(){
+  const vars = 'temperature_2m,dew_point_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,surface_pressure,cloud_cover,precipitation';
+  async function attempt(model){
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${ABC_LAT}&longitude=${ABC_LON}` +
+      `&hourly=${vars}&models=${model}&past_hours=${TREND_WINDOW_H}&forecast_hours=${TREND_WINDOW_H}` +
+      `&wind_speed_unit=kn&timezone=UTC`;
+    const o = await fetchURL(url, 1);
+    if(!o || !o.ok) return null;
+    let j; try{ j = JSON.parse(o.text); }catch(e){ return null; }
+    if(!j || !j.hourly || !j.hourly.time) return null;
+    const suf = '_' + model;
+    const h = j.hourly;
+    const out = [];
+    h.time.forEach((t, i) => {
+      const rec = { t: Date.parse(t + 'Z') };
+      vars.split(',').forEach(v => { const arr = h[v + suf] || h[v]; rec[v] = (arr && arr[i] != null) ? arr[i] : null; });
+      out.push(rec);
+    });
+    return out;
+  }
+  return (await attempt('knmi_harmonie_arome_caribbean')) || (await attempt('knmi_seamless')) || [];
+}
+
+/* Linear-interpolate a value at time `t` from a sparse, time-sorted series
+   of {t,v} points (used to model-fill gaps between real SYNOP obs). */
+function trendInterp(series, t){
+  const pts = series.filter(p => p.v != null && isFinite(p.v));
+  if(!pts.length) return null;
+  if(t <= pts[0].t) return pts[0].v;
+  if(t >= pts[pts.length-1].t) return pts[pts.length-1].v;
+  for(let i = 0; i < pts.length - 1; i++){
+    if(t >= pts[i].t && t <= pts[i+1].t){
+      const span = pts[i+1].t - pts[i].t;
+      const frac = span > 0 ? (t - pts[i].t) / span : 0;
+      return pts[i].v + (pts[i+1].v - pts[i].v) * frac;
+    }
+  }
+  return null;
+}
+
+/* One SVG trend card: solid history (-6h..now), ♦ at the last history
+   point, dashed forecast (now..+6h). Y-axis auto-scales to the data; the
+   X-axis always spans the fixed -6h/+6h window (matches the reference,
+   so a short data gap doesn't visually compress the timeline). */
+function trendChartCard(title, unit, color, hist, fc, nowMs, bigVal){
+  const W = 320, H = 130, padL = 36, padR = 10, padT = 10, padB = 18;
+  const tMin = nowMs - TREND_WINDOW_H*3600e3, tMax = nowMs + TREND_WINDOW_H*3600e3;
+  const big = bigVal != null ? bigVal : '—';
+  const head = `<div class="trd-card"><div class="trd-card-hd"><span class="trd-ttl">${title}</span><span class="trd-val" style="color:${color}">${big}${unit?'<small style="font-size:0.7em;opacity:.8;"> '+unit+'</small>':''}</span></div>`;
+  const allVals = hist.concat(fc).map(p => p.v).filter(v => v != null && isFinite(v));
+  if(!allVals.length) return head + '<div class="trd-empty">No data</div></div>';
+  let vMin = Math.min.apply(null, allVals), vMax = Math.max.apply(null, allVals);
+  if(vMin === vMax){ vMin -= 1; vMax += 1; }
+  const pad = (vMax - vMin) * 0.14; vMin -= pad; vMax += pad;
+  const X = t => padL + (t - tMin) / (tMax - tMin) * (W - padL - padR);
+  const Y = v => H - padB - (v - vMin) / (vMax - vMin) * (H - padT - padB);
+  function pathFor(pts){
+    const seg = pts.filter(p => p.v != null && isFinite(p.v));
+    if(!seg.length) return '';
+    return seg.map((p,i) => (i===0?'M ':'L ') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  }
+  const histPath = pathFor(hist), fcPath = pathFor(fc);
+  const lastHist = hist.filter(p => p.v != null).slice(-1)[0];
+  const nowX = X(nowMs).toFixed(1);
+  const diamond = lastHist
+    ? `<polygon points="${X(lastHist.t).toFixed(1)},${(Y(lastHist.v)-5).toFixed(1)} ${(X(lastHist.t)+5).toFixed(1)},${Y(lastHist.v).toFixed(1)} ${X(lastHist.t).toFixed(1)},${(Y(lastHist.v)+5).toFixed(1)} ${(X(lastHist.t)-5).toFixed(1)},${Y(lastHist.v).toFixed(1)}" fill="${color}" stroke="#0a0e16" stroke-width="1"/>`
+    : '';
+  return head +
+    `<svg class="trd-svg" viewBox="0 0 ${W} ${H}">` +
+      `<line x1="${nowX}" y1="${padT}" x2="${nowX}" y2="${H-padB}" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${nowX}" y="${padT-2}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(255,255,255,0.4)">now</text>` +
+      (histPath ? `<path d="${histPath}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` : '') +
+      (fcPath ? `<path d="${fcPath}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4" opacity="0.75"/>` : '') +
+      diamond +
+      `<text x="${padL}" y="${padT+9}" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(255,255,255,0.35)">${vMax.toFixed(1)}</text>` +
+      `<text x="${padL}" y="${H-padB-1}" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(255,255,255,0.35)">${vMin.toFixed(1)}</text>` +
+      `<text x="${padL}" y="${H-4}" font-family="JetBrains Mono,monospace" font-size="9.5" fill="rgba(255,255,255,0.4)">-${TREND_WINDOW_H}h</text>` +
+      `<text x="${W-padR}" y="${H-4}" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9.5" fill="rgba(255,255,255,0.4)">+${TREND_WINDOW_H}h</text>` +
+    `</svg></div>`;
+}
+
+/* DDHHMMZ (METAR's own timestamp group) -> epoch ms. Same month-rollover
+   guard already used inside parseMetar() for ageMins, just exposing the
+   epoch itself here since parseMetar() doesn't return it. */
+function metarTimeToEpoch(time){
+  if(!/^\d{6}Z$/.test(time || '')) return null;
+  var n = new Date(), dd = +time.slice(0,2), hh = +time.slice(2,4), mm = +time.slice(4,6);
+  var t = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), dd, hh, mm);
+  if((Date.now() - t) / 60000 < -10) t = Date.UTC(n.getUTCFullYear(), n.getUTCMonth() - 1, dd, hh, mm);
+  return t;
+}
+const TREND_OKTA_BY_COVER = {SKC:0, FEW:2, SCT:4, BKN:6, OVC:8};
+function trendCloudPct(cldToks){
+  if(!cldToks || !cldToks.length) return 0;
+  var ok = 0;
+  cldToks.forEach(function(c){ var m = c.match(/^(FEW|SCT|BKN|OVC)/i); if(m && TREND_OKTA_BY_COVER[m[1].toUpperCase()] > ok) ok = TREND_OKTA_BY_COVER[m[1].toUpperCase()]; });
+  return Math.round(ok / 8 * 100);
+}
+function trendRhFromDew(tempC, dewC){
+  if(tempC == null || dewC == null) return null;
+  return Math.round(100 * Math.exp(17.625*dewC/(243.04+dewC)) / Math.exp(17.625*tempC/(243.04+tempC)));
+}
+
+/* ── METAR (TNCC) trend dashboard data ── */
+const HARMONIE_VAR = {temp:'temperature_2m', dew:'dew_point_2m', hum:'relative_humidity_2m', feels:'apparent_temperature', wind:'wind_speed_10m', gust:'wind_gusts_10m', pres:'surface_pressure', cloud:'cloud_cover', precip:'precipitation'};
+const TREND_METRICS = [
+  {key:'temp',   title:'Temperature', unit:'°C',  color:'#ff8a3d'},
+  {key:'feels',  title:'Feels Like',  unit:'°C',  color:'#ff4f4f'},
+  {key:'dew',    title:'Dew Point',   unit:'°C',  color:'#2ec97a'},
+  {key:'hum',    title:'Humidity',    unit:'%',   color:'#4db8ff'},
+  {key:'wind',   title:'Wind Speed',  unit:'kt',  color:'#a78bfa'},
+  {key:'gust',   title:'Gusts',       unit:'kt',  color:'#c084fc'},
+  {key:'pres',   title:'Pressure',    unit:'hPa', color:'#38bdf8'},
+  {key:'cloud',  title:'Cloud Cover', unit:'%',   color:'#94a3b8'},
+  {key:'precip', title:'Precip',      unit:'mm',  color:'#22d3ee'}
+];
+async function fetchMetarTrend(){
+  const nowMs = Date.now();
+  const harmonie = await fetchHarmonieTrend();
+  const url = 'https://aviationweather.gov/api/data/metar?ids=TNCC&hours=8&format=raw';
+  let txt = null;
+  try { const o = await fetchURL(url, 1); if(o && o.ok) txt = o.text; } catch(e){}
+  const obs = [];
+  if(txt){
+    txt.split('\n').forEach(function(line){
+      line = line.trim().replace(/^(METAR|SPECI)\s+/, '');
+      if(!line || line.indexOf('TNCC') < 0) return;
+      let mp; try { mp = parseMetar(line); } catch(e){ return; }
+      if(!mp) return;
+      const t = metarTimeToEpoch(mp.time);
+      if(t == null || t < nowMs - (TREND_WINDOW_H+2)*3600e3 || t > nowMs + 300000) return;
+      const rh = trendRhFromDew(mp.tempC, mp.dewC);
+      obs.push({
+        t: t, temp: mp.tempC, dew: mp.dewC, hum: rh,
+        feels: (mp.tempC != null && typeof calcFeelsLike === 'function') ? calcFeelsLike(mp.tempC, rh, mp.windSpd) : null,
+        wind: mp.windSpd, gust: (mp.windGust > 0 ? mp.windGust : null), pres: mp.qhPa,
+        cloud: trendCloudPct(mp.cldToks), precip: null, visM: mp.visM, windDir: mp.windDir
+      });
+    });
+  }
+  obs.sort(function(a,b){ return a.t - b.t; });
+  const last = obs.length ? obs[obs.length-1] : null;
+  const harmoniePast = harmonie.filter(function(h){ return h.t <= nowMs; });
+  const harmonieFc = harmonie.filter(function(h){ return h.t > nowMs; });
+  const series = {};
+  TREND_METRICS.forEach(function(m){
+    // METAR doesn't reliably encode a precip amount — fall back to the
+    // HARMONIE model for that one metric's history too (still solid-line,
+    // just model- rather than obs-sourced), same source as its forecast tail.
+    const hist = m.key === 'precip'
+      ? harmoniePast.map(function(h){ return {t:h.t, v:h[HARMONIE_VAR.precip]}; })
+      : obs.map(function(o){ return {t:o.t, v:o[m.key]}; });
+    const fc = harmonieFc.map(function(h){ return {t:h.t, v:h[HARMONIE_VAR[m.key]]}; });
+    series[m.key] = {hist:hist, fc:fc};
+  });
+  let rad = null;
+  try { if(window.__monLastData && window.__monLastData.omCurrent && window.__monLastData.omCurrent.shortwave_radiation != null) rad = window.__monLastData.omCurrent.shortwave_radiation; } catch(e){}
+  const lastPrecip = harmoniePast.length ? harmoniePast[harmoniePast.length-1][HARMONIE_VAR.precip] : null;
+  return {
+    nowMs: nowMs, source: 'TNCC METAR', obsTime: last ? last.t : null,
+    tiles: last ? {
+      temp: last.temp, dew: last.dew, hum: last.hum, windDir: last.windDir, wind: last.wind, gust: last.gust,
+      cloud: last.cloud, rad: rad, visKm: last.visM != null ? last.visM/1000 : null, precip: lastPrecip, pres: last.pres
+    } : null,
+    series: series
+  };
+}
+
+/* ── SYNOP (78988) trend dashboard data ── */
+async function fetchSynopTrendHistory(wmo){
+  const b = new Date(Date.now() - (TREND_WINDOW_H + 20) * 3600e3);
+  const begin = '' + b.getUTCFullYear() + String(b.getUTCMonth()+1).padStart(2,'0') + String(b.getUTCDate()).padStart(2,'0') + String(b.getUTCHours()).padStart(2,'0') + '00';
+  const url = 'https://www.ogimet.com/cgi-bin/getsynop?block=' + wmo + '&begin=' + begin;
+  const r = await fetchURL(url, 1);
+  if(!r || !r.text || !/AAXX/.test(r.text)) return [];
+  const obs = [];
+  r.text.split('\n').forEach(function(line){
+    const m = line.match(/^(\d{5}),(\d{4}),(\d{2}),(\d{2}),(\d{2}),(\d{2}),(.*)$/);
+    if(!m || m[1] !== String(wmo)) return;
+    const t = Date.UTC(parseInt(m[2],10), parseInt(m[3],10)-1, parseInt(m[4],10), parseInt(m[5],10), parseInt(m[6],10));
+    let rep = m[7];
+    if(!/AAXX/.test(rep)) rep = 'AAXX ' + m[4] + m[5] + '4 ' + rep;
+    let dec; try { dec = decodeSynopText(rep); } catch(e){ return; }
+    if(!dec || !dec.reports || !dec.reports.length) return;
+    const P = dec.reports[0].P || {};
+    // Field names here are decodeSynopText()'s raw output, NOT the
+    // normalized shape extractWxFromSynop() builds from it elsewhere
+    // (wind_kt/wind_dir there come from wind_speed_kn/wind_dir_deg here;
+    // there's no gust field at all in this decoder's output).
+    obs.push({
+      t: t, temp: P.temp_c!=null?P.temp_c:null, dew: P.dew_c!=null?P.dew_c:null, hum: P.rh!=null?P.rh:null,
+      feels: (P.temp_c!=null && typeof calcFeelsLike==='function') ? calcFeelsLike(P.temp_c, P.rh, P.wind_speed_kn) : null,
+      wind: P.wind_speed_kn!=null?P.wind_speed_kn:null, gust: null, pres: P.slp!=null?P.slp:null,
+      cloud: P.cloud_oktas!=null?Math.round(P.cloud_oktas/8*100):null,
+      precip: P.precip_mm!=null?P.precip_mm:null, visM: parseVisToMeters(P.vis), windDir: P.wind_dir_deg!=null?P.wind_dir_deg:null
+    });
+  });
+  obs.sort(function(a,b){ return a.t - b.t; });
+  return obs;
+}
+async function fetchSynopTrend(){
+  const nowMs = Date.now();
+  const [harmonie, obsAll] = await Promise.all([fetchHarmonieTrend(), fetchSynopTrendHistory(78988)]);
+  const obs = obsAll.filter(function(o){ return o.t >= nowMs - (TREND_WINDOW_H+0.5)*3600e3 && o.t <= nowMs + 300000; });
+  const last = obsAll.length ? obsAll[obsAll.length-1] : null;
+  const series = {};
+  TREND_METRICS.forEach(function(m){
+    const real = obs.filter(function(o){ return o[m.key] != null; }).map(function(o){ return {t:o.t, v:o[m.key]}; });
+    // Per-hour model-filled history: at each real SYNOP time use the real
+    // value; between real obs (SYNOP's native 3-6h cadence), interpolate
+    // the HARMONIE model's own hourly series so the line reads smooth,
+    // same visual density as METAR's naturally-hourly cadence.
+    const histWindow = harmonie.filter(function(h){ return h.t <= nowMs; });
+    let hist;
+    if(real.length >= 2){
+      hist = histWindow.map(function(h){
+        const v = trendInterp(real, h.t);
+        return {t:h.t, v:v};
+      });
+      // Anchor the exact real observation points too (so the diamond and
+      // true values are precise, not just the hourly-grid interpolation).
+      real.forEach(function(p){ if(!hist.some(function(h){ return Math.abs(h.t-p.t) < 300000; })) hist.push(p); });
+      hist.sort(function(a,b){ return a.t - b.t; });
+    } else {
+      hist = real;
+    }
+    const fc = harmonie.filter(function(h){ return h.t > nowMs; }).map(function(h){ return {t:h.t, v:h[HARMONIE_VAR[m.key]]}; });
+    series[m.key] = {hist:hist, fc:fc};
+  });
+  let rad = null;
+  try { if(window.__monLastData && window.__monLastData.omCurrent && window.__monLastData.omCurrent.shortwave_radiation != null) rad = window.__monLastData.omCurrent.shortwave_radiation; } catch(e){}
+  return {
+    nowMs: nowMs, source: 'SYNOP 78988', obsTime: last ? last.t : null,
+    tiles: last ? {
+      temp: last.temp, dew: last.dew, hum: last.hum, windDir: last.windDir, wind: last.wind, gust: last.gust,
+      cloud: last.cloud, rad: rad, visKm: last.visM != null ? last.visM/1000 : null, precip: last.precip, pres: last.pres
+    } : null,
+    series: series
+  };
+}
+
+/* Renders either trend tab's tile grid + 9-chart grid into `hostId`. */
+function renderTrendTab(hostId, timeId, data, modelFilled){
+  var host = byId(hostId);
+  if(!host) return;
+  var timeEl = byId(timeId);
+  if(!data || !data.tiles){
+    host.innerHTML = '<div class="trd-empty">No live data available right now.</div>';
+    if(timeEl) timeEl.textContent = '—';
+    return;
+  }
+  var t = data.tiles;
+  if(timeEl) timeEl.textContent = data.obsTime ? new Date(data.obsTime).toISOString().slice(0,16).replace('T',' ') + ' UTC' : '—';
+  function tile(l, v, u){
+    return '<div class="trd-tile"><div class="trd-tile-l">' + l + '</div><div class="trd-tile-v">' + (v != null ? v : '—') + (u && v != null ? '<small> ' + u + '</small>' : '') + '</div></div>';
+  }
+  var COMP = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  var dirTxt = t.windDir != null ? COMP[Math.round(t.windDir/22.5)%16] + ' ' + Math.round(t.windDir) + '°' : null;
+  var tilesHtml =
+    tile('Temperature', t.temp != null ? t.temp.toFixed(1) : null, '°C') +
+    tile('Dew Point', t.dew != null ? t.dew.toFixed(1) : null, '°C') +
+    tile('Humidity', t.hum != null ? Math.round(t.hum) : null, '%') +
+    tile('Wind Dir', dirTxt, '') +
+    tile('Wind Speed', t.wind != null ? Math.round(t.wind) : null, 'kt') +
+    tile('Gusts', t.gust != null ? Math.round(t.gust) : null, 'kt') +
+    tile('Cloud Cover', t.cloud != null ? t.cloud : null, '%') +
+    tile('Solar Rad', t.rad != null ? Math.round(t.rad) : null, 'W/m²') +
+    tile('Visibility', t.visKm != null ? t.visKm.toFixed(1) : null, 'km') +
+    tile('Precip', t.precip != null ? t.precip.toFixed(1) : null, 'mm') +
+    tile('Pressure', t.pres != null ? t.pres.toFixed(1) : null, 'hPa');
+  var chartsHtml = TREND_METRICS.map(function(m){
+    var s = data.series[m.key] || {hist:[], fc:[]};
+    var lastHist = s.hist.filter(function(p){ return p.v != null; }).slice(-1)[0];
+    var big = lastHist ? (m.key === 'pres' ? Math.round(lastHist.v) : lastHist.v.toFixed(1)) : null;
+    return trendChartCard(m.title, m.unit, m.color, s.hist, s.fc, data.nowMs, big);
+  }).join('');
+  host.innerHTML =
+    '<div class="trd-tiles">' + tilesHtml + '</div>' +
+    '<div class="trd-note">Trends · <b>' + TREND_WINDOW_H + 'h recorded history</b> → now → <b>' + TREND_WINDOW_H + 'h forecast</b> ' +
+      '(history = recorded obs' + (modelFilled ? ', model-filled' : '') + ' · forecast = KNMI HARMONIE · ◆ live obs)</div>' +
+    '<div class="trd-grid">' + chartsHtml + '</div>';
+}
+async function loadMetarTrendTab(){
+  var host = byId('metarsTrendBody');
+  if(host && !host.querySelector('.trd-tiles')) host.innerHTML = '<div class="trd-empty">Loading…</div>';
+  try { renderTrendTab('metarsTrendBody', 'metarsTrendTime', await fetchMetarTrend(), false); }
+  catch(e){ if(host) host.innerHTML = '<div class="trd-empty">Unavailable — will retry</div>'; }
+}
+async function loadSynopTrendTab(){
+  var host = byId('synopTrendBody');
+  if(host && !host.querySelector('.trd-tiles')) host.innerHTML = '<div class="trd-empty">Loading…</div>';
+  try { renderTrendTab('synopTrendBody', 'synopTrendTime', await fetchSynopTrend(), true); }
+  catch(e){ if(host) host.innerHTML = '<div class="trd-empty">Unavailable — will retry</div>'; }
+}
+window.loadMetarTrendTab = loadMetarTrendTab;
+window.loadSynopTrendTab = loadSynopTrendTab;
+
 /* 2) 24-uurs METARs via aviationweather.gov */
 async function ovzFetchMetars(icao){
   var url = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&hours=26&format=raw';
