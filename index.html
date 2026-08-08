@@ -8082,14 +8082,23 @@ function renderWxTileForecast(hours){
     '<div class="mon-wxfc-l">Wind</div>' +
     '<div class="mon-wxfc-l">Dust</div>' +
   '</div>';
-  // Peak hour per row (Feels/Rain chance/Wind/Dust) gets highlighted below —
-  // ties (equal max) all get the highlight rather than picking one arbitrarily.
-  function maxOf(vals){ var v = vals.filter(function(n){ return n != null && isFinite(n); }); return v.length ? Math.max.apply(null, v) : null; }
-  var maxFeels = maxOf(hours.map(function(x){ return x.feels != null ? Math.round(x.feels) : null; }));
-  var maxPop   = maxOf(hours.map(function(x){ return x.pop   != null ? Math.round(x.pop)   : null; }));
-  var maxWind  = maxOf(hours.map(function(x){ return x.wind  != null ? Math.round(x.wind)  : null; }));
-  var maxDust  = maxOf(hours.map(function(x){ return x.dust  != null ? Math.round(x.dust)  : null; }));
-  el.innerHTML = legend + hours.map(function(x){
+  // Peak hour per row (Feels/Rain chance/Wind/Dust) gets highlighted below.
+  // Compare on the raw (unrounded) values and highlight a single cell: the
+  // displayed values are rounded, so comparing those ties constantly and would
+  // light up most of the row instead of marking the actual peak hour.
+  function peakIdx(vals){
+    var bi = -1, bv = null;
+    vals.forEach(function(n, i){
+      if(n == null || !isFinite(n)) return;
+      if(bv == null || n > bv){ bv = n; bi = i; }
+    });
+    return bi;
+  }
+  var pkFeels = peakIdx(hours.map(function(x){ return x.feels; }));
+  var pkPop   = peakIdx(hours.map(function(x){ return x.pop;   }));
+  var pkWind  = peakIdx(hours.map(function(x){ return x.wind;  }));
+  var pkDust  = peakIdx(hours.map(function(x){ return x.dust;  }));
+  el.innerHTML = legend + hours.map(function(x, i){
     var feels = x.feels != null ? Math.round(x.feels) : null;
     var fCol = feels == null ? 'var(--muted)' : feels >= 38 ? '#ff4f4f' : feels >= 34 ? '#ff8a3d' : feels >= 30 ? '#f59e0b' : '#2ec97a';
     var pop = x.pop != null ? Math.round(x.pop) : null;
@@ -8099,10 +8108,10 @@ function renderWxTileForecast(hours){
     var dCol = dust == null ? 'var(--muted)' : dust >= 150 ? '#ff4f4f' : dust >= 75 ? '#ff8a3d' : dust >= 25 ? '#f59e0b' : '#2ec97a';
     var wind = x.wind != null ? Math.round(x.wind) : null;
     var wCol = wind == null ? 'var(--muted)' : wind >= 34 ? '#ff4f4f' : wind >= 25 ? '#ff8a3d' : wind >= 17 ? '#f59e0b' : '#2ec97a';
-    var fPeak = feels != null && feels === maxFeels ? ' peak' : '';
-    var rPeak = pop   != null && pop   === maxPop   ? ' peak' : '';
-    var wPeak = wind  != null && wind  === maxWind  ? ' peak' : '';
-    var dPeak = dust  != null && dust  === maxDust  ? ' peak' : '';
+    var fPeak = i === pkFeels ? ' peak' : '';
+    var rPeak = i === pkPop   ? ' peak' : '';
+    var wPeak = i === pkWind  ? ' peak' : '';
+    var dPeak = i === pkDust  ? ' peak' : '';
     return '<div class="mon-wxfc-col">' +
       '<div class="mon-wxfc-hr">' + String(x.h).padStart(2,'0') + 'h</div>' +
       '<div class="mon-wxfc-v' + fPeak + '" style="color:' + fCol + '">' + (feels != null ? feels + '°' : '—') + '</div>' +
