@@ -8453,6 +8453,8 @@ function renderMonitor(data){
   byId('monDustDesc').textContent = dust.text + ' \u00b7 ' + dust.desc;
   {
     const dCol = dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a';
+    byId('monDustVal').style.color = dCol;
+    byId('monDustDesc').style.color = dCol;
     const dFillCount = Math.min(5, Math.max(1, Math.ceil(dust.index / 20)));
     let dBars = '';
     for(let i = 0; i < 5; i++){
