@@ -8165,9 +8165,12 @@ async function updateWxTileForecast(){
   } catch(e){ renderWxTileForecast(__wxFcCache ? __wxFcCache.hours : null); }
 }
 
-/* Multi-signal Saharan Dust Index (0-100), fusing visibility, SYNOP codes, PM10.
-   KNMI insight: low visibility = dust ONLY when air is dry; high humidity = haze/fog instead.
-   Signals (weighted): KNMI/SYNOP visibility 45%, PM10 aerosol 35%, SYNOP present-weather dust codes 20%. */
+/* Colour per dust severity level, indexed by the `level` assessDust returns
+   (0 Clear, 1 Light, 2 Active, 3 Severe). Everything that colours a dust
+   reading reads this table, so the colour can never disagree with the label —
+   they used to be derived from separate index thresholds (22/45/70 vs the
+   18/40/65 the labels use), which painted "Severe" orange and "Light" green. */
+const DUST_LEVEL_COL = ['#2ec97a', '#f59e0b', '#ff8a3d', '#ff4f4f'];
 /* Multi-signal Saharan Dust Index (0-100) for the Caribbean / ABC Islands.
    Signals: CAMS dust model 35%, visibility 30%, PM10 25%, SYNOP codes 10%.
    Caribbean calibration: normal clear-air vis = 25-50km; 10km IS significant.
@@ -8461,7 +8464,7 @@ function renderMonitor(data){
   byId('monDustVal').textContent = dust.index + ' / 100';
   byId('monDustDesc').textContent = dust.text + ' \u00b7 ' + dust.desc;
   {
-    const dCol = dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a';
+    const dCol = DUST_LEVEL_COL[dust.level] || DUST_LEVEL_COL[0];
     byId('monDustVal').style.color = dCol;
     byId('monDustDesc').style.color = dCol;
     const dFillCount = Math.min(5, Math.max(1, Math.ceil(dust.index / 20)));
@@ -8477,7 +8480,7 @@ function renderMonitor(data){
   byId('monWxDustDesc').textContent = dust.text;
   byId('monWxDustGauge').innerHTML = buildArcGauge({
     value: dust.index, max: 100,
-    color: dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a',
+    color: DUST_LEVEL_COL[dust.level] || DUST_LEVEL_COL[0],
     bgColor: 'rgba(255,255,255,0.06)'
   });
   // ── Sea surface temperature (Marine API) ──
@@ -12558,8 +12561,12 @@ function buildStationBox(s, mp){
 
   // Dust — from __monDust (ABC only, best effort for others)
   var _dust = (window.__monDust && (s.id==='TNCB'||s.id==='TNCC'||s.id==='TNCA')) ? window.__monDust : null;
-  var _dustLbl = _dust ? (_dust.level||'—') : '—';
-  var _dustCol = _dust ? (_dust.level==='High'?'#f87171':_dust.level==='Moderate'?'#fbbf24':'#4ade80') : '#94a3b8';
+  // assessDust returns level as a NUMBER (0-3) and the wording in .text —
+  // reading .level as a label showed a bare "1"/"2"/"3" (and "—" for Clear,
+  // since 0 is falsy), and comparing it to 'High'/'Moderate' never matched so
+  // the value stayed green even during Severe dust.
+  var _dustLbl = _dust ? (_dust.text || '—') : '—';
+  var _dustCol = _dust ? (DUST_LEVEL_COL[_dust.level] || DUST_LEVEL_COL[0]) : '#94a3b8';
 
   // UV index — from omCurrent
   var _uv = (window.__omCurrent && window.__omCurrent.uv_index!=null) ? window.__omCurrent.uv_index : null;
