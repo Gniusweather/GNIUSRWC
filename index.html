@@ -3096,7 +3096,7 @@ html,body{max-width:100%;overflow-x:hidden;}
             <div class="mon-big" id="monDustVal">&mdash;</div>
             <div class="mon-sm" id="monDustDesc">&mdash;</div>
           </div>
-          <div class="mon-icon-r"><svg class="mon-gauge" viewBox="0 0 80 80" id="monDustGauge"></svg></div>
+          <div class="mon-icon-r" id="monDustIcon"></div>
         </div>
       </div>
       <div class="mon-tile mon-weather">
@@ -8451,11 +8451,17 @@ function renderMonitor(data){
   window.__monDust = dust; // expose for condition map
   byId('monDustVal').textContent = dust.index + ' / 100';
   byId('monDustDesc').textContent = dust.text + ' \u00b7 ' + dust.desc;
-  byId('monDustGauge').innerHTML = buildArcGauge({
-    value: dust.index, max: 100,
-    color: dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a',
-    bgColor: 'rgba(255,255,255,0.06)'
-  });
+  {
+    const dCol = dust.index >= 70 ? '#ff4f4f' : dust.index >= 45 ? '#ff8a3d' : dust.index >= 22 ? '#f59e0b' : '#2ec97a';
+    const dFillCount = Math.min(5, Math.max(1, Math.ceil(dust.index / 20)));
+    let dBars = '';
+    for(let i = 0; i < 5; i++){
+      const w = 18 + i * 8;
+      const filled = (4 - i) < dFillCount;
+      dBars += `<div class="mon-visbar ${filled?'fill':''}" style="width:${w}px;color:${dCol};margin-left:auto;"></div>`;
+    }
+    byId('monDustIcon').innerHTML = dBars;
+  }
   // Duplicate dust reading into the consolidated WEATHER tile
   byId('monWxDustDesc').textContent = dust.text;
   byId('monWxDustGauge').innerHTML = buildArcGauge({
