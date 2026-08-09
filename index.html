@@ -11951,10 +11951,11 @@ var CMAP_VIEW_BOUNDS = [[9.0,-76.0],[19.5,-58.5]];
    loads via GIBS WMS (GeoColor's JPEG request came back blank → black map). On the
    dark basemap it's drawn as a plain overlay (NO screen-blend): white/grey cloud
    tops over the near-black canvas give a full-coverage IR satellite view, 24/7.
-   zIndex:200 here is explicit CSS z-index, not just paint/insertion order — the
-   RainViewer rain layer (condRainLayer) must set a HIGHER zIndex than this one
-   or it silently ends up UNDER the satellite regardless of which was added to
-   the map first, hiding rain whenever both layers are on. */
+   zIndex:200 here is explicit CSS z-index, not just paint/insertion order — any
+   overlay meant to stay visible over satellite must set a HIGHER zIndex than
+   this one, or it silently ends up UNDER it regardless of which was added to
+   the map first. Current stacking (low to high): basemap → satellite (200) →
+   rain (210) → storm cone (220), the highest-priority overlay. */
 function makeSatLayer(mode){
   return L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
     layers:'GOES-East_ABI_Band13_Clean_Infrared', format:'image/png', transparent:true,
@@ -12028,7 +12029,9 @@ function initCondMap(){
         '&layers=show:4,6,7,8&bbox=' + bbox;
     }
   });
-  condStormLayer = new NhcExportLayer('', {opacity: 0.85, attribution: 'NOAA NHC', tileSize: 256});
+  // zIndex:220 — above rain (210) and satellite (200): a tropical storm cone
+  // is the highest-priority overlay and must never be hidden by either.
+  condStormLayer = new NhcExportLayer('', {opacity: 0.85, zIndex: 220, attribution: 'NOAA NHC', tileSize: 256});
 
   // ── SATELLITE: NASA GIBS GOES-East GeoColor (full-coverage, free, no key, CORS) ──
   condSatLayer = makeSatLayer();
