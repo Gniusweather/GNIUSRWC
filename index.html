@@ -3658,7 +3658,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
       </div>
       <div class="atc-windy-section">
-        <div class="atc-windy-section-hd">&#127777; Windy &mdash; Radar &amp; Satellite &middot; ABC Islands</div>
+        <div class="atc-windy-section-hd">&#127777; Windy &mdash; Radar &amp; Satellite &middot; Cura&ccedil;ao</div>
         <div class="dash-windy-maps" id="atcWindyMaps"></div>
       </div>
     </div>
@@ -12389,7 +12389,15 @@ window.ensureAtcWindyMaps = ensureAtcWindyMaps;
 var adsbRadarMap = null, adsbRadarLayer = null;
 function ensureAdsbRadarOverlay(){
   var box = byId('adsbRadarOverlay');
-  if(!box || typeof L === 'undefined') return;
+  if(!box) return;
+  if(typeof L === 'undefined'){
+    // Leaflet loads via a deferred <script>; if the ATC tab is opened before
+    // it's ready, retry until it is (same pattern openCondMap uses for the
+    // same race) instead of silently never showing the overlay.
+    if(!ensureAdsbRadarOverlay._tries) ensureAdsbRadarOverlay._tries = 0;
+    if(ensureAdsbRadarOverlay._tries++ < 40) setTimeout(ensureAdsbRadarOverlay, 100);
+    return;
+  }
   if(!adsbRadarMap){
     adsbRadarMap = L.map(box, {
       zoomControl:false, attributionControl:false, dragging:false,
