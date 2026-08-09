@@ -10277,6 +10277,42 @@ function renderGaugesView(data){
   const windNextCol = windNext2h==null?'#2dd4bf':windNext2h>=25?'#ff4f4f':windNext2h>=18?'#ff8a3d':windNext2h>=10?'#f59e0b':'#a78bfa';
   const popCol = popNext2h==null?'#2dd4bf':popNext2h>=60?'#4db8ff':popNext2h>=30?'#38bdf8':'#67e8f9';
 
+  // Sea temperature — Marine API (Open-Meteo), same reading the consolidated
+  // WEATHER tile shows.
+  const seaTemp = d.seaTemp!=null && isFinite(d.seaTemp) ? d.seaTemp : null;
+  const seaCol = seaTemp==null?'#2dd4bf':seaTemp>=29?'#ff8a3d':seaTemp>=27?'#22d3ee':seaTemp>=25?'#0ea5e9':'#0369a1';
+
+  // Feels like — next 2h — multi-model consensus apparent_temperature,
+  // same hrs2 window already used for Wind/Rain Chance · 2h above.
+  const feelsNext2h = _avgField(hrs2, 'feels');
+  const feelsNextCol = feelsNext2h==null?'#2dd4bf':feelsNext2h>=41?'#ff4f4f':feelsNext2h>=36?'#ff8a3d':feelsNext2h>=30?'#f59e0b':feelsNext2h>=24?'#2dd4bf':'#4db8ff';
+
+  // Total rain — island stations network (sum of each active station's own
+  // rain-today reading), separate from the Marine/Open-Meteo model estimate
+  // the plain "Rain" gauge above shows.
+  const totalRainStations = window.__islandAvgRainTotal;
+
+  // Avg wind (speed + direction) — blended across every live source this app
+  // already tracks for Curaçao: the station network average, TNCC's own
+  // METAR, and the 78988 SYNOP reading. Circular mean for direction (can't
+  // just average degrees across the 0/360 wrap), arithmetic mean for speed.
+  let avgWindSrcs = [];
+  if(window.__islandAvgWind!=null) avgWindSrcs.push({spd:window.__islandAvgWind, dir:window.__islandAvgWindDir});
+  try{
+    const tncc = (typeof mState!=='undefined' && mState['TNCC'] && mState['TNCC'].lastRaw) ? parseMetar(mState['TNCC'].lastRaw) : null;
+    if(tncc && tncc.windSpd!=null) avgWindSrcs.push({spd:tncc.windSpd, dir:tncc.windDir});
+  }catch(e){}
+  if(window.__synopPCur && window.__synopPCur.wind_kt!=null) avgWindSrcs.push({spd:window.__synopPCur.wind_kt, dir:window.__synopPCur.wind_dir});
+  const avgWindSpds = avgWindSrcs.map(s=>s.spd).filter(v=>v!=null);
+  const avgWindDirs = avgWindSrcs.map(s=>s.dir).filter(v=>v!=null);
+  const avgWindKt = avgWindSpds.length ? avgWindSpds.reduce((a,b)=>a+b,0)/avgWindSpds.length : null;
+  let avgWindDir = null;
+  if(avgWindDirs.length){
+    let sinS=0,cosS=0;
+    avgWindDirs.forEach(dg=>{ sinS+=Math.sin(dg*Math.PI/180); cosS+=Math.cos(dg*Math.PI/180); });
+    avgWindDir = (Math.atan2(sinS/avgWindDirs.length,cosS/avgWindDirs.length)*180/Math.PI+360)%360;
+  }
+
   host.innerHTML = `
   <div class="gau-grid">
     <div class="gau-tile">
@@ -10326,6 +10362,26 @@ function renderGaugesView(data){
       <div class="gau-hd">\u{1F327} Rain Chance \u00b7 2h</div>
       ${_gauArc({value:popNext2h,min:0,max:100,unit:'%',big:popNext2h!=null?Math.round(popNext2h):'\u2014',color:popCol})}
       <div class="gau-cap">Peak in next 2 hours</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F30A} Sea Temp</div>
+      ${_gauArc({value:seaTemp,min:22,max:32,unit:'\u00b0C',big:seaTemp!=null?seaTemp.toFixed(1):'\u2014',color:seaCol})}
+      <div class="gau-cap">Marine \u00b7 Caribbean Sea</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F975} Feels Like \u00b7 Next 2h</div>
+      ${_gauArc({value:feelsNext2h,min:15,max:48,unit:'\u00b0C',big:feelsNext2h!=null?feelsNext2h.toFixed(1):'\u2014',color:feelsNextCol})}
+      <div class="gau-cap">Multi-model consensus</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F4A7} Total Rain \u00b7 Stations</div>
+      ${_gauArc({value:totalRainStations,min:0,max:25,unit:'mm',big:totalRainStations!=null?totalRainStations.toFixed(1):'0.0',color:'#4db8ff'})}
+      <div class="gau-cap">Today \u00b7 island network sum</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F9ED} Avg Wind</div>
+      ${_gauCompass(avgWindDir, avgWindKt!=null?Math.round(avgWindKt):null)}
+      <div class="gau-cap">Stations \u00b7 METAR \u00b7 SYNOP \u00b7 Cura\u00e7ao</div>
     </div>
   </div>`;
 }
@@ -11177,7 +11233,7 @@ function hourlyTimeline(forecasts, info){
   if(!info || !info.hours) return [];
   const out = [];
   for(const hr of info.hours){
-    let precip = [], temp = [], pop = [], code = [], wind = [], gust = [];
+    let precip = [], temp = [], pop = [], code = [], wind = [], gust = [], feels = [];
     for(const fc of forecasts){
       const h = fc.data.hourly;
       if(!h || h.time[hr.i] !== hr.t) continue;
@@ -11187,6 +11243,7 @@ function hourlyTimeline(forecasts, info){
       if(h.weather_code && h.weather_code[hr.i] != null) code.push(h.weather_code[hr.i]);
       if(h.wind_speed_10m && h.wind_speed_10m[hr.i] != null) wind.push(h.wind_speed_10m[hr.i]);
       if(h.wind_gusts_10m && h.wind_gusts_10m[hr.i] != null) gust.push(h.wind_gusts_10m[hr.i]);
+      if(h.apparent_temperature && h.apparent_temperature[hr.i] != null) feels.push(h.apparent_temperature[hr.i]);
     }
     out.push({
       hour: hr.hour, time: hr.t,
@@ -11195,7 +11252,8 @@ function hourlyTimeline(forecasts, info){
       pop: pop.length ? pop.reduce((a,b)=>a+b,0)/pop.length : 0,
       code: code.length ? code[0] : null,
       wind: wind.length ? wind.reduce((a,b)=>a+b,0)/wind.length : null,
-      gust: gust.length ? gust.reduce((a,b)=>a+b,0)/gust.length : null
+      gust: gust.length ? gust.reduce((a,b)=>a+b,0)/gust.length : null,
+      feels: feels.length ? feels.reduce((a,b)=>a+b,0)/feels.length : null
     });
   }
   return out;
@@ -13285,7 +13343,9 @@ function renderStationsAverage(){
   var avgWind  = avg(windSpds); window.__islandAvgWind = avgWind;
   var avgHum   = avg(hums); window.__islandAvgHum = avgHum;
   var avgHeat  = avg(heats); window.__islandAvgFeelsLike = avgHeat;
+  window.__islandAvgWindDir = avgDir;
   var totalRain= rains.length ? rains.reduce(function(a,b){return a+b;},0) : null;
+  window.__islandAvgRainTotal = totalRain;
   var COMP=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   var dirTxt = avgDir!==null ? COMP[Math.round(avgDir/22.5)%16] : '';
   var spd = avgWind!==null ? Math.round(avgWind) : null;
