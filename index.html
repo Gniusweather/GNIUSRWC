@@ -10320,6 +10320,16 @@ function renderGaugesView(data){
       ${_gauCompass(windDir, windKt!=null?Math.round(windKt):null)}
     </div>
     <div class="gau-tile">
+      <div class="gau-hd">\u{1F9ED} Avg Wind</div>
+      ${_gauCompass(avgWindDir, avgWindKt!=null?Math.round(avgWindKt):null)}
+      <div class="gau-cap">Stations \u00b7 METAR \u00b7 SYNOP \u00b7 Cura\u00e7ao</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F4A8} Wind \u00b7 Next 2h</div>
+      ${_gauArc({value:windNext2h,min:0,max:40,unit:'kt',big:windNext2h!=null?Math.round(windNext2h):'\u2014',color:windNextCol})}
+      <div class="gau-cap">${gustNext2h!=null?'Gusts to <b>'+Math.round(gustNext2h)+' kt</b>':'\u2014'}</div>
+    </div>
+    <div class="gau-tile">
       <div class="gau-hd">\u{1F321} Temperature</div>
       ${_gauArc({value:temp,min:6,max:40,unit:'\u00b0C',big:temp!=null?temp.toFixed(1):'\u2014',color:tempCol})}
     </div>
@@ -10329,14 +10339,34 @@ function renderGaugesView(data){
       <div class="gau-cap">Avg. live stations</div>
     </div>
     <div class="gau-tile">
-      <div class="gau-hd">\u2600 UV Index</div>
-      ${_gauArc({value:uv,min:0,max:12,unit:'index',big:uv!=null?uv.toFixed(0):'\u2014',color:uvCol})}
-      <div class="gau-cap">${uv!=null?(uv>=8?'Very high':uv>=6?'High':uv>=3?'Moderate':'Low'):'\u2014'}</div>
+      <div class="gau-hd">\u{1F975} Feels Like \u00b7 Next 2h</div>
+      ${_gauArc({value:feelsNext2h,min:15,max:48,unit:'\u00b0C',big:feelsNext2h!=null?feelsNext2h.toFixed(1):'\u2014',color:feelsNextCol})}
+      <div class="gau-cap">Multi-model consensus</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F30A} Sea Temp</div>
+      ${_gauArc({value:seaTemp,min:22,max:32,unit:'\u00b0C',big:seaTemp!=null?seaTemp.toFixed(1):'\u2014',color:seaCol})}
+      <div class="gau-cap">Marine \u00b7 Caribbean Sea</div>
     </div>
     <div class="gau-tile">
       <div class="gau-hd">\u{1F4A7} Rain</div>
       ${_gauArc({value:rain1h,min:0,max:15,unit:'mm/h',big:rain1h!=null?rain1h.toFixed(1):'0.0',color:'#4db8ff'})}
       <div class="gau-cap">${(omd.precipitation_sum&&omd.precipitation_sum[0]!=null)?'<b>'+omd.precipitation_sum[0].toFixed(1)+' mm</b> today':'\u2014'}</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F4A7} Total Rain \u00b7 Stations</div>
+      ${_gauArc({value:totalRainStations,min:0,max:25,unit:'mm',big:totalRainStations!=null?totalRainStations.toFixed(1):'0.0',color:'#4db8ff'})}
+      <div class="gau-cap">Today \u00b7 island network sum</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u{1F327} Rain Chance \u00b7 2h</div>
+      ${_gauArc({value:popNext2h,min:0,max:100,unit:'%',big:popNext2h!=null?Math.round(popNext2h):'\u2014',color:popCol})}
+      <div class="gau-cap">Peak in next 2 hours</div>
+    </div>
+    <div class="gau-tile">
+      <div class="gau-hd">\u2600 UV Index</div>
+      ${_gauArc({value:uv,min:0,max:12,unit:'index',big:uv!=null?uv.toFixed(0):'\u2014',color:uvCol})}
+      <div class="gau-cap">${uv!=null?(uv>=8?'Very high':uv>=6?'High':uv>=3?'Moderate':'Low'):'\u2014'}</div>
     </div>
     <div class="gau-tile">
       <div class="gau-hd">\u{1F30A} Pressure</div>
@@ -10352,36 +10382,6 @@ function renderGaugesView(data){
       <div class="gau-hd">\u{1F441} Visibility</div>
       ${_gauArc({value:visKm,min:0,max:20,unit:'km',big:visKm!=null?visKm.toFixed(1):'\u2014',color:visCol})}
       <div class="gau-cap">KNMI \u00b7 Bonaire</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F4A8} Wind \u00b7 Next 2h</div>
-      ${_gauArc({value:windNext2h,min:0,max:40,unit:'kt',big:windNext2h!=null?Math.round(windNext2h):'\u2014',color:windNextCol})}
-      <div class="gau-cap">${gustNext2h!=null?'Gusts to <b>'+Math.round(gustNext2h)+' kt</b>':'\u2014'}</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F327} Rain Chance \u00b7 2h</div>
-      ${_gauArc({value:popNext2h,min:0,max:100,unit:'%',big:popNext2h!=null?Math.round(popNext2h):'\u2014',color:popCol})}
-      <div class="gau-cap">Peak in next 2 hours</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F30A} Sea Temp</div>
-      ${_gauArc({value:seaTemp,min:22,max:32,unit:'\u00b0C',big:seaTemp!=null?seaTemp.toFixed(1):'\u2014',color:seaCol})}
-      <div class="gau-cap">Marine \u00b7 Caribbean Sea</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F975} Feels Like \u00b7 Next 2h</div>
-      ${_gauArc({value:feelsNext2h,min:15,max:48,unit:'\u00b0C',big:feelsNext2h!=null?feelsNext2h.toFixed(1):'\u2014',color:feelsNextCol})}
-      <div class="gau-cap">Multi-model consensus</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F4A7} Total Rain \u00b7 Stations</div>
-      ${_gauArc({value:totalRainStations,min:0,max:25,unit:'mm',big:totalRainStations!=null?totalRainStations.toFixed(1):'0.0',color:'#4db8ff'})}
-      <div class="gau-cap">Today \u00b7 island network sum</div>
-    </div>
-    <div class="gau-tile">
-      <div class="gau-hd">\u{1F9ED} Avg Wind</div>
-      ${_gauCompass(avgWindDir, avgWindKt!=null?Math.round(avgWindKt):null)}
-      <div class="gau-cap">Stations \u00b7 METAR \u00b7 SYNOP \u00b7 Cura\u00e7ao</div>
     </div>
   </div>`;
 }
