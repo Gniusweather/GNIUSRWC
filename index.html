@@ -3224,15 +3224,15 @@ html,body{max-width:100%;overflow-x:hidden;}
         <div class="mon-radar-grid">
           <div class="mon-radar-body" id="monRadarBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127928; Radar</div>
-            <iframe id="monRadar" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=10&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monRadar" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=11&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-blocker"></div>
-            <a href="https://www.windy.com/?radar,12.19,-68.96,10" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
+            <a href="https://www.windy.com/?radar,12.19,-68.96,11" target="_blank" rel="noopener" class="mon-radar-link" title="Open radar in Windy">&#8599;</a>
           </div>
           <div class="mon-radar-body" id="monSatBody" style="position:relative;">
             <div style="position:absolute;top:6px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127760; Satellite</div>
-            <iframe id="monSatellite" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=10&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+            <iframe id="monSatellite" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=11&level=surface&overlay=satellite&product=satellite&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C" frameborder="0" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
             <div class="mrb-blocker"></div>
-            <a href="https://www.windy.com/?satellite,12.19,-68.96,10" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
+            <a href="https://www.windy.com/?satellite,12.19,-68.96,11" target="_blank" rel="noopener" class="mon-radar-link" title="Open satellite in Windy">&#8599;</a>
           </div>
         </div>
       </div>
@@ -12342,21 +12342,21 @@ function ensureAtcWindyMaps(){
   box.dataset.built = '1';
   // Same lat/lon/zoom as the Monitor tab's Current-view Windy panels
   // (monRadar/monSatellite) so both places show the same framing.
-  var base = 'https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=10&level=surface&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C';
+  var base = 'https://embed.windy.com/embed2.html?lat=12.19&lon=-68.96&detailLat=12.19&detailLon=-68.96&zoom=11&level=surface&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C';
   var radarSrc = base + '&overlay=radar&product=radar&radarRange=-1';
   var satSrc   = base + '&overlay=satellite&product=satellite';
   box.innerHTML =
     '<div class="dash-windy-cell">'
       + '<div class="dash-windy-hd">\u{1F326} Radar · Curaçao</div>'
       + '<div class="dash-windy-frame-wrap">'
-        + '<a class="dash-windy-ext" href="https://www.windy.com/?radar,12.19,-68.96,10" target="_blank" rel="noopener" title="Open radar in Windy">↗</a>'
+        + '<a class="dash-windy-ext" href="https://www.windy.com/?radar,12.19,-68.96,11" target="_blank" rel="noopener" title="Open radar in Windy">↗</a>'
         + '<iframe src="' + radarSrc + '" loading="lazy" frameborder="0" referrerpolicy="no-referrer" allow="fullscreen"></iframe>'
       + '</div>'
     + '</div>'
     + '<div class="dash-windy-cell">'
       + '<div class="dash-windy-hd">\u{1F6F0}️ Satellite · Curaçao</div>'
       + '<div class="dash-windy-frame-wrap">'
-        + '<a class="dash-windy-ext" href="https://www.windy.com/?satellite,12.19,-68.96,10" target="_blank" rel="noopener" title="Open satellite in Windy">↗</a>'
+        + '<a class="dash-windy-ext" href="https://www.windy.com/?satellite,12.19,-68.96,11" target="_blank" rel="noopener" title="Open satellite in Windy">↗</a>'
         + '<iframe src="' + satSrc + '" loading="lazy" frameborder="0" referrerpolicy="no-referrer" allow="fullscreen"></iframe>'
       + '</div>'
     + '</div>';
