@@ -3528,7 +3528,7 @@ html,body{max-width:100%;overflow-x:hidden;}
             <button class="cmap-btn" data-layer="stations" onclick="condMapToggle('stations',this)" title="Show weather station markers">&#9681; Stations</button>
             <button class="cmap-btn active" data-layer="wind" onclick="condMapToggle('wind',this)" title="Show wind vanes">&#127788; Wind</button>
             <button class="cmap-btn active" data-layer="rain" onclick="condMapToggle('rain',this)" title="RainViewer radar">&#127783; Rain</button>
-            <button class="cmap-btn" data-layer="satellite" onclick="condMapToggle('satellite',this)" title="Live infrared satellite">&#128752; Satellite</button>
+            <button class="cmap-btn active" data-layer="satellite" onclick="condMapToggle('satellite',this)" title="Live infrared satellite">&#128752; Satellite</button>
             <button class="cmap-btn" data-layer="dust" onclick="condMapToggle('dust',this)" title="Saharan dust overlay">&#127773; Dust</button>
             <button class="cmap-btn" data-layer="marine" onclick="condMapToggle('marine',this)" title="Wave &amp; swell data">&#127754; Waves</button>
             <button class="cmap-btn active" data-layer="buoys" onclick="condMapToggle('buoys',this)" title="NDBC ocean buoys">&#128679; Buoys</button>
@@ -11845,7 +11845,7 @@ window.__fcDebug = () => __lastForecastData;
 var condMap = null, condMarkerLayer = null, condWindLayer = null;
 var condRainLayer = null, condSatLayer = null, condSatLive = null, condDustCircle = null, condMarineMarker = null, condBuoyLayer = null, __buoyCache = null, condStormLayer = null, __satMode = null;
 var condFlightLayer = null, __flightTimer = null, __flightBusy = false;
-var __condMapLayers = {stations:false, wind:true, rain:true, satellite:false, dust:false, marine:false, buoys:true, storm:true, spaghetti:false, flights:false, info:true};
+var __condMapLayers = {stations:false, wind:true, rain:true, satellite:true, dust:false, marine:false, buoys:true, storm:true, spaghetti:false, flights:false, info:true};
 var __condMapReady = false;
 var __condSelectedStn = null;   // station whose full info box is currently shown (tap to select)
 
