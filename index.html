@@ -377,12 +377,13 @@ tr:last-child td{border-bottom:none;}
 .adsb-wrap iframe{width:100%;height:100%;border:none;display:block;}
 .adsb-blocker{position:absolute;inset:0;z-index:9;background:transparent;pointer-events:auto;touch-action:none;}
 .adsb-blocker.unlocked{pointer-events:none;}
-/* Rain radar painted over the live traffic map — a separate, non-interactive
-   Leaflet instance (RainViewer tiles only, no basemap) stacked above the
-   cross-origin airplanes.live iframe, since its own content can't be touched
-   directly. Sits below the lock button/blocker (z-index 9/12) so those still
-   work; pointer-events:none so it never intercepts pan/zoom of the map below. */
-.adsb-radar-overlay{position:absolute;inset:0;z-index:5;pointer-events:none;background:transparent;}
+/* NOAA/NASA GOES-East satellite painted over the live traffic map — a
+   separate, non-interactive Leaflet instance (satellite tiles only, no
+   basemap) stacked above the cross-origin airplanes.live iframe, since its
+   own content can't be touched directly. Sits below the lock button/blocker
+   (z-index 9/12) so those still work; pointer-events:none so it never
+   intercepts pan/zoom of the map below. */
+.adsb-sat-overlay{position:absolute;inset:0;z-index:5;pointer-events:none;background:transparent;}
 .adsb-lock{position:absolute;top:8px;right:8px;z-index:12;min-width:44px;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--bdrb);background:rgba(5,18,34,0.85);color:var(--acc);font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(8px);box-shadow:0 4px 12px rgba(0,0,0,0.45);transition:all .2s;-webkit-tap-highlight-color:transparent;}
 .adsb-lock:hover{background:rgba(26,111,255,0.25);border-color:var(--acc);transform:scale(1.04);}
 .adsb-lock:active{transform:scale(0.97);}
@@ -3653,8 +3654,8 @@ html,body{max-width:100%;overflow-x:hidden;}
           </button>
           <div class="adsb-blocker" id="adsbBlocker"></div>
           <iframe id="adsbFrame" src="https://globe.airplanes.live/?zoom=8&lat=12.2&lon=-69.1&enableLabels&extendedLabels=1&filterAltMax=20000" title="Live Air Traffic" loading="lazy" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
-          <div class="adsb-radar-overlay" id="adsbRadarOverlay"></div>
-          <div style="position:absolute;bottom:8px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127783; Rain</div>
+          <div class="adsb-sat-overlay" id="adsbSatOverlay"></div>
+          <div style="position:absolute;bottom:8px;left:8px;z-index:6;font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(8,18,32,0.75);padding:3px 7px;border-radius:4px;backdrop-filter:blur(4px);pointer-events:none;">&#127760; Satellite</div>
         </div>
       </div>
       <div class="atc-windy-section">
@@ -5645,9 +5646,6 @@ function switchTab(name){
   // hitting aviationweather.gov/ogimet/open-meteo forever in the background.
   if(name!=='metarsgraph' && window.__metarsTrendTimer){ clearInterval(window.__metarsTrendTimer); window.__metarsTrendTimer=null; }
   if(name!=='synopgraph' && window.__synopTrendTimer){ clearInterval(window.__synopTrendTimer); window.__synopTrendTimer=null; }
-  // The ADS-B radar overlay refreshes on the same rhythm as the other
-  // RainViewer-backed layers; stop polling once the ATC tab isn't visible.
-  if(name!=='atc' && window.__adsbRadarTimer){ clearInterval(window.__adsbRadarTimer); window.__adsbRadarTimer=null; }
   if(name==='metarsgraph'){
     loadMetarTrendTab();
     if(!window.__metarsTrendTimer) window.__metarsTrendTimer = setInterval(loadMetarTrendTab, 30000);
@@ -5658,8 +5656,7 @@ function switchTab(name){
   }
   if(name==='atc'){
     if(typeof ensureAtcWindyMaps==='function') ensureAtcWindyMaps();
-    if(typeof ensureAdsbRadarOverlay==='function') ensureAdsbRadarOverlay();
-    if(!window.__adsbRadarTimer) window.__adsbRadarTimer = setInterval(refreshAdsbRadar, 300000);
+    if(typeof ensureAdsbSatOverlay==='function') ensureAdsbSatOverlay();
   }
   if(name==='stations'){
     if(!stationsTabOpened){ stationsTabOpened = true; fetchStationsData(); }
@@ -12376,59 +12373,45 @@ function ensureAtcWindyMaps(){
 }
 window.ensureAtcWindyMaps = ensureAtcWindyMaps;
 
-/* ═══ ATC — rain radar painted over the live traffic map ═══
+/* ═══ ATC — NOAA/NASA GOES-East satellite painted over the live traffic map ═══
    The traffic map itself is a cross-origin iframe (globe.airplanes.live) —
    we can't draw into its content, so this is a second, independent Leaflet
-   map holding only a RainViewer tile layer (no basemap, transparent
+   map holding only the same GOES-East Clean Infrared tile layer condMap's
+   Satellite toggle uses (makeSatLayer(), no basemap, transparent
    background), non-interactive, stacked exactly on top at the same
    lat/lon/zoom the traffic iframe opens with. It stays visually aligned as
    long as the traffic map is left at its default locked view; panning the
    traffic map underneath (after unlocking it) has no way to signal this
    overlay to follow, since we can't read state out of a cross-origin
-   iframe, so the two will drift apart until the tab is re-entered. */
-var adsbRadarMap = null, adsbRadarLayer = null;
-function ensureAdsbRadarOverlay(){
-  var box = byId('adsbRadarOverlay');
+   iframe, so the two will drift apart until the tab is re-entered.
+   Matches condMap's own satellite layer in not re-fetching a fresher
+   timestamp after creation — GOES-East IR updates on a coarse ~10-15 min
+   cadence, so a per-tab-open refresh already keeps it reasonably current. */
+var adsbSatMap = null;
+function ensureAdsbSatOverlay(){
+  var box = byId('adsbSatOverlay');
   if(!box) return;
   if(typeof L === 'undefined'){
     // Leaflet loads via a deferred <script>; if the ATC tab is opened before
     // it's ready, retry until it is (same pattern openCondMap uses for the
     // same race) instead of silently never showing the overlay.
-    if(!ensureAdsbRadarOverlay._tries) ensureAdsbRadarOverlay._tries = 0;
-    if(ensureAdsbRadarOverlay._tries++ < 40) setTimeout(ensureAdsbRadarOverlay, 100);
+    if(!ensureAdsbSatOverlay._tries) ensureAdsbSatOverlay._tries = 0;
+    if(ensureAdsbSatOverlay._tries++ < 40) setTimeout(ensureAdsbSatOverlay, 100);
     return;
   }
-  if(!adsbRadarMap){
-    adsbRadarMap = L.map(box, {
+  if(!adsbSatMap){
+    adsbSatMap = L.map(box, {
       zoomControl:false, attributionControl:false, dragging:false,
       scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false,
       keyboard:false, touchZoom:false, tap:false,
       zoomAnimation:false, fadeAnimation:false, inertia:false
     }).setView([12.2, -69.1], 8);
+    makeSatLayer().addTo(adsbSatMap);
   } else {
-    adsbRadarMap.invalidateSize();
+    adsbSatMap.invalidateSize();
   }
-  refreshAdsbRadar();
 }
-window.ensureAdsbRadarOverlay = ensureAdsbRadarOverlay;
-
-function refreshAdsbRadar(){
-  if(!adsbRadarMap) return;
-  fetch('https://api.rainviewer.com/public/weather-maps.json')
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      var frames = (j.radar && j.radar.past) ? j.radar.past : [];
-      if(j.radar && j.radar.nowcast) frames = frames.concat(j.radar.nowcast);
-      var frame = frames.length ? frames[frames.length - 1] : null;
-      if(!frame || !j.host || !adsbRadarMap) return;
-      var newLayer = L.tileLayer(j.host + frame.path + '/512/{z}/{x}/{y}/8/1_1.png', {opacity:0.55, maxZoom:12});
-      newLayer.addTo(adsbRadarMap);
-      if(adsbRadarLayer) adsbRadarMap.removeLayer(adsbRadarLayer);
-      adsbRadarLayer = newLayer;
-    })
-    .catch(function(){});
-}
-window.refreshAdsbRadar = refreshAdsbRadar;
+window.ensureAdsbSatOverlay = ensureAdsbSatOverlay;
 
 
 /* NDBC buoys — nearest reporting stations to the ABC islands.
