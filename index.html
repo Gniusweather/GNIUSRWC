@@ -1415,6 +1415,11 @@ body.tab-hidden *{animation-play-state:paused !important;}
 .map-cell-shield::after{content:'\1F512  Click to interact';font-family:var(--cond);font-size:16.5px;font-weight:700;letter-spacing:.5px;color:rgba(200,225,255,0.0);background:rgba(8,18,40,0.0);padding:5px 10px;border-radius:20px;transition:all .2s;pointer-events:none;}
 .map-cell-shield:hover::after{color:rgba(200,225,255,0.85);background:rgba(8,18,40,0.65);}
 .map-cell-shield.active{display:none;}
+/* MDC (meteo.cw) radar: a plain hotlinked image, not an interactive iframe —
+   no crop-hack or scroll-shield needed, just fill the frame. */
+.mdc-radar-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0b1f3d;}
+.mdc-radar-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px;font-family:var(--cond);font-size:16.5px;color:var(--muted);background:#0b1f3d;}
+.mdc-radar-fallback a{color:var(--acc);}
 
 
 /* ── Dashboard mini Windy radar + satellite (ABC-focused, built once) ── */
@@ -3555,6 +3560,14 @@ html,body{max-width:100%;overflow-x:hidden;}
           </div>
           <a class="map-cell-ext" href="https://www.windy.com/?radar,12.3,-69.0,8" target="_blank" rel="noopener" title="Open in Windy">&#8599;</a>
         </div>
+        <div class="map-cell" data-overlay="mdcradar">
+          <div class="map-cell-label"><span class="map-cell-ic">&#128225;</span>MDC Radar &middot; Cura&ccedil;ao</div>
+          <div class="map-cell-frame">
+            <img class="mdc-radar-img" id="mdcRadarImg" data-src="https://www.meteo.cw/rad_still.php?Lang=Eng&amp;St=TNCC&amp;Sws=R11" loading="lazy" referrerpolicy="no-referrer" alt="MDC Cura&ccedil;ao radar" onerror="mdcRadarError()" onload="mdcRadarLoaded()"/>
+            <div class="mdc-radar-fallback" id="mdcRadarFallback" style="display:none;">Radar image unavailable &middot; <a href="https://www.meteo.cw/" target="_blank" rel="noopener">view on meteo.cw &#8599;</a></div>
+          </div>
+          <a class="map-cell-ext" href="https://www.meteo.cw/" target="_blank" rel="noopener" title="Open MDC Cura&ccedil;ao">&#8599;</a>
+        </div>
         <div class="map-cell" data-overlay="satellite">
           <div class="map-cell-label"><span class="map-cell-ic">&#127760;</span>Satellite</div>
           <div class="map-cell-frame">
@@ -5632,6 +5645,8 @@ function switchTab(name){
   // Stop the ADS-B flight poll (15s) when leaving the Maps tab — it otherwise
   // keeps hitting a third-party API forever once the flights layer was enabled.
   if(name!=='maps' && typeof __flightTimer!=='undefined' && __flightTimer){ clearInterval(__flightTimer); __flightTimer=null; }
+  // Same stop-when-you-leave rule for the MDC (meteo.cw) radar image refresh.
+  if(name!=='maps' && window.__mdcRadarTimer){ clearInterval(window.__mdcRadarTimer); window.__mdcRadarTimer=null; }
   // Trend-dashboard tabs poll their own live+forecast data every 30s while
   // open; stop polling the moment the user leaves so they don't keep
   // hitting aviationweather.gov/ogimet/open-meteo forever in the background.
@@ -5691,6 +5706,12 @@ function switchTab(name){
         if(f.dataset.src) f.src = f.dataset.src;
       });
     }
+    // MDC radar: fetch a fresh frame every time the tab is opened (unlike the
+    // Windy iframes, which self-refresh internally, this is a plain <img> we
+    // have to re-point ourselves), then keep it current every 10 min while
+    // the tab stays open — matching the image's real-world update cadence.
+    refreshMdcRadar();
+    if(!window.__mdcRadarTimer) window.__mdcRadarTimer = setInterval(refreshMdcRadar, 600000);
   }
   if(name === 'knmi'){
     if(!window.__knmiLoaded){ window.__knmiLoaded = true; if(typeof loadKnmiData==='function') loadKnmiData(false); }
@@ -13133,6 +13154,32 @@ async function loadKnmiData(force){
   }
 }
 window.loadKnmiData = loadKnmiData;
+
+/* MDC (Meteorological Department Curaçao) radar — a plain hotlinked <img>
+   pointed at their live "still" radar image, refreshed on a timer while the
+   Maps tab is open. A cache-busting param forces the browser to actually
+   re-request it instead of serving the previous frame from cache. If the
+   image ever fails to load (site down, hotlink blocked, etc.) the visible
+   fallback link takes over instead of leaving a broken-image icon. */
+var MDC_RADAR_URL = 'https://www.meteo.cw/rad_still.php?Lang=Eng&St=TNCC&Sws=R11';
+function refreshMdcRadar(){
+  var img = byId('mdcRadarImg');
+  if(!img) return;
+  img.src = MDC_RADAR_URL + '&_=' + Date.now();
+}
+window.refreshMdcRadar = refreshMdcRadar;
+function mdcRadarError(){
+  var img = byId('mdcRadarImg'), fb = byId('mdcRadarFallback');
+  if(img) img.style.display = 'none';
+  if(fb) fb.style.display = '';
+}
+window.mdcRadarError = mdcRadarError;
+function mdcRadarLoaded(){
+  var img = byId('mdcRadarImg'), fb = byId('mdcRadarFallback');
+  if(img) img.style.display = '';
+  if(fb) fb.style.display = 'none';
+}
+window.mdcRadarLoaded = mdcRadarLoaded;
 
 function openCondMap(){
   if(!__condMapReady){
