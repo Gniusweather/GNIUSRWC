@@ -8462,8 +8462,10 @@ function renderMonitor(data){
   byId('monDustDesc').textContent = dust.text + ' \u00b7 ' + dust.desc;
   {
     const dCol = DUST_LEVEL_COL[dust.level] || DUST_LEVEL_COL[0];
-    byId('monDustVal').style.color = dCol;
-    byId('monDustDesc').style.color = dCol;
+    // Text stays the tile's normal color — only the bars below are
+    // color-coded by severity, matching how Visibility's bars work.
+    byId('monDustVal').style.color = '';
+    byId('monDustDesc').style.color = '';
     const dFillCount = Math.min(5, Math.max(1, Math.ceil(dust.index / 20)));
     let dBars = '';
     for(let i = 0; i < 5; i++){
@@ -11948,7 +11950,11 @@ var CMAP_VIEW_BOUNDS = [[9.0,-76.0],[19.5,-58.5]];
 /* Satellite = NASA GIBS GOES-East Clean Infrared (PNG) — the product that reliably
    loads via GIBS WMS (GeoColor's JPEG request came back blank → black map). On the
    dark basemap it's drawn as a plain overlay (NO screen-blend): white/grey cloud
-   tops over the near-black canvas give a full-coverage IR satellite view, 24/7. */
+   tops over the near-black canvas give a full-coverage IR satellite view, 24/7.
+   zIndex:200 here is explicit CSS z-index, not just paint/insertion order — the
+   RainViewer rain layer (condRainLayer) must set a HIGHER zIndex than this one
+   or it silently ends up UNDER the satellite regardless of which was added to
+   the map first, hiding rain whenever both layers are on. */
 function makeSatLayer(mode){
   return L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
     layers:'GOES-East_ABI_Band13_Clean_Infrared', format:'image/png', transparent:true,
@@ -12042,7 +12048,7 @@ function initCondMap(){
           // 512px tiles (vs the previous 256px) roughly double the effective
           // resolution of the radar image at the same zoom level.
           condRainLayer = L.tileLayer(j.host + frame.path + '/512/{z}/{x}/{y}/8/1_1.png',
-            {opacity:0.8, maxZoom:12, attribution:'RainViewer'});
+            {opacity:0.8, maxZoom:12, zIndex:210, attribution:'RainViewer'});
           if(__condMapLayers.rain && condMap) condRainLayer.addTo(condMap);
         }
         // Satellite is served by NASA GIBS (condSatLayer) — RainViewer no longer
@@ -12079,7 +12085,7 @@ function initCondMap(){
           var frame=frames.length?frames[frames.length-1]:null;
           if(frame&&j.host){
             window.__rainFrames=frames.map(function(f){return f.path;}); window.__rainHost=j.host;
-            var newRain=L.tileLayer(j.host+frame.path+'/512/{z}/{x}/{y}/8/1_1.png',{opacity:0.8,maxZoom:12,attribution:'RainViewer'});
+            var newRain=L.tileLayer(j.host+frame.path+'/512/{z}/{x}/{y}/8/1_1.png',{opacity:0.8,maxZoom:12,zIndex:210,attribution:'RainViewer'});
             // Swap based on the toggle state, not just current attachment, so a
             // freshly-toggled rain layer still gets the newest frame.
             if(__condMapLayers.rain) newRain.addTo(condMap);
