@@ -2978,6 +2978,7 @@ html,body{max-width:100%;overflow-x:hidden;}
   <button class="mon-style-btn" data-montab="stations"><span class="mon-style-btn-ic">&#8862;</span>Stations</button>
   <button class="mon-style-btn" data-montab="metarsgraph"><span class="mon-style-btn-ic">&#128225;</span>METAR Graph</button>
   <button class="mon-style-btn" data-montab="synopgraph"><span class="mon-style-btn-ic">&#127760;</span>SYNOP Graph</button>
+  <button class="mon-style-btn" data-montab="stationsgraph"><span class="mon-style-btn-ic">&#128200;</span>Stations Graph</button>
 </div>
 
 <div class="content">
@@ -3408,6 +3409,17 @@ html,body{max-width:100%;overflow-x:hidden;}
     <div id="synopTrendBody"><div class="trd-empty">Loading&hellip;</div></div>
     <div class="sbar" style="margin-top:4px;">
       <span><span class="sdot"></span>Live SYNOP 78988 &middot; forecast KNMI HARMONIE &middot; auto-refresh 30s</span>
+    </div>
+  </div>
+
+  <!-- STATIONS TRENDS -->
+  <div id="tab-stationsgraph" class="tpanel hidden">
+    <div class="shdr">
+      <div class="trd-hdr">&#128200; Stations Trends &mdash; Island Avg <small id="stationsTrendTime">&mdash;</small></div>
+    </div>
+    <div id="stationsTrendBody"><div class="trd-empty">Loading&hellip;</div></div>
+    <div class="sbar" style="margin-top:4px;">
+      <span><span class="sdot"></span>Live island station network &middot; forecast KNMI HARMONIE &middot; auto-refresh 30s</span>
     </div>
   </div>
 
@@ -5570,6 +5582,7 @@ const panels = {
   stations: byId('tab-stations'),
   metarsgraph: byId('tab-metarsgraph'),
   synopgraph: byId('tab-synopgraph'),
+  stationsgraph: byId('tab-stationsgraph'),
   weather: byId('tab-weather'), atc: byId('tab-atc'), maps: byId('tab-maps'),
   knmi: byId('tab-knmi')
 };
@@ -5596,8 +5609,8 @@ window.showAviationSub = showAviationSub;
 // "current" is its own top-level tab (left of Monitor) but its content still
 // physically lives inside #tab-monitor. It shows ONLY the Current dashboard —
 // none of the other faces or folded-in sections, which stay under Monitor.
-const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations','metarsgraph','synopgraph'];
-const MON_SUBTABS = ['forecast','knmi','aviation','stations','metarsgraph','synopgraph']; // fold into the Monitor tab highlight
+const MON_FAMILY = ['monitor','forecast','knmi','aviation','stations','metarsgraph','synopgraph','stationsgraph'];
+const MON_SUBTABS = ['forecast','knmi','aviation','stations','metarsgraph','synopgraph','stationsgraph']; // fold into the Monitor tab highlight
 function switchTab(name){
   // Guard: an unknown name would hide every panel AND deselect every tab,
   // leaving a blank page with no way back. Ignore it instead.
@@ -5637,6 +5650,7 @@ function switchTab(name){
   // hitting aviationweather.gov/ogimet/open-meteo forever in the background.
   if(name!=='metarsgraph' && window.__metarsTrendTimer){ clearInterval(window.__metarsTrendTimer); window.__metarsTrendTimer=null; }
   if(name!=='synopgraph' && window.__synopTrendTimer){ clearInterval(window.__synopTrendTimer); window.__synopTrendTimer=null; }
+  if(name!=='stationsgraph' && window.__stationsTrendTimer){ clearInterval(window.__stationsTrendTimer); window.__stationsTrendTimer=null; }
   if(name==='metarsgraph'){
     loadMetarTrendTab();
     if(!window.__metarsTrendTimer) window.__metarsTrendTimer = setInterval(loadMetarTrendTab, 30000);
@@ -5644,6 +5658,10 @@ function switchTab(name){
   if(name==='synopgraph'){
     loadSynopTrendTab();
     if(!window.__synopTrendTimer) window.__synopTrendTimer = setInterval(loadSynopTrendTab, 30000);
+  }
+  if(name==='stationsgraph'){
+    loadStationsTrendTab();
+    if(!window.__stationsTrendTimer) window.__stationsTrendTimer = setInterval(loadStationsTrendTab, 30000);
   }
   if(name==='atc'){
     if(typeof ensureAtcWindyMaps==='function') ensureAtcWindyMaps();
@@ -6880,6 +6898,91 @@ async function loadSynopTrendTab(){
 }
 window.loadMetarTrendTab = loadMetarTrendTab;
 window.loadSynopTrendTab = loadSynopTrendTab;
+
+/* ── Island Stations Average trend dashboard data ──
+   Unlike METAR/SYNOP, the station network (via the Cloudflare Worker)
+   has no external history archive to pull real past observations from —
+   it only ever returns the current snapshot. History here is the app's
+   own rolling buffer (_stationsAvgPushHistory/_stationsAvgSeries, near
+   renderStationsAverage()), accumulated live once per ~60s station poll
+   while the app stays open, so a freshly-opened session starts with
+   little/no history and fills in over time — unlike METAR/SYNOP, which
+   have hours of real history immediately. The forecast tail still comes
+   from the same shared KNMI HARMONIE fetch as the other two tabs.
+   Metric set is deliberately smaller than TREND_METRICS: only what the
+   station network actually measures (temp, feels-like, humidity, wind
+   speed) gets a chart, rather than padding with metrics (dew point,
+   gusts, pressure, cloud cover, precip rate) it doesn't report. */
+const STATIONS_TREND_METRICS = [
+  {key:'temp',  title:'Temperature', unit:'°C', color:'#ff8a3d'},
+  {key:'feels', title:'Feels Like',  unit:'°C', color:'#ff4f4f'},
+  {key:'hum',   title:'Humidity',    unit:'%',  color:'#4db8ff'},
+  {key:'wind',  title:'Wind Speed',  unit:'kt', color:'#a78bfa'}
+];
+async function fetchStationsTrend(){
+  const nowMs = Date.now();
+  try { await fetchStationsData(); } catch(e){}
+  const harmonie = await fetchHarmonieTrend();
+  const harmonieFc = harmonie.filter(function(h){ return h.t > nowMs; });
+  const series = {};
+  STATIONS_TREND_METRICS.forEach(function(m){
+    series[m.key] = {
+      hist: _stationsAvgSeries(m.key),
+      fc: harmonieFc.map(function(h){ return {t: h.t, v: h[HARMONIE_VAR[m.key]]}; })
+    };
+  });
+  return {
+    nowMs: nowMs, source: 'Island stations', obsTime: Date.now(),
+    tiles: {
+      temp: window.__islandAvgTemp, feels: window.__islandAvgFeelsLike,
+      hum: window.__islandAvgHum, windDir: window.__islandAvgWindDir,
+      wind: window.__islandAvgWind, rainTotal: window.__islandAvgRainTotal
+    },
+    series: series
+  };
+}
+function renderStationsTrendTab(hostId, timeId, data){
+  var host = byId(hostId);
+  if(!host) return;
+  var timeEl = byId(timeId);
+  if(!data || !data.tiles){
+    host.innerHTML = '<div class="trd-empty">No live data available right now.</div>';
+    if(timeEl) timeEl.textContent = '—';
+    return;
+  }
+  var t = data.tiles;
+  if(timeEl) timeEl.textContent = data.obsTime ? new Date(data.obsTime).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+  function tile(l, v, u){
+    return '<div class="trd-tile"><div class="trd-tile-l">' + l + '</div><div class="trd-tile-v">' + (v != null ? v : '—') + (u && v != null ? '<small> ' + u + '</small>' : '') + '</div></div>';
+  }
+  var COMP = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  var dirTxt = t.windDir != null ? COMP[Math.round(t.windDir/22.5)%16] + ' ' + Math.round(t.windDir) + '°' : null;
+  var tilesHtml =
+    tile('Temperature', t.temp != null ? t.temp.toFixed(1) : null, '°C') +
+    tile('Feels Like', t.feels != null ? t.feels.toFixed(1) : null, '°C') +
+    tile('Humidity', t.hum != null ? Math.round(t.hum) : null, '%') +
+    tile('Wind Dir', dirTxt, '') +
+    tile('Wind Speed', t.wind != null ? Math.round(t.wind) : null, 'kt') +
+    tile('Total Rain', t.rainTotal != null ? t.rainTotal.toFixed(1) : null, 'mm');
+  var chartsHtml = STATIONS_TREND_METRICS.map(function(m){
+    var s = data.series[m.key] || {hist:[], fc:[]};
+    var lastHist = s.hist.filter(function(p){ return p.v != null; }).slice(-1)[0];
+    var big = lastHist ? lastHist.v.toFixed(1) : null;
+    return trendChartCard(m.title, m.unit, m.color, s.hist, s.fc, data.nowMs, big);
+  }).join('');
+  host.innerHTML =
+    '<div class="trd-tiles">' + tilesHtml + '</div>' +
+    '<div class="trd-note">Trends · <b>recorded live since opened</b> → now → <b>' + TREND_WINDOW_H + 'h forecast</b> ' +
+      '(history = this app\'s own accumulated station-network readings — no external archive exists for this source · forecast = KNMI HARMONIE)</div>' +
+    '<div class="trd-grid">' + chartsHtml + '</div>';
+}
+async function loadStationsTrendTab(){
+  var host = byId('stationsTrendBody');
+  if(host && !host.querySelector('.trd-tiles')) host.innerHTML = '<div class="trd-empty">Loading…</div>';
+  try { renderStationsTrendTab('stationsTrendBody', 'stationsTrendTime', await fetchStationsTrend()); }
+  catch(e){ if(host) host.innerHTML = '<div class="trd-empty">Unavailable — will retry</div>'; }
+}
+window.loadStationsTrendTab = loadStationsTrendTab;
 
 /* 2) 24-uurs METARs via aviationweather.gov */
 async function ovzFetchMetars(icao){
@@ -13299,6 +13402,30 @@ function parseStationTime(s){
   return isNaN(d) ? null : d;
 }
 
+/* Island station-network average — rolling client-side history buffer.
+   Unlike KNMI Bonaire (_knmiPushHistory/_knmiSeries) or SYNOP/METAR, this
+   data source has no external archive to pull a real observation history
+   from — the Cloudflare Worker only ever returns the current snapshot. So
+   this buffer IS the only history: one sample appended per station poll
+   (~60s, throttled below) while the app stays open. A freshly-opened
+   session therefore starts with little/no history and fills in over time,
+   unlike the METAR/SYNOP trend tabs which have hours of real history
+   immediately. Capped at 480 samples (~8h at 60s cadence). */
+var __stationsAvgHist = [];
+function _stationsAvgPushHistory(){
+  var t = Date.now();
+  var last = __stationsAvgHist[__stationsAvgHist.length - 1];
+  if(last && t - last.t < 55000) return; // throttle to ~once per station poll
+  __stationsAvgHist.push({
+    t: t, temp: window.__islandAvgTemp, feels: window.__islandAvgFeelsLike,
+    hum: window.__islandAvgHum, wind: window.__islandAvgWind
+  });
+  if(__stationsAvgHist.length > 480) __stationsAvgHist.splice(0, __stationsAvgHist.length - 480);
+}
+function _stationsAvgSeries(field){
+  return __stationsAvgHist.map(function(r){ return {t: r.t, v: r[field]}; }).filter(function(r){ return r.v != null && isFinite(r.v); });
+}
+
 function renderStationsAverage(){
   if(!stationData || !stationData.length) return;
   function safeNum(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
@@ -13355,6 +13482,7 @@ function renderStationsAverage(){
   window.__islandAvgWindDir = avgDir;
   var totalRain= rains.length ? rains.reduce(function(a,b){return a+b;},0) : null;
   window.__islandAvgRainTotal = totalRain;
+  _stationsAvgPushHistory();
   var COMP=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   var dirTxt = avgDir!==null ? COMP[Math.round(avgDir/22.5)%16] : '';
   var spd = avgWind!==null ? Math.round(avgWind) : null;
