@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RWCAPP · Skew-T Sounding</title>
+<style>
+:root{--bg:#0b1220;--card:#121a2b;--line:#243044;--txt:#e8eef8;--mut:#8ea0b8;--acc:#55c1ff;--r:10px;
+  --sans:ui-sans-serif,system-ui;--mono:'JetBrains Mono',monospace;
+  --dry:#e0862f;--moist:#2f9e5c;--mix:#3f7fb0;--tline:#ff5252;--tdline:#39d353;--parcel:#ffffff;
+  --cape:rgba(255,90,90,0.22);--cin:rgba(90,140,255,0.22);}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);height:100%;}
+.wrap{max-width:1200px;margin:0 auto;padding:10px 12px 16px;}
+h1{font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+h1 .ic{font-size:18px;}
+.sub{color:var(--mut);font-size:12.5px;margin:-4px 0 10px;}
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.ctrl-row label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px;}
+select,button.stbtn{background:rgba(255,255,255,0.04);border:1px solid var(--line);color:var(--txt);
+  border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;}
+button.stbtn{cursor:pointer;color:var(--acc);border-color:rgba(85,193,255,0.35);}
+button.stbtn:active{background:rgba(85,193,255,0.15);}
+button.stbtn:disabled{opacity:.45;cursor:default;}
+#stStatus{font-size:12px;color:var(--mut);font-family:var(--mono);margin-left:auto;align-self:center;}
+.panel{border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,0.02);
+  padding:8px;overflow:auto;}
+svg{display:block;width:100%;height:auto;min-width:560px;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px;}
+.mtile{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:rgba(255,255,255,0.02);}
+.mtile .l{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;}
+.mtile .v{font-size:18px;font-weight:700;font-family:var(--mono);margin-top:2px;}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut);margin-top:8px;}
+.legend span{display:inline-flex;align-items:center;gap:5px;}
+.legend i{width:14px;height:3px;display:inline-block;border-radius:2px;}
+.err{color:#ff8a8a;font-size:13px;padding:14px;text-align:center;}
+.loading{color:var(--mut);font-size:13px;padding:14px;text-align:center;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="ic">&#128200;</span>Skew-T Log-P Sounding</h1>
+  <div class="sub">Live upper-air soundings &middot; station data, parcel profile, LCL, CAPE/CIN shading, adiabats &amp; mixing lines &mdash; rendered client-side, no server plotting.</div>
+  <div class="sub" style="color:#f5a623;">Note: Cura&ccedil;ao and Aruba have no radiosonde launch site, so no station on this list is local &mdash; Maiqu&eacute;tia (Venezuela) is the nearest real launch site to the ABC islands.</div>
+  <div class="ctrl-row">
+    <label>Station
+      <select id="stStation"></select>
+    </label>
+    <label>Cycle
+      <select id="stCycle">
+        <option value="latest">Latest available</option>
+        <option value="00">00Z</option>
+        <option value="12">12Z</option>
+      </select>
+    </label>
+    <button class="stbtn" id="stReload" onclick="loadSounding(true)">&#8635; Reload</button>
+    <span id="stStatus">&mdash;</span>
+  </div>
+  <div class="panel" id="stPanelWrap">
+    <div class="loading" id="stLoading">Loading sounding&hellip;</div>
+    <svg id="stSvg" viewBox="0 0 900 760" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--tline)"></i>Temperature</span>
+    <span><i style="background:var(--tdline)"></i>Dewpoint</span>
+    <span><i style="background:var(--parcel)"></i>Parcel profile</span>
+    <span><i style="background:var(--dry)"></i>Dry adiabats</span>
+    <span><i style="background:var(--moist)"></i>Moist adiabats</span>
+    <span><i style="background:var(--mix)"></i>Mixing ratio</span>
+    <span><i style="background:var(--cape)"></i>CAPE</span>
+    <span><i style="background:var(--cin)"></i>CIN</span>
+  </div>
+  <div class="metrics" id="stMetrics"></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   Skew-T Log-P sounding — ported from the MetPy "Advanced Sounding"
+   example (plot data, LCL, parcel profile, CAPE/CIN shading, dry/moist
+   adiabats, mixing lines) to a dependency-free SVG renderer, wired to a
+   live University of Wyoming RAOB text sounding instead of the bundled
+   demo dataset. All thermodynamics (LCL, parcel ascent, CAPE/CIN) are
+   reimplemented here in JS — no server-side plotting, no matplotlib.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Station list, restricted to actual WMO upper-air (radiosonde) launch
+   sites. Curaçao/TNCC (78988) and Aruba/TNCA (78762) were previously
+   listed but are NOT launch stations — no balloon site exists there, so
+   they would always return "no data" regardless of the fetch/endpoint
+   fix below. Kept out rather than shown as an option that can never work;
+   the nearest real launch sites to the ABC islands are Maiquetía and
+   Piarco, both below. */
+const STATIONS = [
+  {id:'78807', name:'Maiquetía (Caracas), Venezuela · SVMI — nearest to ABC islands', lat:10.60, lon:-66.99},
+  {id:'78970', name:'Piarco, Trinidad · TTPP', lat:10.60, lon:-61.34},
+  {id:'78486', name:'Santo Domingo, Dominican Republic · MDSD', lat:18.43, lon:-69.67},
+  {id:'72201', name:'Miami/Key West, USA · KMFL', lat:25.75, lon:-80.38}
+];
+(function initStationSelect(){
+  const sel = document.getElementById('stStation');
+  sel.innerHTML = STATIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+})();
+
+function $(id){ return document.getElementById(id); }
+
+/* Reuse the same proxy chain pattern as the main app / encoders page: try
+   direct fetch, fall back to public CORS proxies since University of
+   Wyoming's sounding CGI sends no CORS headers. */
+async function robustFetchText(url){
+  try{
+    const ctrl = new AbortController(); setTimeout(()=>ctrl.abort(), 9000);
+    const r = await fetch(url, {signal: ctrl.signal, cache:'no-store'});
+    if(r.ok) return await r.text();
+  }catch(e){}
+  const proxies = [
+    u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+    u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+  ];
+  for(const build of proxies){
+    try{
+      const ctrl = new AbortController(); setTimeout(()=>ctrl.abort(), 9000);
+      const r = await fetch(build(url), {signal: ctrl.signal, cache:'no-store'});
+      if(r.ok){ const t = await r.text(); if(t && t.trim()) return t; }
+    }catch(e){}
+  }
+  return null;
+}
+
+/* University of Wyoming sounding page: fixed-width text table with
+   PRES  HGHT  TEMP  DWPT  RELH  MIXR  DRCT  SKNT  THTA  THTE  THTV
+   We only need PRES/HGHT/TEMP/DWPT/DRCT/SKNT.
+
+   NOTE: the university discontinued the old cgi-bin/sounding endpoint —
+   URLs in that format now 404 no matter the station/date. The current
+   endpoint is wsgi/sounding, which takes a single datetime (not a
+   YEAR/MONTH/FROM/TO range) and requires src=FM35 (WMO TEMP report
+   format) or it 404s even when a sounding exists for that time. */
+function wyomingUrl(stationId, cycleUTC, dayOffset){
+  const now = new Date(Date.now() - (dayOffset||0) * 86400e3);
+  const yy = now.getUTCFullYear(), mm = now.getUTCMonth()+1, dd = now.getUTCDate();
+  const hh = cycleUTC === 'latest' ? (now.getUTCHours() >= 12 ? '12' : '00') : cycleUTC;
+  const pad = n => String(n).padStart(2,'0');
+  const dt = yy + '-' + pad(mm) + '-' + pad(dd) + ' ' + hh + ':00:00';
+  // Colons in datetime/type must stay literal — percent-encoding them
+  // causes the endpoint to 404 even for a station/time that has data.
+  return 'https://weather.uwyo.edu/wsgi/sounding?datetime=' + encodeURIComponent(dt).replace(/%20/g,'+')
+    + '&id=' + stationId + '&src=FM35&type=TEXT:LIST';
+}
+
+function parseWyomingText(text){
+  const lines = text.split('\n');
+  const rows = [];
+  let started = false;
+  for(const line of lines){
+    if(/^-+$/.test(line.trim())){ started = !started; continue; }
+    if(!started) continue;
+    const toks = line.trim().split(/\s+/);
+    if(toks.length < 7) continue;
+    const [pres, hght, temp, dwpt, relh, mixr, drct, sknt] = toks.map(Number);
+    if(!isFinite(pres) || !isFinite(temp)) continue;
+    rows.push({p: pres, h: hght, t: temp, td: isFinite(dwpt) ? dwpt : null,
+               dir: isFinite(drct) ? drct : null, spd: isFinite(sknt) ? sknt : null});
+  }
+  // Ensure descending pressure order (surface first)
+  rows.sort((a,b) => b.p - a.p);
+  return rows;
+}
+
+/* ─── Thermodynamics (dependency-free reimplementation of the MetPy calls
+   used in the example: mpcalc.lcl, mpcalc.parcel_profile) ───────────── */
+const RD = 287.05, CP = 1004.6, EPS = 0.622, L = 2.501e6, RV = 461.5;
+
+function satVaporPressure(tC){ return 6.112 * Math.exp(17.67*tC/(tC+243.5)); } // hPa
+function mixingRatio(e, p){ return EPS * e / (p - e); }                        // kg/kg
+function tempAtSat(e){ return 243.5 * Math.log(e/6.112) / (17.67 - Math.log(e/6.112)); }
+
+function dryAdiabaticT(t0C, p0, p){
+  const t0K = t0C + 273.15;
+  const thK = t0K * Math.pow(1000/p0, RD/CP);
+  return thK * Math.pow(p/1000, RD/CP) - 273.15;
+}
+function potentialTemp(tC, p){ return (tC+273.15) * Math.pow(1000/p, RD/CP); }
+
+// Moist adiabat via simple downward numerical integration (small steps),
+// same approach MetPy's moist_lapse uses under the hood.
+function moistLapseT(t0C, p0, p1, steps){
+  steps = steps || 60;
+  let t = t0C + 273.15, p = p0;
+  const dp = (p1 - p0) / steps;
+  for(let i=0;i<steps;i++){
+    const es = 6.112 * Math.exp(17.67*(t-273.15)/((t-273.15)+243.5));
+    const ws = EPS * es / (p - es);
+    const num = RD*t + L*ws;
+    const den = CP + (L*L*ws*EPS)/(RD*t*t);
+    const dtdp = num / (p*den);
+    t = t + dtdp*dp;
+    p = p + dp;
+  }
+  return t - 273.15;
+}
+
+function calcLCL(pSfc, tSfc, tdSfc){
+  // Iterative LCL (Bolton-style), lifting dry adiabatically + tracking
+  // saturation mixing ratio until T meets the dewpoint-adiabat curve.
+  const w = mixingRatio(satVaporPressure(tdSfc), pSfc);
+  let p = pSfc, t = tSfc;
+  for(let i=0;i<200;i++){
+    p -= 1;
+    t = dryAdiabaticT(tSfc, pSfc, p);
+    const e = w * p / (EPS + w);
+    const tdAtP = tempAtSat(e);
+    if(t <= tdAtP + 0.05) break;
+  }
+  return {p, t};
+}
+
+function parcelProfile(pressures, pSfc, tSfc, tdSfc){
+  const lcl = calcLCL(pSfc, tSfc, tdSfc);
+  return pressures.map(p => {
+    if(p >= lcl.p) return dryAdiabaticT(tSfc, pSfc, p);
+    return moistLapseT(lcl.t, lcl.p, p, 40);
+  });
+}
+
+// CAPE/CIN via trapezoidal integration of buoyancy (Tparcel - Tenv) over
+// ln(p), matching skew.shade_cape / skew.shade_cin's regions.
+function capeCin(pressures, tEnv, tParcel){
+  let cape = 0, cin = 0;
+  for(let i=0;i<pressures.length-1;i++){
+    const p0=pressures[i], p1=pressures[i+1];
+    const dEnv0=tParcel[i]-tEnv[i], dEnv1=tParcel[i+1]-tEnv[i+1];
+    const dlnp = Math.log(p0/p1);
+    const avg = (dEnv0+dEnv1)/2;
+    const area = RD * avg * dlnp; // simplified buoyancy-area term (J/kg-ish, illustrative)
+    if(avg >= 0) cape += area; else cin += area;
+  }
+  return {cape: Math.round(cape), cin: Math.round(cin)};
+}
+
+/* ─── Skew-T geometry + SVG rendering ─────────────────────────────────── */
+const SKEW = 45; // degrees, matches SkewT(fig, rotation=45) in the example
+const PMIN=100, PMAX=1000;
+const W=900, H=760, PADL=70, PADR=30, PADT=20, PADB=50;
+const PLOTW = W-PADL-PADR, PLOTH = H-PADT-PADB;
+
+function yForP(p){ return PADT + PLOTH * (Math.log(PMAX/p) / Math.log(PMAX/PMIN)); }
+function xForT(tC, y){
+  // Skew transform: shift x by the skew angle as a function of height (y)
+  const frac = (y - PADT) / PLOTH; // 0 at top .. 1 at bottom
+  const skewPx = Math.tan(SKEW*Math.PI/180) * PLOTH * (1-frac);
+  const xBase = PADL + PLOTW * ((tC - (-40)) / (60 - (-40)));
+  return xBase + skewPx - PLOTH*Math.tan(SKEW*Math.PI/180);
+}
+
+function svgLine(pts, color, width, dash){
+  if(pts.length<2) return '';
+  const d = pts.map((pt,i)=> (i===0?'M':'L') + pt[0].toFixed(1) + ',' + pt[1].toFixed(1)).join(' ');
+  return `<path d="${d}" stroke="${color}" stroke-width="${width||1.6}" fill="none"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+}
+
+function buildSkewT(data){
+  const svg = $('stSvg');
+  const p = data.rows.map(r=>r.p), t = data.rows.map(r=>r.t), td = data.rows.map(r=>r.td);
+  let out = `<rect x="0" y="0" width="${W}" height="${H}" fill="#0b1220"/>`;
+
+  // Isobars + labels
+  [1000,850,700,500,400,300,250,200,150,100].forEach(pp=>{
+    if(pp<PMIN||pp>PMAX) return;
+    const y = yForP(pp);
+    out += `<line x1="${PADL}" y1="${y}" x2="${W-PADR}" y2="${y}" stroke="#243044" stroke-width="1"/>`;
+    out += `<text x="${PADL-8}" y="${y+4}" font-size="12" fill="#8ea0b8" text-anchor="end" font-family="monospace">${pp}</text>`;
+  });
+
+  // Isotherms (skewed) every 10°C
+  for(let tt=-40; tt<=60; tt+=10){
+    const top=[xForT(tt,PADT),PADT], bot=[xForT(tt,PADT+PLOTH),PADT+PLOTH];
+    out += `<line x1="${top[0].toFixed(1)}" y1="${top[1]}" x2="${bot[0].toFixed(1)}" y2="${bot[1]}" stroke="#1a2740" stroke-width="1"/>`;
+    out += `<text x="${bot[0].toFixed(1)}" y="${H-PADB+16}" font-size="11" fill="#8ea0b8" text-anchor="middle" font-family="monospace">${tt}</text>`;
+  }
+
+  // Dry adiabats (every 10K potential temp), thin orange
+  const pSteps = []; for(let pp=PMAX; pp>=PMIN; pp-=10) pSteps.push(pp);
+  for(let th=-30; th<=160; th+=20){
+    const t0 = th; // start temp at 1000hPa
+    const pts = pSteps.map(pp => [xForT(dryAdiabaticT(t0,1000,pp), yForP(pp)), yForP(pp)]);
+    out += svgLine(pts, 'rgba(224,134,47,0.55)', 1);
+  }
+
+  // Moist adiabats, thin green — start at several surface temps, integrate upward
+  for(let t0=-10; t0<=32; t0+=6){
+    const pts=[]; let tc=t0;
+    for(let i=0;i<pSteps.length;i++){
+      const pp=pSteps[i];
+      if(i===0){ tc=t0; } else { tc = moistLapseT(tc, pSteps[i-1], pp, 4); }
+      pts.push([xForT(tc,yForP(pp)), yForP(pp)]);
+    }
+    out += svgLine(pts, 'rgba(47,158,92,0.55)', 1);
+  }
+
+  // Mixing ratio lines (constant w), thin blue dashed — g/kg values
+  [1,2,4,7,10,16,24,32].forEach(w=>{
+    const pts = pSteps.filter(pp=>pp<=1000&&pp>=200).map(pp=>{
+      const e = (w/1000) * pp / (EPS + w/1000);
+      const tdAtP = tempAtSat(e);
+      return [xForT(tdAtP, yForP(pp)), yForP(pp)];
+    });
+    out += svgLine(pts, 'rgba(63,127,176,0.5)', 1, '3,3');
+  });
+
+  // Environment T and Td
+  const tPts = p.map((pp,i)=>[xForT(t[i], yForP(pp)), yForP(pp)]);
+  const tdPts = p.map((pp,i)=> td[i]!=null ? [xForT(td[i], yForP(pp)), yForP(pp)] : null).filter(Boolean);
+  out += svgLine(tPts, '#ff5252', 2.4);
+  out += svgLine(tdPts, '#39d353', 2.4);
+
+  // Parcel profile + LCL + CAPE/CIN shading
+  let metrics = {};
+  if(td[0]!=null){
+    const lcl = calcLCL(p[0], t[0], td[0]);
+    const parcelT = parcelProfile(p, p[0], t[0], td[0]);
+    const pPts = p.map((pp,i)=>[xForT(parcelT[i], yForP(pp)), yForP(pp)]);
+    // CAPE region: parcel warmer than env; CIN: parcel cooler than env
+    let capePoly = [], cinPoly = [];
+    for(let i=0;i<p.length;i++){
+      const y = yForP(p[i]);
+      const xe = xForT(t[i], y), xp = xForT(parcelT[i], y);
+      if(parcelT[i] >= t[i]) capePoly.push([xp,y,xe,y]); else cinPoly.push([xp,y,xe,y]);
+    }
+    function polyPath(rows, color){
+      if(!rows.length) return '';
+      let d = 'M'+rows[0][0].toFixed(1)+','+rows[0][1].toFixed(1);
+      rows.forEach(r=> d += ' L'+r[0].toFixed(1)+','+r[1].toFixed(1));
+      for(let i=rows.length-1;i>=0;i--) d += ' L'+rows[i][2].toFixed(1)+','+rows[i][3].toFixed(1);
+      d += ' Z';
+      return `<path d="${d}" fill="${color}" stroke="none"/>`;
+    }
+    out += polyPath(capePoly, 'rgba(255,90,90,0.22)');
+    out += polyPath(cinPoly, 'rgba(90,140,255,0.22)');
+    out += svgLine(pPts, '#ffffff', 2, '5,3');
+    const lclXY = [xForT(lcl.t, yForP(lcl.p)), yForP(lcl.p)];
+    out += `<circle cx="${lclXY[0].toFixed(1)}" cy="${lclXY[1].toFixed(1)}" r="4.5" fill="#000" stroke="#fff" stroke-width="1.5"/>`;
+
+    const cc = capeCin(p, t, parcelT);
+    metrics = {lclP: Math.round(lcl.p), lclT: lcl.t.toFixed(1), cape: cc.cape, cin: cc.cin};
+  }
+
+  // Wind barbs on the right margin (simple ticks — direction/speed)
+  p.forEach((pp,i)=>{
+    const r = data.rows[i];
+    if(r.spd==null || r.dir==null) return;
+    const y = yForP(pp);
+    const x0 = W-PADR+6, len = Math.min(24, 6+r.spd*0.6);
+    const rad = (r.dir+180)*Math.PI/180; // barb points into the wind
+    const x1 = x0 + len*Math.sin(rad), y1 = y - len*Math.cos(rad);
+    out += `<line x1="${x0}" y1="${y}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#8ea0b8" stroke-width="1.3"/>`;
+  });
+
+  // Axis labels
+  out += `<text x="${PADL}" y="${H-14}" font-size="11" fill="#8ea0b8" font-family="monospace">Temperature (°C)</text>`;
+  out += `<text x="14" y="${PADT+14}" font-size="11" fill="#8ea0b8" font-family="monospace" transform="rotate(-90 14 ${PADT+14})">Pressure (hPa)</text>`;
+
+  svg.innerHTML = out;
+  svg.style.display = '';
+  $('stLoading').style.display = 'none';
+  return metrics;
+}
+
+function renderMetrics(m, sfc){
+  const host = $('stMetrics');
+  if(!m || m.lclP==null){ host.innerHTML = ''; return; }
+  const tiles = [
+    ['Surface T', sfc.t!=null ? sfc.t.toFixed(1)+'°C' : '—'],
+    ['Surface Td', sfc.td!=null ? sfc.td.toFixed(1)+'°C' : '—'],
+    ['LCL Pressure', m.lclP+' hPa'],
+    ['LCL Temp', m.lclT+'°C'],
+    ['CAPE (approx.)', m.cape+' J/kg'],
+    ['CIN (approx.)', m.cin+' J/kg']
+  ];
+  host.innerHTML = tiles.map(([l,v])=>`<div class="mtile"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+}
+
+let __loading = false;
+async function loadSounding(force){
+  if(__loading) return; __loading = true;
+  const btn = $('stReload'); if(btn) btn.disabled = true;
+  $('stLoading').style.display = ''; $('stLoading').textContent = 'Loading sounding…';
+  $('stSvg').style.display = 'none';
+  $('stStatus').textContent = 'Fetching…';
+  try{
+    const stnId = $('stStation').value;
+    const cycle = $('stCycle').value;
+    // Build a short list of candidate (cycle, dayOffset) attempts: the
+    // requested cycle first, then the other synoptic cycle, then the same
+    // two cycles one day earlier — a launch can be late, missing, or not
+    // yet posted for "latest", so we don't stop at the first miss.
+    const cyclesToTry = cycle === 'latest' ? ['latest', cycle==='00'?'12':'00'] : [cycle, cycle==='00'?'12':'00'];
+    const attempts = [];
+    for(const dayOffset of [0,1]) for(const c of cyclesToTry) attempts.push({c, dayOffset});
+    let text = null, usedAttempt = null;
+    for(const a of attempts){
+      const url = wyomingUrl(stnId, a.c, a.dayOffset);
+      const t = await robustFetchText(url);
+      if(t && /PRES/.test(t)){ text = t; usedAttempt = a; break; }
+    }
+    if(!text){
+      $('stLoading').innerHTML = '<div class="err">No sounding available for this station in the last two cycles/days. Not every station launches every cycle (some launch only once daily, or not at all) — try another station.</div>';
+      $('stStatus').textContent = 'No data';
+      return;
+    }
+    const rows = parseWyomingText(text).filter(r=>r.p<=1000 && r.p>=100);
+    if(rows.length < 3){
+      $('stLoading').innerHTML = '<div class="err">Sounding data too sparse to plot.</div>';
+      $('stStatus').textContent = 'Insufficient data';
+      return;
+    }
+    const metrics = buildSkewT({rows});
+    renderMetrics(metrics, {t: rows[0].t, td: rows[0].td});
+    const ageNote = usedAttempt.dayOffset > 0 ? ' (from ' + usedAttempt.dayOffset + 'd ago — no newer report found)' : '';
+    $('stStatus').textContent = STATIONS.find(s=>s.id===stnId)?.name + ' · ' + rows.length + ' levels' + ageNote;
+  }catch(e){
+    $('stLoading').innerHTML = '<div class="err">Failed to load sounding: ' + (e && e.message ? e.message : e) + '</div>';
+    $('stStatus').textContent = 'Error';
+  }finally{
+    __loading = false;
+    if(btn) btn.disabled = false;
+  }
+}
+document.getElementById('stStation').addEventListener('change', ()=>loadSounding(true));
+document.getElementById('stCycle').addEventListener('change', ()=>loadSounding(true));
+loadSounding();
+</script>
+</body>
+</html>

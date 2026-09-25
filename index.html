@@ -3485,6 +3485,8 @@ html,body{max-width:100%;overflow-x:hidden;}
       <button class="wx-style-btn" data-wxstyle="climate" onclick="switchWxView('climate',this)"><span class="wx-style-btn-ic">&#128200;</span>Climate</button>
       <button class="wx-style-btn" data-wxstyle="written" onclick="switchWxView('written',this)"><span class="wx-style-btn-ic">&#128221;</span>Written</button>
       <button class="wx-style-btn" data-wxstyle="overzicht" onclick="switchWxView('overzicht',this)"><span class="wx-style-btn-ic">&#128203;</span>Overzicht</button>
+      <button class="wx-style-btn" data-wxstyle="skewt" onclick="switchWxView('skewt',this)"><span class="wx-style-btn-ic">&#128200;</span>Skew-T</button>
+      <button class="wx-style-btn" data-wxstyle="synopenc" onclick="switchWxView('synopenc',this)"><span class="wx-style-btn-ic">&#9997;</span>SYNOP Encoder</button>
     </div>
     <div class="wx-view" id="wxViewCurrent">
       <div class="shdr">
@@ -3567,6 +3569,22 @@ html,body{max-width:100%;overflow-x:hidden;}
         </div>
       </div>
       <div id="ovzBody"><div class="wloading">Laden&hellip;</div></div>
+    </div>
+    <div class="wx-view" id="wxViewSkewt" style="display:none;">
+      <div class="shdr">
+        <div class="stitle">Skew-T Log-P Sounding</div>
+        <span style="color:var(--muted);font-size:16.5px;font-family:var(--mono);">Live upper-air soundings</span>
+      </div>
+      <iframe id="skewtFrame" loading="lazy" title="Skew-T Sounding"
+        style="width:100%;height:calc(100dvh - var(--hdr) - var(--nav) - 120px);min-height:520px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
+    </div>
+    <div class="wx-view" id="wxViewSynopenc" style="display:none;">
+      <div class="shdr">
+        <div class="stitle">SYNOP Encoder</div>
+        <span style="color:var(--muted);font-size:16.5px;font-family:var(--mono);">QF-OBS coding tool</span>
+      </div>
+      <iframe id="synopEncFrame" loading="lazy" title="SYNOP Encoder"
+        style="width:100%;height:calc(100dvh - var(--hdr) - var(--nav) - 120px);min-height:520px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
     </div>
   </div>
 
@@ -5831,6 +5849,14 @@ function switchWxView(view, btn){
     else if(typeof updateForecast==='function'){ updateForecast().then(renderWrittenForecast).catch(renderWrittenForecast); }
   }
   if(view==='overzicht'){ buildOverzicht(); }
+  if(view==='skewt' && !window.__skewtFrameLoaded){
+    window.__skewtFrameLoaded = true;
+    var sf = byId('skewtFrame'); if(sf && !sf.src) sf.src = 'skewt.html';
+  }
+  if(view==='synopenc' && !window.__synopEncFrameLoaded){
+    window.__synopEncFrameLoaded = true;
+    var ef = byId('synopEncFrame'); if(ef && !ef.src) ef.src = 'encoders.html';
+  }
 }
 window.switchWxView = switchWxView;
 
@@ -6436,13 +6462,11 @@ window.meteoApplyEdit = meteoApplyEdit;
 window.meteoClearEdit = meteoClearEdit;
 
 /* ─── OVERZICHT WEERSGESTELDHEID (QF-OBS-OW) ───
-   Dagelijks om 08:30 l.t. automatisch gevuld. Databron-prioriteit per station:
-   1) SYNOP (Ogimet, afgelopen 26 u): Tmax uit 1snTxTxTx (18Z), Tmin uit 2snTnTnTn
-      (06Z), neerslag uit sectie-3 7-groep (24-uurs) of som 6-groepen, weertype
-      uit N/ww van de melding van ±12Z (= 08:00 Antilliaanse tijd).
-   2) 24-uurs METARs (aviationweather.gov): Tmax/Tmin uit alle obs, weertype uit
-      de ob het dichtst bij 12Z.
-   3) Open-Meteo model: daily max/min/neerslag (gisteren) + huidige weathercode. */
+   Dagelijks om 08:30 l.t. automatisch gevuld. Bronnen: 1) SYNOP (Ogimet), 2) METAR.
+   GEEN Open-Meteo. Vaste UTC-vensters:
+     Weertype + 24h neerslag : vandaag 12Z            Tmax : gisteren 18Z
+     Tmin : vandaag 06Z (backup 00Z)                  TNCE + EHAM temps : 06Z–12Z vandaag
+   Temperaturen worden half-up afgerond (24,5 → 25 ; 24,4 → 24). */
 var OVZ_STATIONS = [
   {nm:'Aruba (Reina Beatrix)',          wmo:'78982', icao:'TNCA', lat:12.50, lon:-70.01, g:1},
   {nm:'Bonaire (Flamingo)',             wmo:'78990', icao:'TNCB', lat:12.13, lon:-68.27, g:1},
@@ -6585,87 +6609,100 @@ function ovzWmoWeertype(code, cloud){
   return null;
 }
 
-/* 1) SYNOP via Ogimet getsynop (laatste 26 u, CSV-regels) */
-async function ovzFetchSynop(wmo){
-  var b = new Date(Date.now() - 26 * 3600e3);
+/* ─── Vaste UTC-vensters voor het formulier (geen Open-Meteo) ───────────────
+   Weertype + 24h neerslag : vandaag 12Z  (…1200–…1259)
+   Tmax                    : gisteren 18Z (…1800–…1859)
+   Tmin                    : vandaag 06Z  (…0600–…0659), backup vandaag 00Z
+   TNCE + EHAM temps       : alleen 06Z–12Z vandaag (6 uur)
+   Afronden                : half-up (24,5 → 25 ; 24,4 → 24)                       */
+function ovzRound(v){
+  if(v == null || !isFinite(v)) return null;
+  // half-up op de échte waarde (SYNOP-temps zijn tienden, METAR hele graden):
+  // 24,5 → 25 ; 24,4 → 24 ; 24,49 blijft 24. Kleine epsilon vangt float-ruis
+  // op zoals 24.499999999999996 (= 24,5 die door optellen is verschoven).
+  var a = Math.abs(v);
+  var r = Math.floor(a + 0.5 + 1e-9);
+  return v < 0 ? -r : r;
+}
+/* Formulier-dag (zelfde 08:30 l.t. cutover als ovzEffDate): tot 08:30 l.t.
+   (= 12:30Z) telt de UTC-datum van gisteren nog als "vandaag" voor het
+   formulier. Zonder deze correctie zoeken de fetchers vlak na 00Z naar een
+   12Z/18Z-melding die nog moet komen, terwijl het formulier nog op de vorige
+   dag staat (en de cache dus verkeerd overschreven zou worden). */
+function ovzFormDayBase(){
+  // Exact zelfde berekening als ovzEffDate(): schuif naar l.t. (UTC-4), en vóór
+  // 08:30 l.t. telt het nog als de vorige kalenderdag. Het resultaat is een
+  // Date wiens UTC-kalenderdatum (Y/M/D) gelijk is aan de l.t.-datum van het
+  // formulier — dat is precies de referentie die ovzUtcDay() nodig heeft.
+  var lt = new Date(Date.now() - 4 * 3600e3);
+  if(lt.getUTCHours() * 60 + lt.getUTCMinutes() < 510) lt.setUTCDate(lt.getUTCDate() - 1);
+  return lt;
+}
+function ovzUtcDay(offsetDays){
+  var d = new Date(ovzFormDayBase().getTime() + (offsetDays || 0) * 86400e3);
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+function ovzIsHourly(icao){ return icao === 'TNCE' || icao === 'EHAM'; }
+
+/* 1) SYNOP via Ogimet getsynop (CSV-regels) — exacte uurvensters */
+async function ovzFetchSynop(wmo, icao){
+  var b = new Date(Date.now() - 50 * 3600e3);          // gisteren 18Z moet erin vallen
   var begin = '' + b.getUTCFullYear() + String(b.getUTCMonth()+1).padStart(2,'0') + String(b.getUTCDate()).padStart(2,'0') + String(b.getUTCHours()).padStart(2,'0') + '00';
   var url = 'https://www.ogimet.com/cgi-bin/getsynop?block=' + wmo + '&begin=' + begin;
   var r = await fetchURL(url, 1);
   if(!r || !r.text || !/AAXX/.test(r.text)) return null;
-  var out = { tmax:null, tmin:null, precip:null, precip6:0, wt:null, src:'S' };
-  var best12 = null;
-  var tAll = [], tMaxC = [], tMinC = [];
-  // Tmax/Tmin per the documented method: the 1-group (TxTxTx) is only
-  // transmitted in the 18Z report, and the 2-group (TnTnTn) only in the
-  // 06Z report — so those are the SPECIFIC observations to read, not
-  // "whichever report in the last 26h happens to carry the highest/lowest
-  // group value". Collected separately from the general candidate pools
-  // (tMaxC/tMinC/tAll) so the plausibility filter below can still fall
-  // back to those pools on a day when the 18Z or 06Z report itself never
-  // arrived, rather than leaving the cell empty.
-  var t18z = null, t06z = null;
+  var dToday = ovzUtcDay(0), dYest = ovzUtcDay(-1);
+  var out = { tmax:null, tmin:null, precip:null, wt:null, src:'S' };
+  var tmax18 = null, tmin06 = null, tmin00 = null;
+  var w12 = null, p12 = null, pSum6 = 0, pSeen6 = false;
+  var tHourly = [];                                     // TNCE/EHAM: temps 06Z–12Z
   r.text.split('\n').forEach(function(line){
     var m = line.match(/^(\d{5}),(\d{4}),(\d{2}),(\d{2}),(\d{2}),(\d{2}),(.*)$/);
     if(!m || m[1] !== String(wmo)) return;
+    var day = parseInt(m[2],10) * 10000 + parseInt(m[3],10) * 100 + parseInt(m[4],10);
     var hh = parseInt(m[5],10);
     var rep = m[7];
     if(!/AAXX/.test(rep)) rep = 'AAXX ' + m[4] + m[5] + '4 ' + rep;
-    var dec;
-    try { dec = decodeSynopText(rep); } catch(e){ return; }
+    var dec; try { dec = decodeSynopText(rep); } catch(e){ return; }
     if(!dec || !dec.reports || !dec.reports.length) return;
     var P = dec.reports[0].P || {};
-    if(P.temp_max != null && isFinite(P.temp_max)) tMaxC.push(P.temp_max);
-    if(P.temp_min != null && isFinite(P.temp_min)) tMinC.push(P.temp_min);
-    if(P.temp_c != null && isFinite(P.temp_c)) tAll.push(P.temp_c);
-    // ±1h tolerance: some stations report a few minutes either side of the
-    // exact synoptic hour, but the 1-/2-group is still that hour's group.
-    if(P.temp_max != null && isFinite(P.temp_max) && Math.abs(hh - 18) <= 1){
-      if(t18z == null || Math.abs(hh-18) < Math.abs(t18z.hh-18)) t18z = {v:P.temp_max, hh:hh};
-    }
-    if(P.temp_min != null && isFinite(P.temp_min) && (Math.abs(hh - 6) <= 1 || hh === 0)){
-      // 00Z included too: some Caribbean stations' overnight minimum is
-      // still carried in the 00Z group when 06Z is delayed/missing.
-      var d06 = Math.min(Math.abs(hh-6), Math.abs(hh-0));
-      if(t06z == null || d06 < t06z.d) t06z = {v:P.temp_min, d:d06};
-    }
-    if(P.precip_24h != null && (out.precip == null || P.precip_24h > out.precip)) out.precip = P.precip_24h;
-    if(P.precip_mm != null && isFinite(P.precip_mm)) out.precip6 += P.precip_mm;   // mm
-    // weertype: melding het dichtst bij 12Z (08:00 AST). Automatische stations
-    // (iX 4-7, o.a. TNCB/TNCE/EHAM) coderen de 7-groep als wawa (WMO 4680).
-    var d12 = Math.abs(hh - 12);
-    if(best12 == null || d12 < best12){
+    var ok = function(x){ return x != null && isFinite(x); };
+
+    // Tmax: gisteren 18Z (1-groep sectie 3)
+    if(day === dYest && hh === 18 && ok(P.temp_max)) tmax18 = P.temp_max;
+    // Tmin: vandaag 06Z (2-groep sectie 3); backup vandaag 00Z
+    if(day === dToday && hh === 6  && ok(P.temp_min)) tmin06 = P.temp_min;
+    if(day === dToday && hh === 0  && ok(P.temp_min)) tmin00 = P.temp_min;
+
+    // Weertype + 24h neerslag: alleen vandaag 12Z
+    if(day === dToday && hh === 12){
       var auto = P.ix != null && P.ix >= 4;
       var wt = (auto ? ovzWawaNL(P.ww) : ovzWwNL(P.ww)) || ovzOktaNL(P.cloud_oktas);
       if(!wt && P.low_cloud_cover){
-        // 8-groep Nh-bedekking als laatste obs-bron vóór de model-fallback
         wt = ({SKC:'Onbewolkt',FEW:'Licht bewolkt',SCT:'Half bewolkt',BKN:'Zwaar bewolkt',OVC:'Geheel bewolkt'})[P.low_cloud_cover] || null;
       }
-      if(wt){ out.wt = wt; best12 = d12; }
+      if(wt) w12 = wt;
+      if(ok(P.precip_24h)) p12 = P.precip_24h;                       // 7-groep (24 u)
+      else if(ok(P.precip_mm) && P.precip_period === '24h') p12 = P.precip_mm;   // 6-groep tR=4
+      if(ok(P.precip_mm) && P.precip_period !== '24h'){ pSum6 += P.precip_mm; pSeen6 = true; }
     }
+
+    // TNCE + EHAM: enkel temperaturen van 06Z t/m 12Z vandaag
+    if(ovzIsHourly(icao) && day === dToday && hh >= 6 && hh <= 12 && ok(P.temp_c)) tHourly.push(P.temp_c);
   });
-  // Robuuste min/max: verminkte groepen decoderen als onwaarschijnlijk lage
-  // waarden (0, 1, 5 °C op tropische stations). Verwerp kandidaten die meer dan
-  // 15 °C van de mediaan van de uurwaarnemingen afwijken (bij ≥3 obs); een echte
-  // koude dag blijft staan omdat de mediaan dan zelf laag is.
-  function median(a){ var s = a.slice().sort(function(x,y){ return x-y; }); return s.length ? s[Math.floor(s.length/2)] : null; }
-  var med = tAll.length >= 3 ? median(tAll) : null;
-  function plaus(v){ return v > -80 && v < 60 && (med == null || Math.abs(v - med) <= 15); }
-  // Prefer the documented-specific 18Z (Tmax) / 06Z (Tmin) group when that
-  // exact report arrived and its value passes the same plausibility check —
-  // this is the correct method per the form. Only fall back to "best across
-  // all reports in the 26h window" when the 18Z or 06Z report itself never
-  // came in, so a value still fills the cell instead of leaving it empty.
-  var maxCand = tMaxC.concat(tAll).filter(plaus);
-  if(t18z != null && plaus(t18z.v)) out.tmax = t18z.v;
-  else out.tmax = maxCand.length ? Math.max.apply(null, maxCand) : null;
-  var minCand = tMinC.concat(tAll).filter(plaus);
-  if(t06z != null && plaus(t06z.v)) out.tmin = t06z.v;
-  else out.tmin = minCand.length ? Math.min.apply(null, minCand) : null;
-  if(out.tmin != null && out.tmax != null && out.tmin > out.tmax){ var _t = out.tmin; out.tmin = out.tmax; out.tmax = _t; }
-  if(out.precip == null && out.precip6 > 0) out.precip = out.precip6;   // mm
-  if(out.tmax == null && out.tmin == null && out.wt == null) return null;
+
+  if(ovzIsHourly(icao)){
+    if(tHourly.length){ out.tmax = Math.max.apply(null, tHourly); out.tmin = Math.min.apply(null, tHourly); }
+  } else {
+    out.tmax = tmax18;
+    out.tmin = tmin06 != null ? tmin06 : tmin00;
+  }
+  out.wt = w12;
+  out.precip = p12 != null ? p12 : (pSeen6 ? pSum6 : null);
+  if(out.tmax == null && out.tmin == null && out.wt == null && out.precip == null) return null;
   return out;
 }
+
 /* SYNOP 78988 precipitation windows (3h/6h/12h/24h) for the Monitor RAIN tile.
    Reuses the same getsynop (26h CSV) + decodeSynopText pipeline as ovzFetchSynop
    above, but instead of collapsing to one "best" total, keeps every observation's
@@ -7126,12 +7163,10 @@ async function loadStationsTrendTab(){
 }
 window.loadStationsTrendTab = loadStationsTrendTab;
 
-/* 2) 24-uurs METARs via aviationweather.gov */
+/* 2) METAR-terugval via aviationweather.gov — zelfde vaste UTC-vensters, geen model */
 async function ovzFetchMetars(icao){
-  var url = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&hours=26&format=raw';
+  var url = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&hours=50&format=raw';
   var txt = null;
-  // Direct first; on failure retry once via CORS proxy so a blocked direct
-  // fetch doesn't push the station onto the model fallback.
   try{
     var ac = new AbortController(); setTimeout(function(){ ac.abort(); }, 9000);
     var r = await fetch(url, {signal: ac.signal});
@@ -7145,50 +7180,39 @@ async function ovzFetchMetars(icao){
     }catch(e){}
   }
   if(!txt || !txt.trim()) return null;
+  var dToday = ovzFormDayBase().getUTCDate();
+  var dYest  = new Date(ovzFormDayBase().getTime() - 86400e3).getUTCDate();
   var out = { tmax:null, tmin:null, precip:null, wt:null, src:'M' };
-  var best12 = null, pSum = 0, pSeen = false;
+  var t18 = null, t06 = null, t00 = null, pSum = 0, pSeen = false, tHourly = [];
   txt.split('\n').forEach(function(line){
     line = line.trim().replace(/^(METAR|SPECI)\s+/, '');
     if(!line || line.indexOf(icao) < 0) return;
+    var tm = line.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+    if(!tm) return;
+    var dd = parseInt(tm[1],10), hh = parseInt(tm[2],10);
     var mp; try { mp = parseMetar(line); } catch(e){ return; }
     if(!mp) return;
-    if(mp.tempC != null){
-      if(out.tmax == null || mp.tempC > out.tmax) out.tmax = mp.tempC;
-      if(out.tmin == null || mp.tempC < out.tmin) out.tmin = mp.tempC;
-    }
-    // US-style RMK hourly precip group P#### (hundredths of inch) → mm
-    var pg = line.match(/\bP(\d{4})\b/);
-    if(pg){ pSum += parseInt(pg[1],10) * 0.254; pSeen = true; }
-    var tm = line.match(/\b\d{2}(\d{2})\d{2}Z\b/);
-    var hh = tm ? parseInt(tm[1],10) : null;
-    var d12 = hh != null ? Math.abs(hh - 12) : 99;
-    if(best12 == null || d12 < best12){
+    var hasT = mp.tempC != null && isFinite(mp.tempC);
+    if(hasT && dd === dYest && hh === 18) { if(t18 == null || mp.tempC > t18) t18 = mp.tempC; }
+    if(hasT && dd === dToday && hh === 6) { if(t06 == null || mp.tempC < t06) t06 = mp.tempC; }
+    if(hasT && dd === dToday && hh === 0) { if(t00 == null || mp.tempC < t00) t00 = mp.tempC; }
+    if(dd === dToday && hh === 12){
       var wt = ovzMetarWeertype(mp);
-      if(wt){ out.wt = wt; best12 = d12; }
+      if(wt) out.wt = wt;
+      var pg = line.match(/\bP(\d{4})\b/);                    // 24h neerslag niet in METAR; enkel uur-P
+      if(pg){ pSum += parseInt(pg[1],10) * 0.254; pSeen = true; }
     }
+    if(ovzIsHourly(icao) && hasT && dd === dToday && hh >= 6 && hh <= 12) tHourly.push(mp.tempC);
   });
+  if(ovzIsHourly(icao)){
+    if(tHourly.length){ out.tmax = Math.max.apply(null, tHourly); out.tmin = Math.min.apply(null, tHourly); }
+  } else {
+    out.tmax = t18;
+    out.tmin = t06 != null ? t06 : t00;
+  }
   if(pSeen) out.precip = Math.round(pSum * 10) / 10;
-  if(out.tmax == null && out.wt == null) return null;
+  if(out.tmax == null && out.tmin == null && out.wt == null) return null;
   return out;
-}
-/* 3) Open-Meteo model-fallback */
-async function ovzFetchModel(lat, lon){
-  try{
-    var ac = new AbortController(); setTimeout(function(){ ac.abort(); }, 8000);
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-      '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&current=weather_code,cloud_cover&past_days=1&forecast_days=1&timezone=auto';
-    var r = await fetch(url, {signal: ac.signal, cache:'default'});
-    if(!r.ok) return null;
-    var j = await r.json();
-    var d = j.daily || {};
-    return {
-      tmax: d.temperature_2m_max ? d.temperature_2m_max[0] : null,
-      tmin: d.temperature_2m_min ? d.temperature_2m_min[0] : null,
-      precip: d.precipitation_sum ? d.precipitation_sum[0] : null,
-      wt: ovzWmoWeertype(j.current ? j.current.weather_code : null, j.current ? j.current.cloud_cover : null),
-      src: 'O'
-    };
-  }catch(e){ return null; }
 }
 
 function ovzEffDate(){
@@ -7204,40 +7228,31 @@ async function buildOverzicht(force){
   var eff = ovzEffDate();
   if(!force){
     try{
-      var c = JSON.parse(localStorage.getItem('rwc-ovz-v4') || 'null');
+      var c = JSON.parse(localStorage.getItem('rwc-ovz-v5') || 'null');
       if(c && c.date === eff && c.rows){ renderOvzTable(c.rows, eff); if(st) st.textContent = 'Gevuld om 08:30 l.t. · ' + eff; return; }
     }catch(e){}
   }
   if(st) st.textContent = 'Genereren…';
-  host.innerHTML = '<div class="wloading">Stationsdata ophalen (SYNOP → METAR → model)…</div>';
+  host.innerHTML = '<div class="wloading">Stationsdata ophalen (SYNOP → METAR)…</div>';
   var rows = await Promise.all(OVZ_STATIONS.map(async function(s){
     var row = {nm:s.nm, wmo:s.wmo, icao:s.icao, g:s.g, wt:null, tmax:null, tmin:null, precip:null, wsrc:'', tsrc:'', psrc:''};
-    var syn = await ovzFetchSynop(s.wmo);
+    var syn = await ovzFetchSynop(s.wmo, s.icao);
     if(syn){
       row.wt = syn.wt; row.tmax = syn.tmax; row.tmin = syn.tmin; row.precip = syn.precip;
-      row.wsrc = row.wt != null ? 'S' : ''; row.tsrc = row.tmax != null ? 'S' : ''; row.psrc = row.precip != null ? 'S' : '';
+      row.wsrc = row.wt != null ? 'S' : ''; row.tsrc = (row.tmax != null || row.tmin != null) ? 'S' : ''; row.psrc = row.precip != null ? 'S' : '';
     }
     if(row.wt == null || row.tmax == null || row.tmin == null || row.precip == null){
       var met = await ovzFetchMetars(s.icao);
       if(met){
         if(row.wt == null && met.wt != null){ row.wt = met.wt; row.wsrc = 'M'; }
-        if(row.tmax == null && met.tmax != null){ row.tmax = met.tmax; row.tsrc = 'M'; }
-        if(row.tmin == null && met.tmin != null){ row.tmin = met.tmin; if(!row.tsrc) row.tsrc = 'M'; }
+        if(row.tmax == null && met.tmax != null){ row.tmax = met.tmax; row.tsrc = row.tsrc || 'M'; }
+        if(row.tmin == null && met.tmin != null){ row.tmin = met.tmin; row.tsrc = row.tsrc || 'M'; }
         if(row.precip == null && met.precip != null){ row.precip = met.precip; row.psrc = 'M'; }
-      }
-    }
-    if(row.wt == null || row.tmax == null || row.tmin == null || row.precip == null){
-      var mod = await ovzFetchModel(s.lat, s.lon);
-      if(mod){
-        if(row.wt == null && mod.wt != null){ row.wt = mod.wt; row.wsrc = 'O'; }
-        if(row.tmax == null && mod.tmax != null){ row.tmax = mod.tmax; row.tsrc = row.tsrc || 'O'; }
-        if(row.tmin == null && mod.tmin != null){ row.tmin = mod.tmin; row.tsrc = row.tsrc || 'O'; }
-        if(row.precip == null && mod.precip != null){ row.precip = mod.precip; row.psrc = 'O'; }
       }
     }
     return row;
   }));
-  try{ localStorage.setItem('rwc-ovz-v4', JSON.stringify({date: eff, rows: rows})); }catch(e){}
+  try{ localStorage.setItem('rwc-ovz-v5', JSON.stringify({date: eff, rows: rows})); }catch(e){}
   renderOvzTable(rows, eff);
   if(st) st.textContent = 'Gevuld · ' + eff;
 }
@@ -7260,7 +7275,7 @@ function renderOvzTable(rows, eff){
       '<td class="mono">' + r.wmo + '</td>' +
       '<td class="mono">' + r.icao + '</td>' +
       '<td class="wt">' + (r.wt ? r.wt.charAt(0).toLowerCase() + r.wt.slice(1) : '—') + (r.wsrc ? '<span class="ovz-src">' + r.wsrc.toLowerCase() + '</span>' : '') + '</td>' +
-      cell(r.tmax, 0, r.tsrc) + cell(r.tmin, 0, r.tsrc) + cell(r.precip, 1, r.psrc) +
+      cell(ovzRound(r.tmax), 0, r.tsrc) + cell(ovzRound(r.tmin), 0, r.tsrc) + cell(r.precip, 1, r.psrc) +
     '</tr>';
   }
   var g1 = rows.filter(function(r){ return r.g === 1; }).map(trow).join('');
@@ -7276,7 +7291,7 @@ function renderOvzTable(rows, eff){
         '<tr class="ovz-gap"><td colspan="7"></td></tr>' +
         g2 +
       '</table></div>' +
-      '<div class="ovz-foot">Automatisch gevuld om 08:30 uur l.t. · Bronnen per waarde: <b>s</b> = SYNOP (Ogimet), <b>m</b> = 24-uurs METAR, <b>o</b> = Open-Meteo model · Tmax uit 18Z-SYNOP (1-groep sectie 3), Tmin uit 06Z-SYNOP (2-groep), neerslag 24-uurstotaal (7-groep) of som 6-uursgroepen · Weertype uit N/ww van de melding van ±12Z.</div>' +
+      '<div class="ovz-foot">Automatisch gevuld om 08:30 uur l.t. · Bronnen: <b>s</b> = SYNOP (Ogimet), <b>m</b> = METAR · Weertype + 24-uurs neerslag: vandaag 12Z · Tmax: gisteren 18Z · Tmin: vandaag 06Z (backup 00Z) · TNCE + EHAM: temperaturen 06Z–12Z vandaag · Temperaturen half-up afgerond.</div>' +
     '</div>';
   // Double-click a data cell to copy its value to the clipboard, with the
   // superscript source letter (s/m/o) stripped so only the number/text
@@ -7313,7 +7328,7 @@ function renderOvzTable(rows, eff){
 /* Om 08:30 l.t. automatisch opnieuw vullen (check elke 5 min) */
 setInterval(function(){
   try{
-    var c = JSON.parse(localStorage.getItem('rwc-ovz-v4') || 'null');
+    var c = JSON.parse(localStorage.getItem('rwc-ovz-v5') || 'null');
     var v = byId('wxViewOverzicht');
     if(v && v.style.display !== 'none' && (!c || c.date !== ovzEffDate())) buildOverzicht();
   }catch(e){}

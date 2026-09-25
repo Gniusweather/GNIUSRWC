@@ -3,14 +3,16 @@
    picked up when the app is opened; cache fallback for offline use.
    Bump CACHE_VERSION on each deploy to force clients to update. */
 
-const CACHE_VERSION = 'rwc-2026-09-10-4';
+const CACHE_VERSION = 'rwc-2026-09-25-1';
 const CACHE_NAME = 'rwc-cache-' + CACHE_VERSION;
 
-// Core assets to pre-cache (the single-file app).
+// Core assets to pre-cache (the single-file app + its WX-tab sub-pages).
 const CORE = [
   './',
   './index.html',
-  './rwc_caribbean.html'
+  './rwc_caribbean.html',
+  './skewt.html',
+  './encoders.html'
 ];
 
 // Install: pre-cache the shell, then activate immediately.
