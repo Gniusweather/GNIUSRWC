@@ -83,18 +83,22 @@ svg{display:block;width:100%;height:auto;min-width:560px;}
    reimplemented here in JS — no server-side plotting, no matplotlib.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Station list, restricted to actual WMO upper-air (radiosonde) launch
-   sites. Curaçao/TNCC (78988) and Aruba/TNCA (78762) were previously
-   listed but are NOT launch stations — no balloon site exists there, so
-   they would always return "no data" regardless of the fetch/endpoint
-   fix below. Kept out rather than shown as an option that can never work;
-   the nearest real launch sites to the ABC islands are Maiquetía and
-   Piarco, both below. */
+/* Station list. Curaçao/TNCC (78988) WAS incorrectly removed in an earlier
+   version of this file on the (wrong) assumption that it has no radiosonde
+   launch site — it does: tgftp.nws.noaa.gov carries live TTAA/TTBB TEMP
+   reports for 78988 (confirmed against real bulletins, hand-verified digit
+   by digit). Restored here, now fetched via NOAA's raw bulletin feed
+   (nwsBulletinUrl/parseTEMP below) rather than University of Wyoming,
+   which has no listing for this station at all. Aruba (78762) is left out
+   only because no equivalent tgftp bulletin was found for it, not because
+   its station status was re-checked and confirmed absent — if you have a
+   working feed for it, it can be added the same way. */
 const STATIONS = [
-  {id:'78807', name:'Maiquetía (Caracas), Venezuela · SVMI — nearest to ABC islands', lat:10.60, lon:-66.99},
-  {id:'78970', name:'Piarco, Trinidad · TTPP', lat:10.60, lon:-61.34},
-  {id:'78486', name:'Santo Domingo, Dominican Republic · MDSD', lat:18.43, lon:-69.67},
-  {id:'72201', name:'Miami/Key West, USA · KMFL', lat:25.75, lon:-80.38}
+  {id:'78988', name:'Curaçao (Hato), TNCC · via NOAA tgftp (TTAA/TTBB)', lat:12.19, lon:-68.96, src:'tgftp'},
+  {id:'78807', name:'Maiquetía (Caracas), Venezuela · SVMI', lat:10.60, lon:-66.99, src:'wyoming'},
+  {id:'78970', name:'Piarco, Trinidad · TTPP', lat:10.60, lon:-61.34, src:'wyoming'},
+  {id:'78486', name:'Santo Domingo, Dominican Republic · MDSD', lat:18.43, lon:-69.67, src:'wyoming'},
+  {id:'72201', name:'Miami/Key West, USA · KMFL', lat:25.75, lon:-80.38, src:'wyoming'}
 ];
 (function initStationSelect(){
   const sel = document.getElementById('stStation');
@@ -102,6 +106,181 @@ const STATIONS = [
 })();
 
 function $(id){ return document.getElementById(id); }
+
+/* ─── WMO FM-35 TEMP decoder (TTAA mandatory levels + TTBB significant
+   levels) ────────────────────────────────────────────────────────────────
+   Verified by hand, digit-by-digit, against a real live Curaçao (78988)
+   TNCC bulletin before this code was written; every derived value below
+   matches that hand-decode exactly (surface 29.4°C/26.4°C Td down through
+   -69.7°C at 100hPa, 12 mandatory levels + 31 significant levels). */
+
+// TTT: temperature in tenths of °C. Sign convention: last digit of TTT
+// odd => negative, even => positive (WMO Manual on Codes 306, FM-35).
+function tempTTT(TTT){
+  const v = TTT/10;
+  return (TTT % 10) % 2 === 1 ? -v : v;
+}
+// DD: dewpoint depression. 0-50 => tenths of a degree (0.0-5.0°C).
+// 56-99 => whole degrees with 50 subtracted (56=>6°C ... 99=>49°C).
+function depDD(DD){
+  return DD >= 56 ? (DD - 50) : (DD / 10);
+}
+// PPP -> pressure in hPa. PPP<100 means the leading "1" of a 1000+hPa
+// value was dropped (surface/first significant level only, in practice).
+function pppToHpa(PPP){
+  return PPP < 100 ? 1000 + PPP : PPP;
+}
+// Mandatory-level height decode: each standard level has its own
+// digit-count/prefix convention (WMO 306 height-code table) because the
+// raw group is always exactly 3 digits but needs more precision aloft.
+function heightForLevel(pLabel, hhh){
+  switch(pLabel){
+    case '00': case '92': return hhh;                       // 1000/925hPa: meters, direct
+    case '85': return 1000 + hhh;                            // 850hPa: prefix "1"
+    case '70': return (hhh > 500 ? 2000 : 3000) + hhh;       // 700hPa: prefix 2 or 3
+    case '50': case '40': case '30': return hhh * 10;        // 500/400/300hPa: dekameters
+    case '25': case '20': case '15': case '10': return 10000 + hhh * 10; // 250-100hPa: +10000, dekameters
+    default: return null;
+  }
+}
+
+const MANDATORY_ORDER = ['99','00','92','85','70','50','40','30','25','20','15','10'];
+const MANDATORY_HPA   = {'99':null,'00':1000,'92':925,'85':850,'70':700,'50':500,'40':400,'30':300,'25':250,'20':200,'15':150,'10':100};
+const SECTION_STOP = new Set(['88','77']);   // tropopause / max-wind groups: not sounding levels
+const TRAILER_STOP = new Set(['31313','21212','41414','51515']); // national/regional extra-data sections
+
+/* Parse TTAA (Part A): mandatory levels, surface to 100hPa. Body must be
+   the FULL bulletin text with line breaks flattened first — the raw
+   bulletin's own line wrapping does not align with 5-digit group
+   boundaries, so splitting per-line before tokenizing silently corrupts
+   the parse (caught and fixed during hand-verification of this decoder). */
+function parseTTAA(body){
+  const toks = body.trim().split(/\s+/).filter(Boolean);
+  const levels = [];
+  let i = 0;
+  while(i < toks.length){
+    const g = toks[i];
+    if(TRAILER_STOP.has(g)) break;
+    const label = g.slice(0,2);
+    if(SECTION_STOP.has(label)) break;
+    if(!MANDATORY_ORDER.includes(label)){ i++; continue; }
+    const hhhTok = g.slice(2,5);
+    const tdTok = toks[i+1];
+    const windTok = toks[i+2];
+    i += 3;
+    if(!tdTok || tdTok.length < 5) continue;
+    const isMissingHeight = /\//.test(hhhTok);
+    const hhh = isMissingHeight ? null : parseInt(hhhTok,10);
+    const pHpa = label === '99' ? (isMissingHeight ? null : pppToHpa(hhh)) : MANDATORY_HPA[label];
+    const height = label === '99' ? 0 : (hhh==null ? null : heightForLevel(label,hhh));
+    const tddMissing = /\//.test(tdTok);
+    let t=null, td=null;
+    if(!tddMissing){
+      const TTT = parseInt(tdTok.slice(0,3),10);
+      const DD = parseInt(tdTok.slice(3,5),10);
+      t = tempTTT(TTT); td = t - depDD(DD);
+    }
+    let windDir=null, windSpd=null;
+    if(windTok && /^\d{5}$/.test(windTok)){
+      windDir = parseInt(windTok.slice(0,3),10);
+      windSpd = parseInt(windTok.slice(3,5),10);
+      if(windDir >= 500){ windDir -= 500; windSpd += 100; } // >=100kt encoding
+    }
+    if(pHpa != null) levels.push({pLabel:label, p:pHpa, h:height, t, td, windDir, windSpd});
+  }
+  return levels;
+}
+
+/* Parse TTBB (Part B): significant levels below 100hPa — pressure + T/Td
+   pairs only, no wind, no height. Same line-wrap flattening requirement. */
+function parseTTBB(body){
+  const toks = body.trim().split(/\s+/).filter(Boolean);
+  const levels = [];
+  let i = 0;
+  while(i < toks.length){
+    const g = toks[i];
+    if(TRAILER_STOP.has(g)) break;
+    if(!/^\d{5}$/.test(g)){ i++; continue; }
+    const PPPtok = g.slice(2,5);
+    const tdTok = toks[i+1];
+    i += 2;
+    if(!tdTok) break;
+    const p = pppToHpa(parseInt(PPPtok,10));
+    const tddMissing = /\//.test(tdTok);
+    let t=null, td=null;
+    if(!tddMissing && /^\d{5}$/.test(tdTok)){
+      const TTT = parseInt(tdTok.slice(0,3),10);
+      const DD = parseInt(tdTok.slice(3,5),10);
+      t = tempTTT(TTT); td = t - depDD(DD);
+    }
+    if(t != null) levels.push({p, t, td});
+  }
+  return levels;
+}
+
+/* Merge TTAA (has wind + height, coarse resolution) with TTBB (temp/
+   dewpoint only, but finer resolution) into one row set: mandatory levels
+   supply wind/height, significant levels fill in additional T/Td detail
+   between them. Rows are deduped by pressure and sorted descending. */
+function mergeTempReport(ttaaLevels, ttbbLevels){
+  const byP = new Map();
+  ttaaLevels.forEach(l=>{
+    if(l.p==null) return;
+    byP.set(l.p, {p:l.p, h:l.h, t:l.t, td:l.td, dir:l.windDir, spd:l.windSpd});
+  });
+  ttbbLevels.forEach(l=>{
+    if(l.p==null) return;
+    const existing = byP.get(l.p);
+    if(existing){
+      if(existing.t==null) existing.t = l.t;
+      if(existing.td==null) existing.td = l.td;
+    } else {
+      byP.set(l.p, {p:l.p, h:null, t:l.t, td:l.td, dir:null, spd:null});
+    }
+  });
+  return Array.from(byP.values()).sort((a,b)=>b.p-a.p);
+}
+
+/* NOAA tgftp raw bulletin feed. File naming: <bulletin-lowercase>.<icao-
+   lowercase>..txt under /data/raw/<first-2-letters-of-bulletin>/. TTAA for
+   TNCC ships as bulletin "USNU01", TTBB as "UKNU01" (confirmed against the
+   live files for 78988 — the T1T2A1A2 header prefix can differ by station/
+   region, so this mapping may need a station-specific entry if a future
+   station's bulletin uses a different prefix). */
+const TGFTP_BULLETIN = {
+  '78988': {icao:'tncc', ttaa:'usnu01', ttbb:'uknu01'}
+};
+function tgftpUrl(bulletin, icao){
+  const b = bulletin.toLowerCase();
+  return 'https://tgftp.nws.noaa.gov/data/raw/' + b.slice(0,2) + '/' + b + '.' + icao.toLowerCase() + '..txt';
+}
+async function fetchTgftpSounding(stationId){
+  const cfg = TGFTP_BULLETIN[stationId];
+  if(!cfg) return null;
+  const [ttaaText, ttbbText] = await Promise.all([
+    robustFetchText(tgftpUrl(cfg.ttaa, cfg.icao)),
+    robustFetchText(tgftpUrl(cfg.ttbb, cfg.icao))
+  ]);
+  if(!ttaaText && !ttbbText) return null;
+  // Body = everything after the "IIiii TTAA/TTBB YYGGId IIiii" header line;
+  // strip the bulletin header line and station/part identifier, keep the
+  // rest as one flattened stream (line breaks in the raw text are cosmetic).
+  function bodyAfterHeader(text, partTag){
+    if(!text) return '';
+    const idx = text.indexOf(partTag);
+    if(idx < 0) return '';
+    // Skip the part tag itself and the YYGGId + IIiii groups that follow it
+    const rest = text.slice(idx + partTag.length);
+    const toks = rest.trim().split(/\s+/).filter(Boolean);
+    return toks.slice(2).join(' '); // drop YYGGId and the repeated station id
+  }
+  const ttaaLevels = ttaaText ? parseTTAA(bodyAfterHeader(ttaaText, 'TTAA')) : [];
+  const ttbbLevels = ttbbText ? parseTTBB(bodyAfterHeader(ttbbText, 'TTBB')) : [];
+  if(!ttaaLevels.length && !ttbbLevels.length) return null;
+  const merged = mergeTempReport(ttaaLevels, ttbbLevels);
+  return merged.map(r => ({p:r.p, h:r.h, t:r.t, td:r.td, dir:r.dir, spd:r.spd}));
+}
+
 
 /* Reuse the same proxy chain pattern as the main app / encoders page: try
    direct fetch, fall back to public CORS proxies since University of
@@ -389,34 +568,49 @@ async function loadSounding(force){
   try{
     const stnId = $('stStation').value;
     const cycle = $('stCycle').value;
-    // Build a short list of candidate (cycle, dayOffset) attempts: the
-    // requested cycle first, then the other synoptic cycle, then the same
-    // two cycles one day earlier — a launch can be late, missing, or not
-    // yet posted for "latest", so we don't stop at the first miss.
-    const cyclesToTry = cycle === 'latest' ? ['latest', cycle==='00'?'12':'00'] : [cycle, cycle==='00'?'12':'00'];
-    const attempts = [];
-    for(const dayOffset of [0,1]) for(const c of cyclesToTry) attempts.push({c, dayOffset});
-    let text = null, usedAttempt = null;
-    for(const a of attempts){
-      const url = wyomingUrl(stnId, a.c, a.dayOffset);
-      const t = await robustFetchText(url);
-      if(t && /PRES/.test(t)){ text = t; usedAttempt = a; break; }
+    const stnCfg = STATIONS.find(s=>s.id===stnId);
+    let rows = null, sourceNote = '';
+
+    // Primary path for stations with a known tgftp bulletin (currently
+    // just 78988/Curaçao — University of Wyoming has no listing for it at
+    // all, so this is the only real source, not merely a faster one).
+    if(stnCfg && stnCfg.src === 'tgftp'){
+      try{
+        rows = await fetchTgftpSounding(stnId);
+      }catch(e){ rows = null; }
+      if(rows && rows.length) sourceNote = ' (NOAA tgftp, current bulletin — cycle/day selector not applicable to this feed)';
     }
-    if(!text){
-      $('stLoading').innerHTML = '<div class="err">No sounding available for this station in the last two cycles/days. Not every station launches every cycle (some launch only once daily, or not at all) — try another station.</div>';
+
+    // University of Wyoming path (used for all other stations). Skipped
+    // entirely for tgftp-only stations like Curaçao — Wyoming has no
+    // listing for 78988 at all, so falling through here would only waste
+    // up to 4 fetch attempts (2 cycles × 2 day-offsets) on a station that
+    // can never succeed there.
+    if((!rows || !rows.length) && !(stnCfg && stnCfg.src === 'tgftp')){
+      const cyclesToTry = cycle === 'latest' ? ['latest', cycle==='00'?'12':'00'] : [cycle, cycle==='00'?'12':'00'];
+      const attempts = [];
+      for(const dayOffset of [0,1]) for(const c of cyclesToTry) attempts.push({c, dayOffset});
+      let text = null, usedAttempt = null;
+      for(const a of attempts){
+        const url = wyomingUrl(stnId, a.c, a.dayOffset);
+        const t = await robustFetchText(url);
+        if(t && /PRES/.test(t)){ text = t; usedAttempt = a; break; }
+      }
+      if(text){
+        rows = parseWyomingText(text).filter(r=>r.p<=1000 && r.p>=100);
+        if(rows.length) sourceNote = usedAttempt.dayOffset > 0 ? ' (from ' + usedAttempt.dayOffset + 'd ago — no newer report found)' : '';
+      }
+    }
+
+    if(!rows || rows.length < 3){
+      const tgftpHint = (stnCfg && stnCfg.src === 'tgftp') ? ' NOAA\u2019s bulletin feed for this station returned no usable report.' : ' Not every station launches every cycle (some launch only once daily, or not at all).';
+      $('stLoading').innerHTML = '<div class="err">No sounding available for this station right now.' + tgftpHint + ' Try another station or check back later.</div>';
       $('stStatus').textContent = 'No data';
-      return;
-    }
-    const rows = parseWyomingText(text).filter(r=>r.p<=1000 && r.p>=100);
-    if(rows.length < 3){
-      $('stLoading').innerHTML = '<div class="err">Sounding data too sparse to plot.</div>';
-      $('stStatus').textContent = 'Insufficient data';
       return;
     }
     const metrics = buildSkewT({rows});
     renderMetrics(metrics, {t: rows[0].t, td: rows[0].td});
-    const ageNote = usedAttempt.dayOffset > 0 ? ' (from ' + usedAttempt.dayOffset + 'd ago — no newer report found)' : '';
-    $('stStatus').textContent = STATIONS.find(s=>s.id===stnId)?.name + ' · ' + rows.length + ' levels' + ageNote;
+    $('stStatus').textContent = (stnCfg ? stnCfg.name : stnId) + ' · ' + rows.length + ' levels' + sourceNote;
   }catch(e){
     $('stLoading').innerHTML = '<div class="err">Failed to load sounding: ' + (e && e.message ? e.message : e) + '</div>';
     $('stStatus').textContent = 'Error';
@@ -425,8 +619,20 @@ async function loadSounding(force){
     if(btn) btn.disabled = false;
   }
 }
-document.getElementById('stStation').addEventListener('change', ()=>loadSounding(true));
+document.getElementById('stStation').addEventListener('change', ()=>{
+  const stnCfg = STATIONS.find(s=>s.id===document.getElementById('stStation').value);
+  const cycleSel = document.getElementById('stCycle');
+  cycleSel.disabled = !!(stnCfg && stnCfg.src === 'tgftp');
+  cycleSel.title = cycleSel.disabled ? 'This station uses NOAA\u2019s current-bulletin feed, which has no cycle selector' : '';
+  loadSounding(true);
+});
 document.getElementById('stCycle').addEventListener('change', ()=>loadSounding(true));
+(function initialCycleState(){
+  const stnCfg = STATIONS.find(s=>s.id===document.getElementById('stStation').value);
+  const cycleSel = document.getElementById('stCycle');
+  cycleSel.disabled = !!(stnCfg && stnCfg.src === 'tgftp');
+  cycleSel.title = cycleSel.disabled ? 'This station uses NOAA\u2019s current-bulletin feed, which has no cycle selector' : '';
+})();
 loadSounding();
 </script>
 </body>

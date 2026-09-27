@@ -3,7 +3,7 @@
    picked up when the app is opened; cache fallback for offline use.
    Bump CACHE_VERSION on each deploy to force clients to update. */
 
-const CACHE_VERSION = 'rwc-2026-09-25-1';
+const CACHE_VERSION = 'rwc-2026-09-27-1';
 const CACHE_NAME = 'rwc-cache-' + CACHE_VERSION;
 
 // Core assets to pre-cache (the single-file app + its WX-tab sub-pages).
@@ -16,10 +16,17 @@ const CORE = [
 ];
 
 // Install: pre-cache the shell, then activate immediately.
+// addAll() is all-or-nothing — if ANY one URL in CORE 404s (e.g. a file
+// renamed or not yet deployed), the whole precache silently fails and
+// none of the others get cached either, even though most of them are
+// fine. Caching each file individually means one missing file only
+// costs that file, not the whole offline shell.
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE).catch(() => {}))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(CORE.map((url) => cache.add(url).catch(() => {})))
+    )
   );
 });
 
