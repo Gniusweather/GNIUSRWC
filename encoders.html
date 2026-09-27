@@ -7,10 +7,18 @@
 <style>
 
 :root{--bg:#0b1220;--card:#121a2b;--line:#243044;--txt:#e8eef8;--mut:#8ea0b8;--acc:#55c1ff;--r:10px;--cond:ui-sans-serif,system-ui;}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--cond)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--cond);height:100%;}
 button{cursor:pointer;font:inherit}
-.wrap{max-width:1100px;margin:0 auto;padding:12px}
-h1{font-size:18px;margin:0 0 10px}
+/* Full-screen layout, independent of any --hdr/--nav variables (this
+   page has no fixed top bar of its own — h1+subnav sit in normal flow
+   at their natural height, and whichever .sub-panel is active fills
+   everything below them). This also makes the page size itself
+   correctly whether opened directly OR embedded in an iframe (as it is
+   from the main app's WX tab), since it no longer depends on custom
+   properties that only exist in the OUTER page's stylesheet. */
+html,body{height:100%;overflow:hidden;}
+.wrap{max-width:1100px;margin:0 auto;padding:12px;height:100dvh;display:flex;flex-direction:column;min-height:0;}
+h1{font-size:18px;margin:0 0 10px;flex:0 0 auto;}
 
 .hdr-btns{display:flex;gap:6px;}
 .hdr-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--acc);font-size:15px;display:flex;align-items:center;justify-content:center;}
@@ -35,7 +43,24 @@ select.enc-inp option{background:#0d1f36;color:#e8f4ff;}
 .enc-out-lbl{font-family:var(--cond);font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--acc);}
 .enc-copy-btn{font-family:var(--cond);font-weight:700;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:5px;border:1px solid var(--acc);color:var(--acc);background:rgba(27,124,255,0.08);cursor:pointer;}
 .enc-out{font-family:var(--mono);font-size:12px;color:#a8d4ff;background:rgba(0,0,0,0.45);border:1px solid var(--border);border-radius:6px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;overflow-x:hidden;line-height:1.55;margin-bottom:8px;letter-spacing:.2px;}
-#synop-sub-encode{display:none;flex-direction:column;height:calc(100dvh - var(--hdr) - var(--nav) - 72px);overflow:hidden;}
+/* Baseline: exactly one .sub-panel renders at a time. Previously showEnc()
+   and the DOMContentLoaded init both queried '.synop-sub', a class that
+   does not exist anywhere in the markup (panels use 'sub-panel') — so the
+   JS toggle silently touched nothing, Sutron/Vaisala stayed in normal
+   document flow below Encode, and switching tabs only changed which
+   subnav button looked active while Encode itself never actually hid. */
+.sub-panel{display:none;}
+/* Previously: height:calc(100dvh - var(--hdr) - var(--nav) - 72px). This
+   file never defines --hdr/--nav (those are index.html's variables) —
+   an invalid var() inside calc() makes the WHOLE declaration invalid at
+   computed-value time, so height silently fell back to auto and the
+   panel only ever grew to fit its content instead of filling the
+   screen. Since .wrap is now a height:100dvh flex column with h1+subnav
+   sized to their natural (flex:0 0 auto) height, flex:1 here reliably
+   fills exactly what's left — no measured/guessed number needed. */
+.sub-panel.active{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;}
+#synop-sub-sutron.active,#synop-sub-vaisala.active{overflow-y:auto;-webkit-overflow-scrolling:touch;display:block;}
+#synop-sub-encode{display:none;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;}
 #synop-sub-encode.active{display:flex;}
 #synop-sub-encode > div{padding:0!important;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden;}
 #synop-sub-encode .enc-card{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin-bottom:0;}
@@ -55,11 +80,12 @@ select.enc-inp option{background:#0d1f36;color:#e8f4ff;}
 .enc-verify .ev-hdr{font-family:var(--cond);font-weight:800;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ok);margin-bottom:5px;}
 .enc-verify b{color:#eef5ff;font-weight:600;}
 .hdr-btn{width:38px;height:38px;font-size:17px;}
-/* SYNOP Encode only — form scrolls, generated line pinned */
-  #synop-sub-encode{display:none;flex-direction:column;max-height:calc(100dvh - var(--hdr) - var(--nav) - 90px);overflow:hidden;}
-#synop-sub-encode.active{display:flex;}
-#synop-sub-encode > div{padding:0!important;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden;}
-#synop-sub-encode .enc-card{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin-bottom:0;}
+/* SYNOP Encode only — form scrolls, generated line pinned.
+   (Duplicate #synop-sub-encode rule with the same broken var(--hdr)/
+   var(--nav) pattern removed here — the real, fixed rule now lives
+   above at .sub-panel.active / #synop-sub-encode. The > div / .enc-card
+   flex rules below were also duplicated immediately above this comment;
+   removed here since they're identical to lines 65-66.) */
 #synop-sub-encode .enc-hdr,#synop-sub-encode #enc-mode-status{flex-shrink:0;}
 #synop-sub-encode .enc-card > .enc-sec{flex:0 0 auto;}
 #synop-sub-encode #enc-form-scroll{flex:1;min-height:0;overflow:auto;}
@@ -100,16 +126,23 @@ select.enc-inp option{background:#0d1f36;color:#e8f4ff;}
 .va-f{display:flex;flex-direction:column;gap:2px;min-width:64px;}
 .va-f label{font-size:10px;color:#444;}
 .va-f input,.va-f select{background:#fff;border:1px solid #888;padding:3px 5px;font-family:Consolas,monospace;font-size:13px;min-width:58px;}
-.va-out{background:#fff;border:1px solid #888;margin:8px;padding:8px;font-family:Consolas,monospace;font-size:13px;min-height:56px;white-space:pre-wrap;}
+.va-out{margin:8px;padding:8px;font-family:Consolas,monospace;font-size:13px;min-height:56px;white-space:pre-wrap;}
+/* background/border/color for .va-out are set by the shared .enc-out,.va-out,#su-out
+   rule further down (dark theme, matches the rest of the app) — this rule used to also
+   declare background:#fff;border:1px solid #888 here, which was always overridden by
+   that later rule anyway (same specificity, later in source wins), but silently left
+   .va-out with a dark background and no explicit text color, inheriting near-black
+   (#222) from .va-wrap above it — dark-on-dark, unreadable. Fixed by adding an explicit
+   color there instead of leaving two rules pulling in different directions. */
 .va-src{font-family:var(--cond),sans-serif;font-size:11px;padding:6px 10px;color:#1a2a4a;opacity:.9;}
 .va-actions{display:flex;gap:8px;justify-content:flex-end;padding:8px;}
 .va-actions button{padding:4px 14px;border:1px solid #888;background:#e8e8e8;cursor:pointer;}
 .synop-sub{display:none}
 .synop-sub.active{display:block}
-.subnav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.subnav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;flex:0 0 auto;}
 .subnav button{background:#1e3a5f;color:#fff;border:0;border-radius:8px;padding:6px 10px}
 .subnav button.active{background:#55c1ff;color:#0b1220}
-.enc-out,.va-out,#su-out{background:#0b1220;border:1px solid #243044;padding:8px;font-family:ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}
+.enc-out,.va-out,#su-out{background:#0b1220;color:#e8eef8;border:1px solid #243044;padding:8px;font-family:ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}
 </style>
 </head>
 <body>
@@ -1114,8 +1147,6 @@ select.enc-inp option{background:#0d1f36;color:#e8f4ff;}
           </div>
         </div>
       </div>
-<div class="sub-panel" 
-</div>
 <script>
 
 function $(id){return document.getElementById(id);}
@@ -3789,7 +3820,7 @@ const loadedTabs={metar:true,taf:false,synop:false,stations:false,atc:false,weat
 function byId(id){return document.getElementById(id);}
 
 function showEnc(name,btn){
-  document.querySelectorAll('.synop-sub').forEach(function(p){
+  document.querySelectorAll('.sub-panel').forEach(function(p){
     const on=p.id==='synop-sub-'+name;
     p.classList.toggle('active',on);
     p.style.display=on?'block':'none';
@@ -3798,7 +3829,7 @@ function showEnc(name,btn){
   try{if(name==='sutron'){tplFillFromEnc('su');suUpdate();} if(name==='vaisala'){tplFillFromEnc('va');vaUpdate();} if(name==='encode')encUpdate();}catch(e){}
 }
 document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.synop-sub').forEach(function(p){
+  document.querySelectorAll('.sub-panel').forEach(function(p){
     p.style.display=p.id==='synop-sub-encode'?'block':'none';
     if(p.id==='synop-sub-encode') p.classList.add('active');
   });
