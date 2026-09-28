@@ -3568,6 +3568,11 @@ html,body{max-width:100%;overflow-x:hidden;}
           <button class="wr-lang-btn" onclick="buildOverzicht(true)" title="Opnieuw genereren">&#8635;</button>
         </div>
       </div>
+      <div class="wr-modes">
+        <button class="wr-mode-btn" data-ovzsrc="synop" onclick="setOvzSource('synop',this)">&#128225; SYNOP</button>
+        <button class="wr-mode-btn" data-ovzsrc="metar" onclick="setOvzSource('metar',this)">&#9992; METAR</button>
+        <button class="wr-mode-btn" data-ovzsrc="openmeteo" onclick="setOvzSource('openmeteo',this)">&#127757; Open-Meteo</button>
+      </div>
       <div id="ovzBody"><div class="wloading">Laden&hellip;</div></div>
     </div>
     <div class="wx-view" id="wxViewSkewt" style="display:none;">
@@ -6462,10 +6467,15 @@ window.meteoApplyEdit = meteoApplyEdit;
 window.meteoClearEdit = meteoClearEdit;
 
 /* ─── OVERZICHT WEERSGESTELDHEID (QF-OBS-OW) ───
-   Dagelijks om 08:30 l.t. automatisch gevuld. Bronnen: 1) SYNOP (Ogimet), 2) METAR.
-   GEEN Open-Meteo. Vaste UTC-vensters:
+   Dagelijks om 08:15 l.t. automatisch gevuld. Drie volledig ONAFHANKELIJKE
+   bronnen, gekozen via tabs (SYNOP / METAR / Open-Meteo) — zie
+   ovzGetSource()/setOvzSource() en buildOverzicht(). Geen onderlinge
+   fallback: als de gekozen bron geen data heeft voor een station, blijft
+   dat veld leeg. SYNOP/METAR gebruiken vaste UTC-vensters:
      Weertype + 24h neerslag : vandaag 12Z            Tmax : gisteren 18Z
      Tmin : vandaag 06Z (backup 00Z)                  TNCE + EHAM temps : 06Z–12Z vandaag
+   Open-Meteo levert in plaats daarvan hele-kalenderdag min/max/som (zie
+   ovzFetchOpenMeteo hierboven) — niet hetzelfde als een uurwaarneming.
    Temperaturen worden half-up afgerond (24,5 → 25 ; 24,4 → 24). */
 var OVZ_STATIONS = [
   {nm:'Aruba (Reina Beatrix)',          wmo:'78982', icao:'TNCA', lat:12.50, lon:-70.01, g:1},
@@ -6573,6 +6583,31 @@ function ovzWawaNL(w){
   if(w >= 90 && w <= 96) return 'Onweer';
   return null;
 }
+/* Weertype uit Open-Meteo's "weathercode" (WMO table 4677/4680 subset,
+   documented at open-meteo.com/en/docs#weathervariables). This is a
+   DIFFERENT, much smaller code space than SYNOP's ww (ovzWwNL above) or
+   wawa (ovzWawaNL above) — some numeric values happen to coincide (e.g.
+   61) but must not be run through those tables; a dedicated mapper avoids
+   silently mixing two different code tables that only partially overlap. */
+function ovzWmoCodeNL(code){
+  if(code == null || isNaN(code)) return null;
+  if(code === 0) return 'Onbewolkt';
+  if(code === 1) return 'Overwegend onbewolkt';
+  if(code === 2) return 'Half bewolkt';
+  if(code === 3) return 'Geheel bewolkt';
+  if(code === 45 || code === 48) return 'Mist';
+  if(code >= 51 && code <= 55) return 'Motregen';
+  if(code === 56 || code === 57) return 'Motregen met ijzel';
+  if(code >= 61 && code <= 65) return 'Regen';
+  if(code === 66 || code === 67) return 'Regen met ijzel';
+  if(code >= 71 && code <= 75) return 'Sneeuw';
+  if(code === 77) return 'Motsneeuw';
+  if(code >= 80 && code <= 82) return 'Regenbui';
+  if(code === 85 || code === 86) return 'Sneeuwbui';
+  if(code === 95) return 'Onweer';
+  if(code === 96 || code === 99) return 'Onweer met hagel';
+  return null;
+}
 function ovzMetarWeertype(mp){
   if(!mp) return null;
   var wx = (mp.wxToks || []).join(' ');
@@ -6624,18 +6659,18 @@ function ovzRound(v){
   var r = Math.floor(a + 0.5 + 1e-9);
   return v < 0 ? -r : r;
 }
-/* Formulier-dag (zelfde 08:30 l.t. cutover als ovzEffDate): tot 08:30 l.t.
-   (= 12:30Z) telt de UTC-datum van gisteren nog als "vandaag" voor het
+/* Formulier-dag (zelfde 08:15 l.t. cutover als ovzEffDate): tot 08:15 l.t.
+   (= 12:15Z) telt de UTC-datum van gisteren nog als "vandaag" voor het
    formulier. Zonder deze correctie zoeken de fetchers vlak na 00Z naar een
    12Z/18Z-melding die nog moet komen, terwijl het formulier nog op de vorige
    dag staat (en de cache dus verkeerd overschreven zou worden). */
 function ovzFormDayBase(){
   // Exact zelfde berekening als ovzEffDate(): schuif naar l.t. (UTC-4), en vóór
-  // 08:30 l.t. telt het nog als de vorige kalenderdag. Het resultaat is een
+  // 08:15 l.t. telt het nog als de vorige kalenderdag. Het resultaat is een
   // Date wiens UTC-kalenderdatum (Y/M/D) gelijk is aan de l.t.-datum van het
   // formulier — dat is precies de referentie die ovzUtcDay() nodig heeft.
   var lt = new Date(Date.now() - 4 * 3600e3);
-  if(lt.getUTCHours() * 60 + lt.getUTCMinutes() < 510) lt.setUTCDate(lt.getUTCDate() - 1);
+  if(lt.getUTCHours() * 60 + lt.getUTCMinutes() < 495) lt.setUTCDate(lt.getUTCDate() - 1);
   return lt;
 }
 function ovzUtcDay(offsetDays){
@@ -7263,50 +7298,142 @@ async function ovzFetchMetars(icao){
   return out;
 }
 
+/* Open-Meteo forecast API — free, keyless, no CORS restrictions (unlike
+   Ogimet/aviationweather.gov, so this needs no proxy fallback).
+   IMPORTANT DIFFERENCE FROM SYNOP/METAR ABOVE: Open-Meteo's "daily"
+   fields are calendar-day AGGREGATES computed by their own model over an
+   entire UTC calendar day (temperature_2m_max/min = the max/min across
+   that whole day, precipitation_sum = the whole day's total) — this is
+   fundamentally not the same measurement as "the value reported in the
+   12Z/18Z/06Z synoptic ob", which is what SYNOP and METAR give. Using
+   timezone=UTC and past_days=1 lets us pick "yesterday" and "today" by
+   the same UTC-calendar-day definition ovzUtcDay() already uses, so the
+   two rows line up with the same dates as the other two sources — but
+   the VALUES themselves answer a different question (whole-day min/max
+   vs a snapshot at a specific hour) and will not generally match SYNOP/
+   METAR for the same station/day, even when both have good data. This
+   is inherent to what Open-Meteo's daily endpoint provides, not a bug to
+   fix — the UI should make clear which source produced a given row. */
+async function ovzFetchOpenMeteo(lat, lon, icao){
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
+    + '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode'
+    // past_days=2 (niet 1): vóór 12:15Z loopt de formulier-dag één dag ACHTER op
+    // de echte UTC-datum, dus "gisteren" van het formulier is dan twee echte
+    // dagen terug. Met past_days=1 kwam Tmax in die periode leeg terug.
+    + '&timezone=UTC&past_days=2&forecast_days=1';
+  var txt = null;
+  try{
+    var ac = new AbortController(); setTimeout(function(){ ac.abort(); }, 9000);
+    var r = await fetch(url, {signal: ac.signal});
+    if(r.ok) txt = await r.text();
+  }catch(e){}
+  if(!txt) return null;
+  var j; try{ j = JSON.parse(txt); }catch(e){ return null; }
+  if(!j || !j.daily || !Array.isArray(j.daily.time) || !j.daily.time.length) return null;
+
+  var dToday = ovzUtcDay(0), dYest = ovzUtcDay(-1);
+  var out = { tmax:null, tmin:null, precip:null, wt:null, src:'O' };
+  var idxToday = -1, idxYest = -1;
+  j.daily.time.forEach(function(dateStr, i){
+    var p = dateStr.split('-');
+    var dayInt = parseInt(p[0],10)*10000 + parseInt(p[1],10)*100 + parseInt(p[2],10);
+    if(dayInt === dToday) idxToday = i;
+    if(dayInt === dYest) idxYest = i;
+  });
+  var ok = function(x){ return x != null && isFinite(x); };
+
+  // Tmax: yesterday's daily max (matches the "gisteren" column's INTENT,
+  // even though it's a whole-day max rather than an 18Z snapshot).
+  if(idxYest >= 0 && ok(j.daily.temperature_2m_max[idxYest])) out.tmax = j.daily.temperature_2m_max[idxYest];
+  // Tmin: today's daily min (whole-day min so far, not a 06Z snapshot).
+  if(idxToday >= 0 && ok(j.daily.temperature_2m_min[idxToday])) out.tmin = j.daily.temperature_2m_min[idxToday];
+  // Weertype + 24h precip: today's row.
+  if(idxToday >= 0){
+    if(ok(j.daily.weathercode[idxToday])) out.wt = ovzWmoCodeNL(j.daily.weathercode[idxToday]);
+    if(ok(j.daily.precipitation_sum[idxToday])) out.precip = j.daily.precipitation_sum[idxToday];
+  }
+  if(out.tmax == null && out.tmin == null && out.wt == null && out.precip == null) return null;
+  return out;
+}
+
 function ovzEffDate(){
-  // Formulier-dag: vandaag vanaf 08:30 l.t. (UTC-4), anders gisteren
+  // Formulier-dag: vandaag vanaf 08:15 l.t. (UTC-4), anders gisteren
   var lt = new Date(Date.now() - 4 * 3600e3);
-  if(lt.getUTCHours() * 60 + lt.getUTCMinutes() < 510) lt.setUTCDate(lt.getUTCDate() - 1);
+  if(lt.getUTCHours() * 60 + lt.getUTCMinutes() < 495) lt.setUTCDate(lt.getUTCDate() - 1);
   return lt.toISOString().slice(0, 10);
 }
 
+/* Bron-keuze voor Overzicht Weersgesteldheid: SYNOP, METAR of Open-Meteo.
+   Elke bron is nu volledig ONAFHANKELIJK — geen onderlinge fallback meer.
+   Kiest de gebruiker "synop", dan komt elk veld uitsluitend uit SYNOP; als
+   een station geen SYNOP-data heeft blijft dat veld leeg (niet aangevuld
+   vanuit METAR of Open-Meteo). Zelfde isolatie voor de andere twee bronnen.
+   De keuze wordt onthouden in localStorage en verandert alleen als de
+   gebruiker zelf een andere tab kiest — niet bij een gewone reload. */
+function ovzGetSource(){
+  try{
+    var v = localStorage.getItem('rwc-ovz-source');
+    if(v === 'synop' || v === 'metar' || v === 'openmeteo') return v;
+  }catch(e){}
+  return 'synop'; // default voor nieuwe/lege installaties
+}
+function setOvzSource(src, btn){
+  try{ localStorage.setItem('rwc-ovz-source', src); }catch(e){}
+  document.querySelectorAll('[data-ovzsrc]').forEach(function(b){
+    b.classList.toggle('active', b === btn || b.dataset.ovzsrc === src);
+  });
+  buildOverzicht(true);
+}
+window.setOvzSource = setOvzSource;
+
+/* Elke buildOverzicht-run krijgt een oplopend nummer; alleen de LAATSTE run
+   mag de tabel tekenen. Zonder dit kan een trage run (bv. SYNOP via Ogimet)
+   die klaar is NA een snellere run voor een andere tab (bv. METAR) de tabel
+   overschrijven met data van de verkeerde bron, terwijl de tab-markering
+   nog de nieuwe bron toont. */
+var __ovzRunId = 0;
 async function buildOverzicht(force){
   var host = byId('ovzBody'), st = byId('ovzStatus');
   if(!host) return;
+  var myRun = ++__ovzRunId;
   var eff = ovzEffDate();
+  var src = ovzGetSource();
+  document.querySelectorAll('[data-ovzsrc]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.ovzsrc === src);
+  });
+  var cacheKey = 'rwc-ovz-v6-' + src; // aparte cache per bron: wisselen van tab mag nooit de vorige bron laten zien
+  var srcLabel = {synop:'SYNOP', metar:'METAR', openmeteo:'Open-Meteo'}[src];
   if(!force){
     try{
-      var c = JSON.parse(localStorage.getItem('rwc-ovz-v5') || 'null');
-      if(c && c.date === eff && c.rows){ renderOvzTable(c.rows, eff); if(st) st.textContent = 'Gevuld om 08:30 l.t. · ' + eff; return; }
+      var c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if(c && c.date === eff && c.rows){ renderOvzTable(c.rows, eff, src); if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff; return; }
     }catch(e){}
   }
   if(st) st.textContent = 'Genereren…';
-  host.innerHTML = '<div class="wloading">Stationsdata ophalen (SYNOP → METAR)…</div>';
+  host.innerHTML = '<div class="wloading">Stationsdata ophalen (' + srcLabel + ')…</div>';
   var rows = await Promise.all(OVZ_STATIONS.map(async function(s){
     var row = {nm:s.nm, wmo:s.wmo, icao:s.icao, g:s.g, wt:null, tmax:null, tmin:null, precip:null, wsrc:'', tsrc:'', psrc:''};
-    var syn = await ovzFetchSynop(s.wmo, s.icao);
-    if(syn){
-      row.wt = syn.wt; row.tmax = syn.tmax; row.tmin = syn.tmin; row.precip = syn.precip;
-      row.wsrc = row.wt != null ? 'S' : ''; row.tsrc = (row.tmax != null || row.tmin != null) ? 'S' : ''; row.psrc = row.precip != null ? 'S' : '';
-    }
-    if(row.wt == null || row.tmax == null || row.tmin == null || row.precip == null){
-      var met = await ovzFetchMetars(s.icao);
-      if(met){
-        if(row.wt == null && met.wt != null){ row.wt = met.wt; row.wsrc = 'M'; }
-        if(row.tmax == null && met.tmax != null){ row.tmax = met.tmax; row.tsrc = row.tsrc || 'M'; }
-        if(row.tmin == null && met.tmin != null){ row.tmin = met.tmin; row.tsrc = row.tsrc || 'M'; }
-        if(row.precip == null && met.precip != null){ row.precip = met.precip; row.psrc = 'M'; }
-      }
+    var data = null;
+    if(src === 'synop') data = await ovzFetchSynop(s.wmo, s.icao);
+    else if(src === 'metar') data = await ovzFetchMetars(s.icao);
+    else if(src === 'openmeteo') data = await ovzFetchOpenMeteo(s.lat, s.lon, s.icao);
+    if(data){
+      row.wt = data.wt; row.tmax = data.tmax; row.tmin = data.tmin; row.precip = data.precip;
+      var tag = data.src; // 'S' | 'M' | 'O'
+      row.wsrc = row.wt != null ? tag : ''; row.tsrc = (row.tmax != null || row.tmin != null) ? tag : ''; row.psrc = row.precip != null ? tag : '';
     }
     return row;
   }));
-  try{ localStorage.setItem('rwc-ovz-v5', JSON.stringify({date: eff, rows: rows})); }catch(e){}
-  renderOvzTable(rows, eff);
-  if(st) st.textContent = 'Gevuld · ' + eff;
+  // Cache altijd bijwerken (sleutel is per bron, dus nooit fout), maar alleen
+  // tekenen als dit nog steeds de nieuwste run is.
+  try{ localStorage.setItem(cacheKey, JSON.stringify({date: eff, rows: rows})); }catch(e){}
+  if(myRun !== __ovzRunId) return;
+  renderOvzTable(rows, eff, src);
+  if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff;
 }
 window.buildOverzicht = buildOverzicht;
 
-function renderOvzTable(rows, eff){
+function renderOvzTable(rows, eff, src){
   var host = byId('ovzBody');
   if(!host) return;
   var DAYS_NL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
@@ -7328,6 +7455,9 @@ function renderOvzTable(rows, eff){
   }
   var g1 = rows.filter(function(r){ return r.g === 1; }).map(trow).join('');
   var g2 = rows.filter(function(r){ return r.g === 2; }).map(trow).join('');
+  var footText = src === 'openmeteo'
+    ? 'Automatisch gevuld om 08:15 uur l.t. · Bron: <b>o</b> = Open-Meteo · LET OP: dit zijn hele-kalenderdag min/max/som (UTC), geen uurwaarneming zoals bij SYNOP/METAR · Weertype + neerslag: vandaag (UTC) · Tmax: gisteren (UTC) · Tmin: vandaag (UTC) · Temperaturen half-up afgerond.'
+    : 'Automatisch gevuld om 08:15 uur l.t. · Bron: <b>' + (src === 'metar' ? 'm' : 's') + '</b> = ' + (src === 'metar' ? 'METAR' : 'SYNOP (Ogimet)') + ' — geen onderlinge fallback naar een andere bron · Weertype + 24-uurs neerslag: vandaag 12Z · Tmax: gisteren 18Z · Tmin: vandaag 06Z (backup 00Z) · TNCE + EHAM: temperaturen 06Z–12Z vandaag · Temperaturen half-up afgerond.';
   host.innerHTML =
     '<div class="ovz-card">' +
       '<div class="ovz-hd"><span class="ovz-ttl">OVERZICHT WEERSGESTELDHEID</span><span class="ovz-code">Code: QF-OBS-OW · V 1.0</span></div>' +
@@ -7339,7 +7469,7 @@ function renderOvzTable(rows, eff){
         '<tr class="ovz-gap"><td colspan="7"></td></tr>' +
         g2 +
       '</table></div>' +
-      '<div class="ovz-foot">Automatisch gevuld om 08:30 uur l.t. · Bronnen: <b>s</b> = SYNOP (Ogimet), <b>m</b> = METAR · Weertype + 24-uurs neerslag: vandaag 12Z · Tmax: gisteren 18Z · Tmin: vandaag 06Z (backup 00Z) · TNCE + EHAM: temperaturen 06Z–12Z vandaag · Temperaturen half-up afgerond.</div>' +
+      '<div class="ovz-foot">' + footText + '</div>' +
     '</div>';
   // Double-click a data cell to copy its value to the clipboard, with the
   // superscript source letter (s/m/o) stripped so only the number/text
@@ -7373,12 +7503,16 @@ function renderOvzTable(rows, eff){
   }
 }
 
-/* Om 08:30 l.t. automatisch opnieuw vullen (check elke 5 min) */
+/* Om 08:15 l.t. automatisch opnieuw vullen (check elke 5 min), voor de op
+   dat moment GEKOZEN bron — elke bron heeft zijn eigen cache-key (zie
+   buildOverzicht), dus dit moet met dezelfde sleutel checken. */
 setInterval(function(){
   try{
-    var c = JSON.parse(localStorage.getItem('rwc-ovz-v5') || 'null');
     var v = byId('wxViewOverzicht');
-    if(v && v.style.display !== 'none' && (!c || c.date !== ovzEffDate())) buildOverzicht();
+    if(!v || v.style.display === 'none') return;
+    var cacheKey = 'rwc-ovz-v6-' + ovzGetSource();
+    var c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if(!c || c.date !== ovzEffDate()) buildOverzicht();
   }catch(e){}
 }, 5 * 60 * 1000);
 
