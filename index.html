@@ -7271,22 +7271,27 @@ async function loadStationsTrendTab(){
 window.loadStationsTrendTab = loadStationsTrendTab;
 
 /* 2) METAR-terugval via aviationweather.gov — zelfde vaste UTC-vensters, geen model */
-async function ovzFetchMetars(icao){
+/* Diagnose-teller voor de METAR-bron: hoeveel stations gaven data, hoeveel niet
+   bereikbaar, hoeveel bereikbaar maar zonder passende meldingen. buildOverzicht
+   zet dit in de statusregel, zodat een lege tabel niet stil leeg blijft. */
+var __ovzMetarStats = {ok:0, unreachable:0, noReports:0};
+async function ovzFetchMetars(icao, fresh){
   var url = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&hours=50&format=raw';
+  /* Was: kale fetch() + één proxy (allorigins /raw). Die combinatie faalde voor
+     ALLE stations (tabel helemaal leeg), terwijl de rest van de app dezelfde
+     METAR-bron wél bereikt via fetchURL -> robustGet (direct, allorigins /get,
+     jina, met cache + dedupe). Nu dezelfde route. */
   var txt = null;
   try{
-    var ac = new AbortController(); setTimeout(function(){ ac.abort(); }, 9000);
-    var r = await fetch(url, {signal: ac.signal});
-    if(r.ok) txt = await r.text();
+    var o = await fetchURL(url, 2, fresh ? {forceFresh:true} : {});
+    if(o && o.ok && o.text){
+      // een opgeslagen kopie (offline-terugval) alleen gebruiken als die recent is:
+      // METAR-dagen worden op dag-van-de-maand gematcht, dus oude data is gevaarlijk
+      if(!(o.stale && o.cachedAt && Date.now() - o.cachedAt > 12*3600e3)) txt = o.text;
+    }
   }catch(e){}
-  if(!txt || !txt.trim()){
-    try{
-      var ac2 = new AbortController(); setTimeout(function(){ ac2.abort(); }, 9000);
-      var r2 = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {signal: ac2.signal});
-      if(r2.ok) txt = await r2.text();
-    }catch(e){}
-  }
-  if(!txt || !txt.trim()) return null;
+  if(!txt || !txt.trim()){ __ovzMetarStats.unreachable++; return null; }
+  if(txt.indexOf(icao) < 0){ __ovzMetarStats.noReports++; return null; }
   var dToday = ovzFormDayBase().getUTCDate();
   var dYest  = new Date(ovzFormDayBase().getTime() - 86400e3).getUTCDate();
   var out = { tmax:null, tmin:null, precip:null, wt:null, src:'M' };
@@ -7318,7 +7323,8 @@ async function ovzFetchMetars(icao){
     out.tmin = t06 != null ? t06 : t00;
   }
   if(pSeen) out.precip = Math.round(pSum * 10) / 10;
-  if(out.tmax == null && out.tmin == null && out.wt == null) return null;
+  if(out.tmax == null && out.tmin == null && out.wt == null){ __ovzMetarStats.noReports++; return null; }
+  __ovzMetarStats.ok++;
   return out;
 }
 
@@ -7415,6 +7421,12 @@ window.setOvzSource = setOvzSource;
    die klaar is NA een snellere run voor een andere tab (bv. METAR) de tabel
    overschrijven met data van de verkeerde bron, terwijl de tab-markering
    nog de nieuwe bron toont. */
+/* Een tabel telt alleen als "bruikbaar" als er minstens één cel data heeft.
+   Anders (bv. bron onbereikbaar) zou een lege tabel de hele dag als cache
+   blijven staan en nooit opnieuw proberen. */
+function ovzHasData(rows){
+  return !!(rows && rows.some(function(r){ return r && (r.tmax != null || r.tmin != null || r.wt != null || r.precip != null); }));
+}
 var __ovzRunId = 0;
 async function buildOverzicht(force){
   var host = byId('ovzBody'), st = byId('ovzStatus');
@@ -7430,16 +7442,33 @@ async function buildOverzicht(force){
   if(!force){
     try{
       var c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if(c && c.date === eff && c.rows){ renderOvzTable(c.rows, eff, src); if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff; return; }
+      if(c && c.date === eff && c.rows && ovzHasData(c.rows) && c.complete !== false){
+        renderOvzTable(c.rows, eff, src);
+        if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff + (c.diag || '');
+        return;
+      }
     }catch(e){}
   }
   if(st) st.textContent = 'Genereren…';
   host.innerHTML = '<div class="wloading">Stationsdata ophalen (' + srcLabel + ')…</div>';
-  var rows = await Promise.all(OVZ_STATIONS.map(async function(s){
+  __ovzMetarStats = {ok:0, unreachable:0, noReports:0};
+  var done = 0;
+  // 17 gelijktijdige METAR-verzoeken overbelasten de gratis proxies; max. 4 tegelijk
+  var limit = src === 'metar' ? 4 : OVZ_STATIONS.length;
+  var queue = OVZ_STATIONS.slice(), rowsByIcao = {};
+  async function worker(){
+    while(queue.length){
+      var s = queue.shift();
+      rowsByIcao[s.icao] = await fetchStation(s);
+      done++;
+      if(myRun === __ovzRunId) host.innerHTML = '<div class="wloading">Stationsdata ophalen (' + srcLabel + ')… ' + done + '/' + OVZ_STATIONS.length + '</div>';
+    }
+  }
+  async function fetchStation(s){
     var row = {nm:s.nm, wmo:s.wmo, icao:s.icao, g:s.g, wt:null, tmax:null, tmin:null, precip:null, wsrc:'', tsrc:'', psrc:''};
     var data = null;
     if(src === 'synop') data = await ovzFetchSynop(s.wmo, s.icao);
-    else if(src === 'metar') data = await ovzFetchMetars(s.icao);
+    else if(src === 'metar') data = await ovzFetchMetars(s.icao, force);
     else if(src === 'openmeteo') data = await ovzFetchOpenMeteo(s.lat, s.lon, s.icao);
     if(data){
       row.wt = data.wt; row.tmax = data.tmax; row.tmin = data.tmin; row.precip = data.precip;
@@ -7447,13 +7476,31 @@ async function buildOverzicht(force){
       row.wsrc = row.wt != null ? tag : ''; row.tsrc = (row.tmax != null || row.tmin != null) ? tag : ''; row.psrc = row.precip != null ? tag : '';
     }
     return row;
-  }));
+  }
+  var workers = []; for(var wi = 0; wi < limit; wi++) workers.push(worker());
+  await Promise.all(workers);
+  var rows = OVZ_STATIONS.map(function(s){ return rowsByIcao[s.icao]; });
   // Cache altijd bijwerken (sleutel is per bron, dus nooit fout), maar alleen
   // tekenen als dit nog steeds de nieuwste run is.
-  try{ localStorage.setItem(cacheKey, JSON.stringify({date: eff, rows: rows})); }catch(e){}
-  if(myRun !== __ovzRunId) return;
+  var diag = '';
+  if(src === 'metar'){
+    var m = __ovzMetarStats;
+    diag = ' · ' + m.ok + '/' + OVZ_STATIONS.length + ' stations' +
+           (m.unreachable ? ', ' + m.unreachable + ' niet bereikbaar' : '') +
+           (m.noReports ? ', ' + m.noReports + ' zonder passende melding' : '');
+  }
+  // Cache alleen een tabel met data; bij METAR alleen als ELK station bereikbaar was,
+  // anders wordt bij de volgende keer openen (en elke 5 min) opnieuw geprobeerd.
+  // Dit gebeurt ook voor een inmiddels verdrongen run: de sleutel is per bron, dus nooit fout.
+  var complete = ovzHasData(rows) && !(src === 'metar' && __ovzMetarStats.unreachable > 0);
+  if(ovzHasData(rows)){
+    try{ localStorage.setItem(cacheKey, JSON.stringify({date: eff, rows: rows, complete: complete, diag: diag})); }catch(e){}
+  } else {
+    try{ localStorage.removeItem(cacheKey); }catch(e){}
+  }
+  if(myRun !== __ovzRunId) return;          // alleen de nieuwste run mag tekenen
   renderOvzTable(rows, eff, src);
-  if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff;
+  if(st) st.textContent = 'Gevuld (' + srcLabel + ') · ' + eff + diag;
 }
 window.buildOverzicht = buildOverzicht;
 
@@ -7536,7 +7583,7 @@ setInterval(function(){
     if(!v || v.style.display === 'none') return;
     var cacheKey = 'rwc-ovz-v6-' + ovzGetSource();
     var c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if(!c || c.date !== ovzEffDate()) buildOverzicht();
+    if(!c || c.date !== ovzEffDate() || c.complete === false || !ovzHasData(c.rows)) buildOverzicht();
   }catch(e){}
 }, 5 * 60 * 1000);
 
