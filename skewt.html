@@ -7,8 +7,7 @@
 <style>
 :root{--bg:#0b1220;--card:#121a2b;--line:#243044;--txt:#e8eef8;--mut:#8ea0b8;--acc:#55c1ff;--r:10px;
   --sans:ui-sans-serif,system-ui;--mono:'JetBrains Mono',monospace;
-  --dry:#e0862f;--moist:#2f9e5c;--mix:#3f7fb0;--tline:#ff5252;--tdline:#39d353;--parcel:#ffffff;
-  --cape:rgba(255,90,90,0.22);--cin:rgba(90,140,255,0.22);}
+  --dry:#e58b8b;--moist:#8f8fee;--mix:#3f9f3f;--tline:#000000;--iso:#c8c8c8;--parcel:#d92c2c;}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);height:100%;}
 .wrap{max-width:1200px;margin:0 auto;padding:10px 12px 16px;}
@@ -23,7 +22,7 @@ button.stbtn{cursor:pointer;color:var(--acc);border-color:rgba(85,193,255,0.35);
 button.stbtn:active{background:rgba(85,193,255,0.15);}
 button.stbtn:disabled{opacity:.45;cursor:default;}
 #stStatus{font-size:12px;color:var(--mut);font-family:var(--mono);margin-left:auto;align-self:center;}
-.panel{border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,0.02);
+.panel{border:1px solid var(--line);border-radius:var(--r);background:#fff;
   padding:8px;overflow:auto;}
 svg{display:block;width:100%;height:auto;min-width:560px;}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px;}
@@ -53,6 +52,9 @@ svg{display:block;width:100%;height:auto;min-width:560px;}
         <option value="12">12Z</option>
       </select>
     </label>
+    <label style="flex-direction:row;align-items:center;gap:6px;">
+      <input type="checkbox" id="stOverlay"> Parcel / CAPE overlay
+    </label>
     <button class="stbtn" id="stReload" onclick="loadSounding(true)">&#8635; Reload</button>
     <span id="stStatus">&mdash;</span>
   </div>
@@ -61,14 +63,12 @@ svg{display:block;width:100%;height:auto;min-width:560px;}
     <svg id="stSvg" viewBox="0 0 900 760" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
   </div>
   <div class="legend">
-    <span><i style="background:var(--tline)"></i>Temperature</span>
-    <span><i style="background:var(--tdline)"></i>Dewpoint</span>
-    <span><i style="background:var(--parcel)"></i>Parcel profile</span>
+    <span><i style="background:var(--tline)"></i>Temperature &amp; dewpoint</span>
+    <span><i style="background:var(--iso)"></i>Isotherms</span>
     <span><i style="background:var(--dry)"></i>Dry adiabats</span>
     <span><i style="background:var(--moist)"></i>Moist adiabats</span>
-    <span><i style="background:var(--mix)"></i>Mixing ratio</span>
-    <span><i style="background:var(--cape)"></i>CAPE</span>
-    <span><i style="background:var(--cin)"></i>CIN</span>
+    <span><i style="background:var(--mix)"></i>Mixing ratio (g/kg)</span>
+    <span><i style="background:var(--parcel)"></i>Parcel &amp; CAPE/CIN (overlay)</span>
   </div>
   <div class="metrics" id="stMetrics"></div>
 </div>
@@ -416,20 +416,27 @@ function capeCin(pressures, tEnv, tParcel){
   return {cape: Math.round(cape), cin: Math.round(cin)};
 }
 
-/* ─── Skew-T geometry + SVG rendering ─────────────────────────────────── */
-const SKEW = 45; // degrees, matches SkewT(fig, rotation=45) in the example
-const PMIN=100, PMAX=1000;
-const W=900, H=760, PADL=70, PADR=30, PADT=20, PADB=50;
-const PLOTW = W-PADL-PADR, PLOTH = H-PADT-PADB;
+/* ─── Skew-T geometry + SVG rendering ─────────────────────────────────
+   Layout and colours follow the University of Wyoming sounding plot:
+   log-p axis with 1000 hPa at the BOTTOM and 100 hPa at the TOP, isobars
+   every 100 hPa, isotherms leaning up-and-to-the-RIGHT at 45°, dry adiabats
+   (pink, dashed), moist adiabats (blue, dashed), mixing-ratio lines
+   (green, dashed, 1000-600 hPa, labelled along the bottom), one solid
+   black trace for T and one for Td, geopotential heights printed inside the
+   plot on the left, wind barbs on the right, everything clipped to the plot
+   box. NOTE: an earlier version of this file had the pressure axis upside
+   down (1000 hPa at the top) and no clipping, so the whole diagram was
+   inverted and spilled outside the frame. ─────────────────────────────── */
+const SKEW = 45;
+const PMIN=100, PMAX=1000, TMIN=-40, TMAX=60;
+const W=900, H=760, PADL=64, PADR=64, PADT=34, PADB=46;
+const PLOTW = W-PADL-PADR, PLOTH = H-PADT-PADB, YBOT = PADT+PLOTH;
+const TANSKEW = Math.tan(SKEW*Math.PI/180);
 
-function yForP(p){ return PADT + PLOTH * (Math.log(PMAX/p) / Math.log(PMAX/PMIN)); }
-function xForT(tC, y){
-  // Skew transform: shift x by the skew angle as a function of height (y)
-  const frac = (y - PADT) / PLOTH; // 0 at top .. 1 at bottom
-  const skewPx = Math.tan(SKEW*Math.PI/180) * PLOTH * (1-frac);
-  const xBase = PADL + PLOTW * ((tC - (-40)) / (60 - (-40)));
-  return xBase + skewPx - PLOTH*Math.tan(SKEW*Math.PI/180);
-}
+// 1000 hPa -> bottom edge, 100 hPa -> top edge (log-p)
+function yForP(p){ return PADT + PLOTH * (Math.log(p/PMIN) / Math.log(PMAX/PMIN)); }
+// isotherms lean to the right with height: x grows as we go UP from the 1000 hPa baseline
+function xForT(tC, y){ return PADL + PLOTW*((tC-TMIN)/(TMAX-TMIN)) + TANSKEW*(YBOT - y); }
 
 function svgLine(pts, color, width, dash){
   if(pts.length<2) return '';
@@ -437,106 +444,153 @@ function svgLine(pts, color, width, dash){
   return `<path d="${d}" stroke="${color}" stroke-width="${width||1.6}" fill="none"${dash?` stroke-dasharray="${dash}"`:''}/>`;
 }
 
+/* Wind barb per standard 5/10/50-knot notation, rounded to the nearest 5kt:
+   a pennant (filled triangle) = 50kt, a full barb = 10kt, a half barb =
+   5kt, drawn from the outer end of the shaft inward. Calm (<2.5kt, i.e.
+   rounds to 0) draws an open circle instead of a shaft, matching station-
+   model convention. dir is the meteorological direction the wind is
+   coming FROM (0=N, 90=E, ...); the shaft points that way, away from the
+   plotted value at (x0,y0). */
+function windBarbSVG(x0, y0, dir, speedKt, color, shaftLen){
+  shaftLen = shaftLen || 26;
+  if(speedKt == null || dir == null) return '';
+  var s = Math.round(speedKt/5)*5;
+  if(s <= 0) return `<circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="3.5" fill="none" stroke="${color}" stroke-width="1.2"/>`;
+
+  var rad = dir * Math.PI/180;
+  var dx = Math.sin(rad), dy = -Math.cos(rad);      // unit vector toward where wind comes FROM
+  var x1 = x0 + dx*shaftLen, y1 = y0 + dy*shaftLen;  // outer end of shaft
+  var px = -dy, py = dx;                              // perpendicular (barb) direction, one consistent side
+
+  var pennants = Math.floor(s/50); s -= pennants*50;
+  var fulls = Math.floor(s/10); s -= fulls*10;
+  var halfs = Math.floor(s/5);
+
+  var spacing = 5.5, fullLen = 9, halfLen = 4.5, pos = shaftLen;
+  var path = `M${x0.toFixed(1)},${y0.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)} `;
+  var hasPennant = pennants > 0;
+  for(var i=0;i<pennants;i++){
+    var bx0=x0+dx*pos, by0=y0+dy*pos, bx1=x0+dx*(pos-spacing*1.4), by1=y0+dy*(pos-spacing*1.4);
+    var tipx=bx0+px*fullLen, tipy=by0+py*fullLen;
+    path += `M${bx0.toFixed(1)},${by0.toFixed(1)} L${tipx.toFixed(1)},${tipy.toFixed(1)} L${bx1.toFixed(1)},${by1.toFixed(1)} Z `;
+    pos -= spacing*1.4;
+  }
+  for(var i2=0;i2<fulls;i2++){
+    var fx0=x0+dx*pos, fy0=y0+dy*pos, ftx=fx0+px*fullLen, fty=fy0+py*fullLen;
+    path += `M${fx0.toFixed(1)},${fy0.toFixed(1)} L${ftx.toFixed(1)},${fty.toFixed(1)} `;
+    pos -= spacing;
+  }
+  for(var i3=0;i3<halfs;i3++){
+    var hx0=x0+dx*pos, hy0=y0+dy*pos, htx=hx0+px*halfLen, hty=hy0+py*halfLen;
+    path += `M${hx0.toFixed(1)},${hy0.toFixed(1)} L${htx.toFixed(1)},${hty.toFixed(1)} `;
+    pos -= spacing;
+  }
+  return `<path d="${path}" stroke="${color}" stroke-width="1.3" fill="${hasPennant?color:'none'}" stroke-linejoin="round"/>`;
+}
+
+function escXml(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 function buildSkewT(data){
   const svg = $('stSvg');
+  const overlay = !!($('stOverlay') && $('stOverlay').checked);
   const p = data.rows.map(r=>r.p), t = data.rows.map(r=>r.t), td = data.rows.map(r=>r.td);
-  let out = `<rect x="0" y="0" width="${W}" height="${H}" fill="#0b1220"/>`;
-
-  // Isobars + labels
-  [1000,850,700,500,400,300,250,200,150,100].forEach(pp=>{
-    if(pp<PMIN||pp>PMAX) return;
-    const y = yForP(pp);
-    out += `<line x1="${PADL}" y1="${y}" x2="${W-PADR}" y2="${y}" stroke="#243044" stroke-width="1"/>`;
-    out += `<text x="${PADL-8}" y="${y+4}" font-size="12" fill="#8ea0b8" text-anchor="end" font-family="monospace">${pp}</text>`;
-  });
-
-  // Isotherms (skewed) every 10°C
-  for(let tt=-40; tt<=60; tt+=10){
-    const top=[xForT(tt,PADT),PADT], bot=[xForT(tt,PADT+PLOTH),PADT+PLOTH];
-    out += `<line x1="${top[0].toFixed(1)}" y1="${top[1]}" x2="${bot[0].toFixed(1)}" y2="${bot[1]}" stroke="#1a2740" stroke-width="1"/>`;
-    out += `<text x="${bot[0].toFixed(1)}" y="${H-PADB+16}" font-size="11" fill="#8ea0b8" text-anchor="middle" font-family="monospace">${tt}</text>`;
-  }
-
-  // Dry adiabats (every 10K potential temp), thin orange
+  const C = {iso:'#c8c8c8', isobar:'#a4a4a4', dry:'#e58b8b', moist:'#8f8fee', mix:'#3f9f3f', axis:'#222', hgt:'#7a7a7a', frame:'#444'};
+  const inPlot = pp => pp <= PMAX && pp >= PMIN;
   const pSteps = []; for(let pp=PMAX; pp>=PMIN; pp-=10) pSteps.push(pp);
-  for(let th=-30; th<=160; th+=20){
-    const t0 = th; // start temp at 1000hPa
-    const pts = pSteps.map(pp => [xForT(dryAdiabaticT(t0,1000,pp), yForP(pp)), yForP(pp)]);
-    out += svgLine(pts, 'rgba(224,134,47,0.55)', 1);
-  }
 
-  // Moist adiabats, thin green — start at several surface temps, integrate upward
-  for(let t0=-10; t0<=32; t0+=6){
-    const pts=[]; let tc=t0;
+  // ---- everything below is clipped to the plot box ----
+  let grid = '';
+  // isotherms every 10°C; start far to the left so the skewed lines also fill the upper-left corner
+  for(let tt=-130; tt<=60; tt+=10){
+    grid += `<line x1="${xForT(tt,YBOT).toFixed(1)}" y1="${YBOT}" x2="${xForT(tt,PADT).toFixed(1)}" y2="${PADT}" stroke="${C.iso}" stroke-width="1"/>`;
+  }
+  for(let pp=100; pp<=1000; pp+=100){
+    const y = yForP(pp).toFixed(1);
+    grid += `<line x1="${PADL}" y1="${y}" x2="${PADL+PLOTW}" y2="${y}" stroke="${C.isobar}" stroke-width="1"/>`;
+  }
+  // dry adiabats: one per 10 K of potential temperature
+  for(let th=-40; th<=200; th+=10){
+    const pts = pSteps.map(pp => [xForT(dryAdiabaticT(th,1000,pp), yForP(pp)), yForP(pp)]);
+    grid += svgLine(pts, C.dry, 1, '5,3');
+  }
+  // moist adiabats, integrated upward from 1000 hPa
+  for(let t0=-30; t0<=40; t0+=5){
+    let tc = t0; const pts = [];
     for(let i=0;i<pSteps.length;i++){
-      const pp=pSteps[i];
-      if(i===0){ tc=t0; } else { tc = moistLapseT(tc, pSteps[i-1], pp, 4); }
+      const pp = pSteps[i];
+      if(i>0) tc = moistLapseT(tc, pSteps[i-1], pp, 4);
       pts.push([xForT(tc,yForP(pp)), yForP(pp)]);
     }
-    out += svgLine(pts, 'rgba(47,158,92,0.55)', 1);
+    grid += svgLine(pts, C.moist, 1, '5,3');
   }
-
-  // Mixing ratio lines (constant w), thin blue dashed — g/kg values
-  [1,2,4,7,10,16,24,32].forEach(w=>{
-    const pts = pSteps.filter(pp=>pp<=1000&&pp>=200).map(pp=>{
+  // mixing-ratio lines, 1000-600 hPa only (as on the Wyoming plot)
+  let mixLabels = '';
+  [0.2,0.4,1,2,4,7,10,16,24,32].forEach(w=>{
+    const pts = pSteps.filter(pp=>pp>=600).map(pp=>{
       const e = (w/1000) * pp / (EPS + w/1000);
-      const tdAtP = tempAtSat(e);
-      return [xForT(tdAtP, yForP(pp)), yForP(pp)];
+      return [xForT(tempAtSat(e), yForP(pp)), yForP(pp)];
     });
-    out += svgLine(pts, 'rgba(63,127,176,0.5)', 1, '3,3');
+    grid += svgLine(pts, C.mix, 1, '5,3');
+    mixLabels += `<text x="${pts[0][0].toFixed(1)}" y="${(YBOT-4).toFixed(1)}" font-size="10" fill="${C.mix}" text-anchor="middle" font-family="monospace">${w.toFixed(1)}</text>`;
   });
 
-  // Environment T and Td
-  const tPts = p.map((pp,i)=>[xForT(t[i], yForP(pp)), yForP(pp)]);
-  const tdPts = p.map((pp,i)=> td[i]!=null ? [xForT(td[i], yForP(pp)), yForP(pp)] : null).filter(Boolean);
-  out += svgLine(tPts, '#ff5252', 2.4);
-  out += svgLine(tdPts, '#39d353', 2.4);
-
-  // Parcel profile + LCL + CAPE/CIN shading
-  let metrics = {};
+  // parcel / LCL / CAPE-CIN: always computed (tiles below the chart), drawn only if the overlay is ticked
+  let metrics = {}, ov = '';
   if(td[0]!=null){
     const lcl = calcLCL(p[0], t[0], td[0]);
     const parcelT = parcelProfile(p, p[0], t[0], td[0]);
-    const pPts = p.map((pp,i)=>[xForT(parcelT[i], yForP(pp)), yForP(pp)]);
-    // CAPE region: parcel warmer than env; CIN: parcel cooler than env
-    let capePoly = [], cinPoly = [];
-    for(let i=0;i<p.length;i++){
-      const y = yForP(p[i]);
-      const xe = xForT(t[i], y), xp = xForT(parcelT[i], y);
-      if(parcelT[i] >= t[i]) capePoly.push([xp,y,xe,y]); else cinPoly.push([xp,y,xe,y]);
-    }
-    function polyPath(rows, color){
-      if(!rows.length) return '';
-      let d = 'M'+rows[0][0].toFixed(1)+','+rows[0][1].toFixed(1);
-      rows.forEach(r=> d += ' L'+r[0].toFixed(1)+','+r[1].toFixed(1));
-      for(let i=rows.length-1;i>=0;i--) d += ' L'+rows[i][2].toFixed(1)+','+rows[i][3].toFixed(1);
-      d += ' Z';
-      return `<path d="${d}" fill="${color}" stroke="none"/>`;
-    }
-    out += polyPath(capePoly, 'rgba(255,90,90,0.22)');
-    out += polyPath(cinPoly, 'rgba(90,140,255,0.22)');
-    out += svgLine(pPts, '#ffffff', 2, '5,3');
-    const lclXY = [xForT(lcl.t, yForP(lcl.p)), yForP(lcl.p)];
-    out += `<circle cx="${lclXY[0].toFixed(1)}" cy="${lclXY[1].toFixed(1)}" r="4.5" fill="#000" stroke="#fff" stroke-width="1.5"/>`;
-
     const cc = capeCin(p, t, parcelT);
     metrics = {lclP: Math.round(lcl.p), lclT: lcl.t.toFixed(1), cape: cc.cape, cin: cc.cin};
+    if(overlay){
+      let capePoly = [], cinPoly = [];
+      for(let i=0;i<p.length;i++){
+        const y = yForP(p[i]);
+        const xe = xForT(t[i], y), xp = xForT(parcelT[i], y);
+        if(parcelT[i] >= t[i]) capePoly.push([xp,y,xe,y]); else cinPoly.push([xp,y,xe,y]);
+      }
+      const polyPath = (rows, color) => {
+        if(!rows.length) return '';
+        let d = 'M'+rows[0][0].toFixed(1)+','+rows[0][1].toFixed(1);
+        rows.forEach(r=> d += ' L'+r[0].toFixed(1)+','+r[1].toFixed(1));
+        for(let i=rows.length-1;i>=0;i--) d += ' L'+rows[i][2].toFixed(1)+','+rows[i][3].toFixed(1);
+        return `<path d="${d} Z" fill="${color}" stroke="none"/>`;
+      };
+      ov += polyPath(capePoly, 'rgba(217,60,60,0.16)') + polyPath(cinPoly, 'rgba(60,110,217,0.14)');
+      ov += svgLine(p.map((pp,i)=>[xForT(parcelT[i], yForP(pp)), yForP(pp)]), '#d92c2c', 1.6, '5,3');
+      ov += `<circle cx="${xForT(lcl.t, yForP(lcl.p)).toFixed(1)}" cy="${yForP(lcl.p).toFixed(1)}" r="4" fill="#fff" stroke="#d92c2c" stroke-width="1.6"/>`;
+    }
   }
+  // T and Td: two solid black traces (Td is simply the left-hand one)
+  const tPts = p.map((pp,i)=>[xForT(t[i], yForP(pp)), yForP(pp)]);
+  const tdPts = p.map((pp,i)=> td[i]!=null ? [xForT(td[i], yForP(pp)), yForP(pp)] : null).filter(Boolean);
+  const trace = svgLine(tPts, '#000000', 2.2) + svgLine(tdPts, '#000000', 2.2);
 
-  // Wind barbs on the right margin (simple ticks — direction/speed)
-  p.forEach((pp,i)=>{
-    const r = data.rows[i];
-    if(r.spd==null || r.dir==null) return;
-    const y = yForP(pp);
-    const x0 = W-PADR+6, len = Math.min(24, 6+r.spd*0.6);
-    const rad = (r.dir+180)*Math.PI/180; // barb points into the wind
-    const x1 = x0 + len*Math.sin(rad), y1 = y - len*Math.cos(rad);
-    out += `<line x1="${x0}" y1="${y}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#8ea0b8" stroke-width="1.3"/>`;
+  let out = `<defs><clipPath id="plotclip"><rect x="${PADL}" y="${PADT}" width="${PLOTW}" height="${PLOTH}"/></clipPath></defs>`;
+  out += `<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`;
+  out += `<g clip-path="url(#plotclip)">${grid}${ov}${trace}</g>`;
+  out += `<rect x="${PADL}" y="${PADT}" width="${PLOTW}" height="${PLOTH}" fill="none" stroke="${C.frame}" stroke-width="1.2"/>`;
+
+  // left axis: pressure
+  for(let pp=100; pp<=1000; pp+=100){
+    out += `<text x="${PADL-8}" y="${(yForP(pp)+4).toFixed(1)}" font-size="12" fill="${C.axis}" text-anchor="end" font-family="monospace">${pp}</text>`;
+  }
+  // bottom axis: temperature at the 1000 hPa baseline
+  for(let tt=TMIN; tt<=TMAX; tt+=10){
+    out += `<text x="${xForT(tt,YBOT).toFixed(1)}" y="${YBOT+16}" font-size="12" fill="${C.axis}" text-anchor="middle" font-family="monospace">${tt}</text>`;
+  }
+  out += mixLabels;
+  // geopotential heights (m) printed inside the plot, left edge, just above each level (as on the Wyoming plot)
+  data.rows.forEach(r=>{
+    if(r.h == null || !inPlot(r.p)) return;
+    out += `<text x="${PADL+5}" y="${(yForP(r.p)-3).toFixed(1)}" font-size="10" fill="${C.hgt}" font-family="monospace">${Math.round(r.h)}</text>`;
   });
-
-  // Axis labels
-  out += `<text x="${PADL}" y="${H-14}" font-size="11" fill="#8ea0b8" font-family="monospace">Temperature (°C)</text>`;
-  out += `<text x="14" y="${PADT+14}" font-size="11" fill="#8ea0b8" font-family="monospace" transform="rotate(-90 14 ${PADT+14})">Pressure (hPa)</text>`;
+  // wind barbs down the right-hand margin
+  data.rows.forEach(r=>{
+    if(r.spd==null || r.dir==null || !inPlot(r.p)) return;
+    out += windBarbSVG(PADL+PLOTW+32, yForP(r.p), r.dir, r.spd, '#000000', 22);
+  });
+  if(data.title) out += `<text x="${PADL}" y="20" font-size="13" font-weight="700" fill="#000" font-family="monospace">${escXml(data.title)}</text>`;
+  out += `<text x="${PADL}" y="${H-10}" font-size="11" fill="${C.axis}" font-family="monospace">Temperature (°C) · pressure (hPa) · heights (m) · wind (kt)</text>`;
 
   svg.innerHTML = out;
   svg.style.display = '';
@@ -608,7 +662,8 @@ async function loadSounding(force){
       $('stStatus').textContent = 'No data';
       return;
     }
-    const metrics = buildSkewT({rows});
+    window.__lastSkew = {rows: rows, title: (stnCfg ? stnCfg.name : stnId)};
+    const metrics = buildSkewT(window.__lastSkew);
     renderMetrics(metrics, {t: rows[0].t, td: rows[0].td});
     $('stStatus').textContent = (stnCfg ? stnCfg.name : stnId) + ' · ' + rows.length + ' levels' + sourceNote;
   }catch(e){
@@ -619,6 +674,9 @@ async function loadSounding(force){
     if(btn) btn.disabled = false;
   }
 }
+document.getElementById('stOverlay').addEventListener('change', ()=>{
+  if(window.__lastSkew) buildSkewT(window.__lastSkew);
+});
 document.getElementById('stStation').addEventListener('change', ()=>{
   const stnCfg = STATIONS.find(s=>s.id===document.getElementById('stStation').value);
   const cycleSel = document.getElementById('stCycle');

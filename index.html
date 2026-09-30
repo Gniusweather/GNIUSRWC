@@ -3581,7 +3581,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         <span style="color:var(--muted);font-size:16.5px;font-family:var(--mono);">Live upper-air soundings</span>
       </div>
       <iframe id="skewtFrame" loading="lazy" title="Skew-T Sounding"
-        style="width:100%;height:calc(100dvh - var(--hdr) - var(--nav) - 120px);min-height:520px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
+        style="width:100%;height:70vh;min-height:360px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
     </div>
     <div class="wx-view" id="wxViewSynopenc" style="display:none;">
       <div class="shdr">
@@ -3589,7 +3589,7 @@ html,body{max-width:100%;overflow-x:hidden;}
         <span style="color:var(--muted);font-size:16.5px;font-family:var(--mono);">QF-OBS coding tool</span>
       </div>
       <iframe id="synopEncFrame" loading="lazy" title="SYNOP Encoder"
-        style="width:100%;height:calc(100dvh - var(--hdr) - var(--nav) - 120px);min-height:520px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
+        style="width:100%;height:70vh;min-height:360px;border:1px solid var(--bdr);border-radius:10px;background:#0b1220;"></iframe>
     </div>
   </div>
 
@@ -5842,6 +5842,26 @@ function showKnmiSub(which){
 window.showKnmiSub = showKnmiSub;
 
 /* Weather tab view switcher (Forecast & Climate moved into Weather tab) */
+/* Vult een WX-iframe (Skew-T / SYNOP Encoder) van zijn bovenrand tot de onderrand
+   van het scherm. Bewust in JS en niet in CSS: deze pagina wordt in Safari op
+   ~750 px layoutbreedte getoond en verkleind, dus 100dvh/vh-berekeningen zijn
+   niet te vertrouwen en er is geen vaste header-hoogte om af te trekken.
+   getBoundingClientRect() en innerHeight zijn allebei layout-px, dus dit klopt
+   ongeacht de schaal. Met pageYOffset wordt de positie op scroll 0 bepaald,
+   zodat de hoogte niet verandert als de pagina al gescrold is. */
+function wxFitFrame(id){
+  var f = byId(id); if(!f) return;
+  var host = f.parentNode; if(!host || host.style.display === 'none') return;
+  var top = f.getBoundingClientRect().top + (window.pageYOffset || 0);
+  var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  f.style.height = Math.max(360, Math.floor(vh - top - 10)) + 'px';
+}
+function wxFitFrames(){ wxFitFrame('synopEncFrame'); wxFitFrame('skewtFrame'); }
+window.wxFitFrame = wxFitFrame; window.wxFitFrames = wxFitFrames;
+window.addEventListener('resize', wxFitFrames);
+window.addEventListener('orientationchange', function(){ setTimeout(wxFitFrames, 250); });
+if(window.visualViewport) window.visualViewport.addEventListener('resize', wxFitFrames);
+
 function switchWxView(view, btn){
   if(btn) document.querySelectorAll('.wx-style-btn').forEach(b=>b.classList.toggle('active',b===btn));
   document.querySelectorAll('.wx-view').forEach(v=>v.style.display='none');
@@ -5861,6 +5881,10 @@ function switchWxView(view, btn){
   if(view==='synopenc' && !window.__synopEncFrameLoaded){
     window.__synopEncFrameLoaded = true;
     var ef = byId('synopEncFrame'); if(ef && !ef.src) ef.src = 'encoders.html';
+  }
+  if(view==='skewt' || view==='synopenc'){
+    wxFitFrames();                       // meteen na het tonen
+    setTimeout(wxFitFrames, 120);        // en nogmaals als de layout is gezet
   }
 }
 window.switchWxView = switchWxView;

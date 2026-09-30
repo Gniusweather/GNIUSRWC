@@ -17,7 +17,7 @@ button{cursor:pointer;font:inherit}
    from the main app's WX tab), since it no longer depends on custom
    properties that only exist in the OUTER page's stylesheet. */
 html,body{height:100%;overflow:hidden;}
-.wrap{max-width:1100px;margin:0 auto;padding:12px;height:100dvh;display:flex;flex-direction:column;min-height:0;}
+.wrap{max-width:1100px;margin:0 auto;padding:12px;height:100%;display:flex;flex-direction:column;min-height:0;}
 h1{font-size:18px;margin:0 0 10px;flex:0 0 auto;}
 
 .hdr-btns{display:flex;gap:6px;}
@@ -1147,6 +1147,7 @@ select.enc-inp option{background:#0d1f36;color:#e8f4ff;}
           </div>
         </div>
       </div>
+</div><!-- /.wrap -->
 <script>
 
 function $(id){return document.getElementById(id);}
@@ -3823,15 +3824,20 @@ function showEnc(name,btn){
   document.querySelectorAll('.sub-panel').forEach(function(p){
     const on=p.id==='synop-sub-'+name;
     p.classList.toggle('active',on);
-    p.style.display=on?'block':'none';
+    // NB: do NOT set p.style.display here. An inline display beats the
+    // stylesheet, and the CSS (.sub-panel / .sub-panel.active) already shows
+    // exactly one panel. Forcing 'block' used to override the flex-column
+    // layout on #synop-sub-encode and un-pin the Generated SYNOP box.
+    p.style.display='';
   });
   document.querySelectorAll('.subnav button').forEach(function(b){b.classList.toggle('active',b===btn);});
   try{if(name==='sutron'){tplFillFromEnc('su');suUpdate();} if(name==='vaisala'){tplFillFromEnc('va');vaUpdate();} if(name==='encode')encUpdate();}catch(e){}
 }
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.sub-panel').forEach(function(p){
-    p.style.display=p.id==='synop-sub-encode'?'block':'none';
-    if(p.id==='synop-sub-encode') p.classList.add('active');
+    // Visibility comes from the .active class + CSS only (see showEnc).
+    p.style.display='';
+    p.classList.toggle('active', p.id==='synop-sub-encode');
   });
   try{encStampUtc();encUpdate();}catch(e){}
 });
