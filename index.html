@@ -1293,7 +1293,7 @@ body.tab-hidden *{animation-play-state:paused !important;}
 
 /* ─── Gauges view (Image 2) ─── */
 .gau-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
-@media(max-width:1100px){.gau-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:1100px){.gau-grid{grid-template-columns:repeat(3,1fr);gap:8px;}.gau-tile{padding:12px 8px;min-height:150px;}.gau-hd{font-size:13px;letter-spacing:.6px;top:9px;left:10px;}.gau-svg{max-width:150px;}.gau-cap{font-size:14px;}}
 @media(max-width:560px){.gau-grid{grid-template-columns:1fr;}}
 .gau-tile{border-radius:16px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.004)),rgba(10,14,22,0.9);border:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;overflow:hidden;min-height:180px;justify-content:center;transition:border-color .25s,box-shadow .25s,transform .25s;}
 .gau-tile:hover{border-color:rgba(45,212,191,0.35);box-shadow:0 6px 22px rgba(45,212,191,0.08);transform:translateY(-1px);}
@@ -3362,7 +3362,7 @@ html,body{max-width:100%;overflow-x:hidden;}
       </div>
       <div class="cw-grid" style="grid-column:1/-1;">
       <div class="mon-tile mon-synop cw-tile">
-        <div class="mon-tile-hd"><span class="mon-tile-ttl">&#127760; SYNOP 78988</span><span class="mon-tile-sub">Ogimet live</span></div>
+        <div class="mon-tile-hd"><span class="mon-tile-ttl">&#127760; SYNOP 78988</span><span class="mon-tile-sub">NOAA raw live</span></div>
         <div class="mon-synop-body">
           <div class="mon-synop-raw" id="monSynopRaw">&mdash;</div>
           <div class="cw-rose-wrap"><div id="monSynopRose"></div></div>
@@ -3893,7 +3893,8 @@ function tickClocks(){
   set('uclk',`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`);
   set('udate',`${pad(d.getUTCDate())}-${pad(d.getUTCMonth()+1)}-${d.getUTCFullYear()}`);
 }
-tickClocks(); setInterval(tickClocks,1000);
+tickClocks(); setInterval(function(){ if(!document.hidden) tickClocks(); },1000);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) tickClocks(); });
 function nowStamp(){const d=new Date();return`${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;}
 
 /* Aviation "last updated … · N ago" timestamps. Each setter records the
@@ -4463,7 +4464,7 @@ function startOverview(){
   fetchOverview();
   if(__ovwTimer) clearInterval(__ovwTimer);
   __ovwTimer = setInterval(function(){
-    if(byId('tab-aviation') && !byId('tab-aviation').classList.contains('hidden')) fetchOverview();
+    if(!document.hidden && byId('tab-aviation') && !byId('tab-aviation').classList.contains('hidden')) fetchOverview();
   }, 300000);  // 5 min
 }
 
@@ -5792,15 +5793,15 @@ function switchTab(name){
   if(name!=='stationsgraph' && window.__stationsTrendTimer){ clearInterval(window.__stationsTrendTimer); window.__stationsTrendTimer=null; }
   if(name==='metarsgraph'){
     loadMetarTrendTab();
-    if(!window.__metarsTrendTimer) window.__metarsTrendTimer = setInterval(loadMetarTrendTab, 30000);
+    if(!window.__metarsTrendTimer) window.__metarsTrendTimer = setInterval(function(){ var pn=byId('tab-metarsgraph'); if(document.hidden || (pn && pn.classList.contains('hidden'))) return; loadMetarTrendTab(); }, 30000);
   }
   if(name==='synopgraph'){
     loadSynopTrendTab();
-    if(!window.__synopTrendTimer) window.__synopTrendTimer = setInterval(loadSynopTrendTab, 30000);
+    if(!window.__synopTrendTimer) window.__synopTrendTimer = setInterval(function(){ var pn=byId('tab-synopgraph'); if(document.hidden || (pn && pn.classList.contains('hidden'))) return; loadSynopTrendTab(); }, 30000);
   }
   if(name==='stationsgraph'){
     loadStationsTrendTab();
-    if(!window.__stationsTrendTimer) window.__stationsTrendTimer = setInterval(loadStationsTrendTab, 30000);
+    if(!window.__stationsTrendTimer) window.__stationsTrendTimer = setInterval(function(){ var pn=byId('tab-stationsgraph'); if(document.hidden || (pn && pn.classList.contains('hidden'))) return; loadStationsTrendTab(); }, 30000);
   }
   if(name==='atc'){
     if(typeof ensureAtcWindyMaps==='function') ensureAtcWindyMaps();
@@ -6801,12 +6802,77 @@ function ovzTempPlausible(v, tNow){
   return tNow == null || !isFinite(tNow) || Math.abs(v - tNow) <= 12;
 }
 /* 1) SYNOP via Ogimet getsynop (CSV-regels) — exacte uurvensters */
+/* ── NOAA tgftp raw SYNOP for Curaçao 78988 (replaces Ogimet for this station) ──
+   smca01 (3-hourly main) and sica20 (intermediate hourly) each hold only the
+   latest bulletin. Header "SMCA01 TNCC ddhhmm"; "AAXX ddhhiw" and the station
+   group may be on separate lines; trailing "=" / "NNNN". */
+var NOAA_TNCC_URLS = ['https://tgftp.nws.noaa.gov/data/raw/sm/smca01.tncc..txt','https://tgftp.nws.noaa.gov/data/raw/si/sica20.tncc..txt'];
+function parseNoaaTnccBulletin(text, now){
+  if(!text) return null;
+  var t = String(text).replace(/\r/g,'');
+  var h = t.match(/\b(?:SM|SI)CA\d\d\s+TNCC\s+(\d{2})(\d{2})(\d{2})/);
+  var a = t.match(/\bAAXX\s+(\d{2})(\d{2})(\d)/);
+  var mm = t.match(/\b78988\s+([\d\/\s]+?)=/);
+  if(!h || !a || !mm) return null;
+  var dd = parseInt(h[1],10), hh = parseInt(h[2],10), mi = parseInt(h[3],10);
+  var n = new Date(now || Date.now());
+  var cand = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), dd, hh, mi);
+  if(cand > n.getTime() + 36*3600e3) cand = Date.UTC(n.getUTCFullYear(), n.getUTCMonth()-1, dd, hh, mi);
+  var body = mm[1].replace(/\s+/g,' ').trim();
+  var obsHH = a[2];
+  return { ms: cand, dd: a[1], hh: obsHH, mi: mi, rep: 'AAXX ' + a[1] + a[2] + a[3] + ' 78988 ' + body + '=', bodyLine: '78988 ' + body + '=' };
+}
+async function fetchNoaaTncc(force){
+  var res = await Promise.all(NOAA_TNCC_URLS.map(function(u){
+    return fetchURL(u, 2, force ? {forceFresh:true} : undefined).then(function(r){ return (r && r.ok) ? parseNoaaTnccBulletin(r.text) : null; }).catch(function(){ return null; });
+  }));
+  var list = res.filter(Boolean).sort(function(x,y){ return y.ms - x.ms; });
+  if(list.length){ try{ localStorage.setItem('rwc-noaa-tncc', JSON.stringify(list.slice(0,2))); }catch(e){} return list; }
+  try{ var c = JSON.parse(localStorage.getItem('rwc-noaa-tncc')||'null'); if(c && c.length && Date.now()-c[0].ms < 6*3600e3) return c; }catch(e){}
+  return [];
+}
+/* Put the newest NOAA 78988 report into an Ogimet-scraped text (Ogimet still
+   supplies Aruba/Bonaire lines); returns the combined text. */
+function overlayNoaaSynop(scraped, noaa){
+  if(!noaa || !noaa.length) return scraped;
+  var n = noaa[0];
+  var d = new Date(n.ms), z = function(x){ return String(x).padStart(2,'0'); };
+  var head = 'NOAA TNCC ' + z(d.getUTCDate()) + z(d.getUTCHours()) + z(d.getUTCMinutes()) + 'Z (tgftp)\nAAXX ' + n.dd + n.hh + (n.rep.match(/AAXX \d{4}(\d)/)||[])[1];
+  var others = [];
+  if(scraped){
+    String(scraped).split('\n').forEach(function(l){ if(/^7[7-9]\d{3} /.test(l) && !/^78988 /.test(l)) others.push(l); });
+  }
+  return head + '\n' + n.bodyLine + (others.length ? '\n' + others.join('\n') : '');
+}
+
 async function ovzFetchSynop(wmo, icao){
   var b = new Date(Date.now() - 50 * 3600e3);          // gisteren 18Z moet erin vallen
   var begin = '' + b.getUTCFullYear() + String(b.getUTCMonth()+1).padStart(2,'0') + String(b.getUTCDate()).padStart(2,'0') + String(b.getUTCHours()).padStart(2,'0') + '00';
   var url = 'https://www.ogimet.com/cgi-bin/getsynop?block=' + wmo + '&begin=' + begin;
   var r = await fetchURL(url, 1);
-  if(!r || !r.text || !/AAXX/.test(r.text)) return null;
+  if(!r || !r.text || !/AAXX/.test(r.text)) r = {text:''};
+  if(String(wmo) === '78988'){
+    // NOAA tgftp raw is the primary source for Curaçao; Ogimet fills history.
+    try{
+      var nl = await fetchNoaaTncc();
+      if(nl.length){
+        var z2 = function(x){ return String(x).padStart(2,'0'); };
+        var add = [], skip = {};
+        nl.forEach(function(n){
+          var d = new Date(n.ms);
+          var key = d.getUTCFullYear()+'-'+z2(d.getUTCMonth()+1)+'-'+z2(d.getUTCDate())+'-'+z2(d.getUTCHours());
+          skip[key] = 1;
+          add.push('78988,'+d.getUTCFullYear()+','+z2(d.getUTCMonth()+1)+','+z2(d.getUTCDate())+','+z2(d.getUTCHours())+','+z2(d.getUTCMinutes())+','+n.rep);
+        });
+        var kept = r.text.split('\n').filter(function(l){
+          var m = l.match(/^78988,(\d{4}),(\d{2}),(\d{2}),(\d{2}),/);
+          return !(m && skip[m[1]+'-'+m[2]+'-'+m[3]+'-'+m[4]]);
+        });
+        r = {text: kept.concat(add).join('\n')};
+      }
+    }catch(e){}
+  }
+  if(!r.text || !/AAXX/.test(r.text)) return null;
   var dToday = ovzUtcDay(0), dYest = ovzUtcDay(-1);
   var out = { tmax:null, tmin:null, precip:null, wt:null, src:'S' };
   var tmax18 = null, tmin06 = null, tmin00 = null;
@@ -7739,6 +7805,7 @@ function renderOvzTable(rows, eff, src){
    buildOverzicht), dus dit moet met dezelfde sleutel checken. */
 setInterval(function(){
   try{
+    if(document.hidden) return;
     var v = byId('wxViewOverzicht');
     if(!v || v.style.display === 'none') return;
     var cacheKey = 'rwc-ovz-v6-' + ovzGetSource();
@@ -8541,9 +8608,10 @@ async function fetchWeatherCuracao(){
     const o = await fetchURL('https://www.ogimet.com/ultimos_synops2.php?estado=Cura&fmt=html&Enviar=Ver');
     if(o.ok){
       scraped = scrapeOgimetSynop(o.text);
-      if(scraped) P = extractWxFromSynop(scraped, '78988');
     }
   } catch(e){}
+  try{ const nl = await fetchNoaaTncc(); if(nl.length) scraped = overlayNoaaSynop(scraped, nl); }catch(e){}
+  if(scraped) P = extractWxFromSynop(scraped, '78988');
   if(!P || P.temp_c == null){
     const wa = await fetchWeatherApiCurrent(12.19, -68.96);
     if(wa) P = Object.assign(wa, P || {});
@@ -9118,7 +9186,8 @@ async function fetchMonitorData(){
     fetchMonitorOM(),
     fetchSeaTemp(),
     fetchSynopRainWindows('78988'),
-    fetchRadarNow()
+    fetchRadarNow(),
+    fetchNoaaTncc()
   ]);
   let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null, radarNow = null;
   if(tasks[0].status === 'fulfilled' && tasks[0].value && tasks[0].value.ok){
@@ -9126,6 +9195,14 @@ async function fetchMonitorData(){
       try{ window.__synopPAru = extractWxFromSynop(scraped, '78762'); }catch(_e){}
     } } catch(e){ console.warn('Ogimet parse failed', e); }
   }
+  try {
+    const nl = (tasks[6] && tasks[6].status === 'fulfilled') ? tasks[6].value : null;
+    if(nl && nl.length){
+      synopRaw = overlayNoaaSynop(synopRaw, nl);
+      synopP = extractWxFromSynop(synopRaw, '78988'); window.__synopPCur = synopP; window.__synopLoadedAt = Date.now();
+      try{ if(!window.__synopPAru) window.__synopPAru = null; }catch(_e){}
+    }
+  } catch(e){ console.warn('NOAA SYNOP overlay failed', e); }
   if(tasks[1].status === 'fulfilled' && tasks[1].value && tasks[1].value.ok){
     try { bonaireVisM = extractVis(tasks[1].value.text); } catch(e){ console.warn('KNMI vis parse failed', e); }
   }
@@ -9644,6 +9721,7 @@ function renderMonitor(data){
     var liveSrcLabel = liveSrcParts.join(' + ') || 'live';
     var mins = (data && data.nowcast) || null;
     checkNowcastRainAlert(mins);
+    checkRainingNowAlert(liveRainNow, liveSrcLabel, (omCurrent && (omCurrent.rain != null ? omCurrent.rain : omCurrent.precipitation)) || 0);
     if(ncEl){
       if(mins && mins.length){
         var maxV = Math.max(0.2, Math.max.apply(null, mins.map(function(m){ return m.precip; })));
@@ -13837,7 +13915,7 @@ function renderCondMap(){
     if(!condFlightLayer) condFlightLayer = L.layerGroup().addTo(condMap);
     else if(!condMap.hasLayer(condFlightLayer)) condFlightLayer.addTo(condMap);
     fetchCondFlights();               // immediate paint
-    if(!__flightTimer) __flightTimer = setInterval(fetchCondFlights, 15000);
+    if(!__flightTimer) __flightTimer = setInterval(function(){ if(!document.hidden) fetchCondFlights(); }, 15000);
   } else {
     if(__flightTimer){ clearInterval(__flightTimer); __flightTimer = null; }
     if(condFlightLayer){ condFlightLayer.clearLayers(); if(condMap.hasLayer(condFlightLayer)) condMap.removeLayer(condFlightLayer); }
@@ -14887,6 +14965,7 @@ async function init(){
   if(!fill || !bar) return;
   var start = Date.now();
   function tick(){
+    if(document.hidden) return;
     var elapsed = (Date.now() - start) % CYCLE;
     fill.style.width = (elapsed / CYCLE * 100).toFixed(2) + '%';
   }
@@ -15100,6 +15179,36 @@ function checkNowcastRainAlert(mins){
       });
     }).catch(function(){});
     try{ localStorage.setItem(key, String(Date.now() + 60 * 60 * 1000)); }catch(e){}
+  } catch(e){}
+}
+
+/* "It is raining now" notification — fires when TNCC METAR present weather,
+   the radar sample at our coordinates, or Open-Meteo current precipitation
+   shows rain. Fires once per rain episode; re-arms after 20 min without rain. */
+function checkRainingNowAlert(live, src, omMm){
+  try {
+    if(localStorage.getItem('rwc-alerts') !== 'on') return;
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    var prefs = (typeof getAlertPrefs === 'function') ? getAlertPrefs() : null;
+    if(!prefs || !prefs.rain) return;
+    var raining = !!live || omMm >= 0.2;
+    var kA = 'rwc-rainnow-active', kDry = 'rwc-rainnow-dry';
+    if(!raining){
+      var d = parseInt(localStorage.getItem(kDry) || '0', 10) || 0;
+      if(!d){ localStorage.setItem(kDry, String(Date.now())); }
+      else if(Date.now() - d > 20 * 60 * 1000){ localStorage.removeItem(kA); }
+      return;
+    }
+    localStorage.removeItem(kDry);
+    if(localStorage.getItem(kA) === '1') return;
+    localStorage.setItem(kA, '1');
+    var by = live ? (src || 'live') : 'Open-Meteo';
+    navigator.serviceWorker.ready.then(function(reg){
+      reg.showNotification('It is raining', {
+        body: 'Rain detected at your location (' + by + ').',
+        icon: './icon-192.png', badge: './icon-192.png', tag: 'rwc-raining-now', data: {url: './'}
+      });
+    }).catch(function(){});
   } catch(e){}
 }
 
