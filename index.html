@@ -1427,6 +1427,15 @@ body.tab-hidden *{animation-play-state:paused !important;}
 /* ── Stations Average tile in Monitor ── */
 .mon-stavg .srow-hd{padding:0;border:none;background:none;}
 .mon-stavg .srow-body{padding:0;}
+.mon-stavg{min-height:220px;}
+.mon-stavg .srow-body{flex:1;display:flex;flex-direction:column;justify-content:center;}
+.mon-stavg .srow-body>.srow-row{flex:1;align-items:center;}
+.mon-stavg .chip{padding:10px 12px;justify-content:center;}
+.mon-stavg .chip-v{font-size:26px;}
+.mon-stavg #monStavgHeat,.mon-stavg #monStavgDir{white-space:normal;overflow:visible;text-overflow:clip;font-size:19px;color:#ffd27a;font-weight:700;}
+.mon-stavg #monStavgDir{color:var(--muted);font-weight:400;}
+.mon-stavg #monStavgRose{display:flex;align-items:center;flex:none;}
+.mon-stavg #monStavgRose svg{display:block;width:120px;height:120px;}
 
 
 /* ═══ MAPPING TAB ═══ */
@@ -3318,6 +3327,9 @@ html,body{max-width:100%;overflow-x:hidden;}
             <span class="mon-rain-lbl">Nowcast &middot; next 1h</span>
             <div class="mon-rain-nc-bars" id="monRainNowcast"></div>
             <div class="mon-rain-nc-note" id="monRainNcNote"></div>
+            <div id="monRadarNcEta" style="font-family:var(--cond);font-size:17px;font-weight:700;color:#cce4ff;margin-top:4px;"></div>
+            <canvas id="monRadarNcMap" width="192" height="192" style="width:100%;max-width:192px;border-radius:10px;margin-top:4px;display:block;"></canvas>
+            <div id="monRadarNcStat" style="font-family:var(--cond);font-size:13px;color:var(--muted);margin-top:3px;"></div>
           </div>
           <div class="mon-rain-sec">
             <span class="mon-rain-lbl">SYNOP 78988 &middot; Precip</span>
@@ -6802,6 +6814,188 @@ function ovzTempPlausible(v, tNow){
   return tNow == null || !isFinite(tNow) || Math.abs(v - tNow) <= 12;
 }
 /* 1) SYNOP via Ogimet getsynop (CSV-regels) — exacte uurvensters */
+/* ── Radar nowcast (own): RainViewer past frames → motion (cross-correlation) → extrapolation ──
+   3×3 tiles @ z7 around the island, block-averaged ×4 into a 192×192 grid (~4.8 km/cell).
+   Intensity is RainViewer's relative alpha×brightness (same measure as fetchRadarNow);
+   rain = ≥0.12. Motion = best shift between an older and the latest frame. */
+var RNC = {z:7, S:256, ds:4, N:192, frames:{}, last:null, lastAt:0};
+function rncTile(url){
+  return new Promise(function(res){
+    var img = new Image(); img.crossOrigin = 'anonymous';
+    var t = setTimeout(function(){ res(null); }, 7000);
+    img.onload = function(){ clearTimeout(t); res(img); };
+    img.onerror = function(){ clearTimeout(t); res(null); };
+    img.src = url;
+  });
+}
+async function rncField(host, path, tx0, ty0){
+  var S = RNC.S, ds = RNC.ds, N = RNC.N;
+  var cv = document.createElement('canvas'); cv.width = cv.height = S*3;
+  var cx = cv.getContext('2d', {willReadFrequently:true});
+  var jobs = [];
+  for(var dy = -1; dy <= 1; dy++) for(var dx = -1; dx <= 1; dx++){
+    (function(dx, dy){
+      jobs.push(rncTile(host + path + '/256/' + RNC.z + '/' + (tx0+dx) + '/' + (ty0+dy) + '/0/0_0.png').then(function(img){
+        if(img){ cx.drawImage(img, (dx+1)*S, (dy+1)*S); return 1; } return 0;
+      }));
+    })(dx, dy);
+  }
+  var okN = (await Promise.all(jobs)).reduce(function(a,b){ return a+b; }, 0);
+  if(okN < 6) return null;
+  var d; try{ d = cx.getImageData(0, 0, S*3, S*3).data; }catch(e){ return null; }
+  var f = new Float32Array(N*N), W = S*3, inv = 1/(ds*ds*255*765);
+  for(var y = 0; y < N; y++) for(var x = 0; x < N; x++){
+    var sum = 0;
+    for(var j = 0; j < ds; j++){ var row = ((y*ds+j)*W + x*ds)*4;
+      for(var i = 0; i < ds; i++){ var o = row + i*4; sum += d[o+3]*(d[o]+d[o+1]+d[o+2]); } }
+    f[y*N+x] = sum*inv;
+  }
+  return f;
+}
+function rncMotion(A, B, dtMin){
+  var N = RNC.N, R = 10, TH = 0.06, idx = [], nB = 0, i, k;
+  for(i = 0; i < A.length; i++) if(A[i] > TH) idx.push(i);
+  for(i = 0; i < B.length; i++) if(B[i] > TH) nB++;
+  if(idx.length < 30 || nB < 30) return null;
+  var nA = 0; for(k = 0; k < idx.length; k++) nA += A[idx[k]]*A[idx[k]];
+  var nBB = 0; for(i = 0; i < B.length; i++) if(B[i] > TH) nBB += B[i]*B[i];
+  var best = -1, bdx = 0, bdy = 0, s0 = 0;
+  for(var dy = -R; dy <= R; dy++) for(var dx = -R; dx <= R; dx++){
+    var s = 0;
+    for(k = 0; k < idx.length; k++){
+      var p = idx[k], x = p % N + dx, y = (p/N|0) + dy;
+      if(x < 0 || y < 0 || x >= N || y >= N) continue;
+      var b = B[y*N+x]; if(b > TH) s += A[p]*b;
+    }
+    s /= Math.sqrt(nA*nBB) || 1;
+    if(dx === 0 && dy === 0) s0 = s;
+    if(s > best){ best = s; bdx = dx; bdy = dy; }
+  }
+  if(best < 0.3) return null;
+  return {vx: bdx/dtMin, vy: bdy/dtMin, conf: best, still: s0};
+}
+function rncAt(B, x, y){
+  var N = RNC.N, m = 0;
+  for(var j = -1; j <= 1; j++) for(var i = -1; i <= 1; i++){
+    var xx = Math.round(x)+i, yy = Math.round(y)+j;
+    if(xx < 0 || yy < 0 || xx >= N || yy >= N) continue;
+    var v = B[yy*N+xx]; if(v > m) m = v;
+  }
+  return m;
+}
+async function fetchRadarNowcast(force){
+  if(!force && RNC.last && Date.now() - RNC.lastAt < 90000) return RNC.last;
+  var out = {ok:false, reason:''};
+  try{
+    var ctrl = new AbortController(); var tm = setTimeout(function(){ ctrl.abort(); }, 5000);
+    var res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {signal: ctrl.signal});
+    clearTimeout(tm);
+    if(!res.ok){ out.reason = 'RainViewer HTTP ' + res.status; return (RNC.last = out); }
+    var j = await res.json();
+    var past = (j && j.radar && j.radar.past) || [];
+    if(past.length < 3){ out.reason = 'only ' + past.length + ' radar frames'; return (RNC.last = out); }
+    var pick = past.slice(-4);
+    var n2 = Math.pow(2, RNC.z), xF = (ABC_LON + 180)/360*n2, lr = ABC_LAT*Math.PI/180;
+    var yF = (1 - Math.log(Math.tan(lr) + 1/Math.cos(lr))/Math.PI)/2*n2;
+    var tx0 = Math.floor(xF), ty0 = Math.floor(yF);
+    var key = tx0 + '_' + ty0;
+    for(var k in RNC.frames){ if(k.indexOf(key+'|') !== 0 || !pick.some(function(p){ return k === key+'|'+p.time; })) delete RNC.frames[k]; }
+    await Promise.all(pick.map(async function(p){
+      var kk = key + '|' + p.time;
+      if(!RNC.frames[kk]){ var f = await rncField(j.host, p.path, tx0, ty0); if(f) RNC.frames[kk] = f; }
+    }));
+    var have = pick.filter(function(p){ return RNC.frames[key+'|'+p.time]; });
+    if(have.length < 2){ out.reason = 'radar tiles unreadable (' + have.length + ' frames)'; return (RNC.last = out); }
+    var pB = have[have.length-1], pA = have[Math.max(0, have.length-3)];
+    var A = RNC.frames[key+'|'+pA.time], B = RNC.frames[key+'|'+pB.time];
+    var dtMin = (pB.time - pA.time)/60;
+    var N = RNC.N, TH = 0.12, kmCell = 40075*Math.cos(lr)/(n2*RNC.S)*RNC.ds;
+    var cx0 = (xF - (tx0-1))*RNC.S/RNC.ds, cy0 = (yF - (ty0-1))*RNC.S/RNC.ds;
+    var echoes = 0; for(var i = 0; i < B.length; i++) if(B[i] >= TH) echoes++;
+    var mo = dtMin > 0 ? rncMotion(A, B, dtMin) : null;
+    var now = rncAt(B, cx0, cy0);
+    var leads = [];
+    for(var L = 0; L <= 90; L += 5){
+      var v = mo ? rncAt(B, cx0 - mo.vx*L, cy0 - mo.vy*L) : (L === 0 ? now : null);
+      leads.push({L:L, i:v});
+    }
+    var eta = null, endMin = null;
+    if(mo){
+      if(now < TH){ var e = leads.find(function(q){ return q.L > 0 && q.i >= TH; }); if(e) eta = e.L; }
+      else { var en = leads.find(function(q){ return q.L > 0 && q.i < TH; }); endMin = en ? en.L : 90; }
+    }
+    // nearest echo (≥TH) distance/bearing
+    var near = null;
+    for(var y = 0; y < N; y++) for(var x = 0; x < N; x++) if(B[y*N+x] >= TH){
+      var dd = Math.hypot(x-cx0, y-cy0);
+      if(!near || dd < near.d){ near = {d:dd, x:x, y:y}; }
+    }
+    var nearInfo = null;
+    if(near){
+      var brg = (Math.atan2(near.x-cx0, -(near.y-cy0))*180/Math.PI + 360) % 360;
+      nearInfo = {km: near.d*kmCell, brg: brg};
+    }
+    var motion = null;
+    if(mo){
+      var spd = Math.hypot(mo.vx, mo.vy)*60*kmCell;
+      motion = {kmh: spd, toDeg: (Math.atan2(mo.vx, -mo.vy)*180/Math.PI + 360) % 360, conf: mo.conf};
+    }
+    // 64×64 crop for the map (current + +30 min projection)
+    var C = 64, half = C/2, cur = new Float32Array(C*C), prj = new Float32Array(C*C);
+    for(var yy = 0; yy < C; yy++) for(var xx = 0; xx < C; xx++){
+      var sx = Math.round(cx0) - half + xx, sy = Math.round(cy0) - half + yy;
+      if(sx >= 0 && sy >= 0 && sx < N && sy < N) cur[yy*C+xx] = B[sy*N+sx];
+      if(mo){ var px = sx - mo.vx*30, py = sy - mo.vy*30;
+        if(px >= 0 && py >= 0 && px < N && py < N) prj[yy*C+xx] = B[Math.round(py)*N+Math.round(px)]; }
+    }
+    out = {ok:true, ts:pB.time*1000, frames:have.length, dtMin:dtMin, echoes:echoes, now:now, motion:motion, eta:eta, endMin:endMin,
+           leads:leads, near:nearInfo, kmCell:kmCell, map:{C:C, cur:cur, prj:prj, moving:!!mo}};
+  }catch(e){ out = {ok:false, reason:'radar error: ' + (e && e.message || e)}; }
+  RNC.last = out; RNC.lastAt = Date.now();
+  return out;
+}
+function rncMm15(i){ return i < 0.12 ? 0 : Math.min(8, (0.5 + (i-0.12)*40)/4); }   // rough relative→mm/15min
+function mergeRadarNowcast(mins, rn){
+  if(!rn || !rn.ok || !rn.motion && rn.eta == null && rn.now < 0.12) return mins;
+  var out = [];
+  for(var b = 0; b < 4; b++){
+    var lo = b*15 + (b ? 5 : 0), hi = (b+1)*15, mx = 0;
+    rn.leads.forEach(function(q){ if(q.i != null && q.L >= lo && q.L <= hi && q.i > mx) mx = q.i; });
+    var base = (mins && mins[b]) ? mins[b] : {label:'+' + ((b+1)*15) + 'm', precip:0};
+    out.push({label: base.label, precip: Math.max(base.precip || 0, rn.motion || b === 0 ? rncMm15(mx) : 0)});
+  }
+  return out;
+}
+function rncCompass(deg){ return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(deg/22.5)%16]; }
+function rncSummary(rn){
+  if(!rn) return {eta:'', stat:'Radar nowcast: not loaded'};
+  if(!rn.ok) return {eta:'', stat:'Radar nowcast unavailable — ' + rn.reason + ' (using forecast model)'};
+  var eta = '';
+  if(rn.now >= 0.12) eta = rn.endMin != null ? '☔ Raining now — radar expects it to ease in ~' + rn.endMin + ' min' + (rn.endMin >= 90 ? '+' : '') : '☔ Raining now';
+  else if(rn.eta != null) eta = '⛈ Rain expected in ~' + rn.eta + ' min (radar)';
+  else if(rn.motion) eta = '✓ No rain expected in the next 90 min (radar)';
+  else if(rn.echoes === 0) eta = '✓ No radar echoes in the area';
+  else eta = 'Echoes nearby but motion unclear';
+  var bits = [rn.frames + ' frames', Math.max(0, Math.round((Date.now()-rn.ts)/60000)) + ' min old', rn.echoes + ' echo cells'];
+  if(rn.motion) bits.push('moving ' + rncCompass(rn.motion.toDeg) + ' ' + Math.round(rn.motion.kmh) + ' km/h (conf ' + rn.motion.conf.toFixed(2) + ')');
+  if(rn.near && rn.now < 0.12) bits.push('nearest rain ' + Math.round(rn.near.km) + ' km ' + rncCompass(rn.near.brg));
+  return {eta:eta, stat:'Radar nowcast · ' + bits.join(' · ')};
+}
+function rncDrawMap(cv, rn){
+  if(!cv || !rn || !rn.ok) return;
+  var m = rn.map, C = m.C, sc = cv.width/C, g = cv.getContext('2d');
+  g.fillStyle = 'rgba(6,14,26,.9)'; g.fillRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = 'rgba(120,160,210,.25)'; g.lineWidth = 1;
+  [50, 100].forEach(function(km){ g.beginPath(); g.arc(cv.width/2, cv.height/2, km/rn.kmCell*sc, 0, 6.2832); g.stroke(); });
+  for(var y = 0; y < C; y++) for(var x = 0; x < C; x++){
+    var p = m.prj[y*C+x], c = m.cur[y*C+x];
+    if(m.moving && p >= 0.12){ g.fillStyle = 'rgba(245,158,11,.35)'; g.fillRect(x*sc, y*sc, sc, sc); }
+    if(c >= 0.12){ g.fillStyle = c > 0.4 ? 'rgba(255,79,79,.9)' : c > 0.22 ? 'rgba(255,170,60,.9)' : 'rgba(77,184,255,.85)'; g.fillRect(x*sc, y*sc, sc, sc); }
+  }
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(cv.width/2, cv.height/2, 3.5, 0, 6.2832); g.fill();
+  g.fillStyle = 'rgba(200,220,240,.8)'; g.font = '10px sans-serif'; g.fillText('50 / 100 km', 4, cv.height-4);
+}
+
 /* ── NOAA tgftp raw SYNOP for Curaçao 78988 (replaces Ogimet for this station) ──
    smca01 (3-hourly main) and sica20 (intermediate hourly) each hold only the
    latest bulletin. Header "SMCA01 TNCC ddhhmm"; "AAXX ddhhiw" and the station
@@ -9187,9 +9381,10 @@ async function fetchMonitorData(){
     fetchSeaTemp(),
     fetchSynopRainWindows('78988'),
     fetchRadarNow(),
-    fetchNoaaTncc()
+    fetchNoaaTncc(),
+    fetchRadarNowcast()
   ]);
-  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null, radarNow = null;
+  let synopP = null, bonaireVisM = null, omCurrent = null, omDaily = null, seaTemp = null, synopRaw = null, nowcast = null, synopRain = null, radarNow = null, radarNc = null;
   if(tasks[0].status === 'fulfilled' && tasks[0].value && tasks[0].value.ok){
     try { const scraped = scrapeOgimetSynop(tasks[0].value.text); if(scraped){ synopRaw = scraped; synopP = extractWxFromSynop(scraped, '78988'); window.__synopPCur = synopP; window.__synopLoadedAt = Date.now();
       try{ window.__synopPAru = extractWxFromSynop(scraped, '78762'); }catch(_e){}
@@ -9221,7 +9416,8 @@ async function fetchMonitorData(){
   if(tasks[5] && tasks[5].status === 'fulfilled' && tasks[5].value != null){
     radarNow = tasks[5].value;
   }
-  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw, nowcast, synopRain, radarNow};
+  if(tasks[7] && tasks[7].status === 'fulfilled') radarNc = tasks[7].value;
+  return {synopP, bonaireVisM, omCurrent, omDaily, seaTemp, synopRaw, nowcast, synopRain, radarNow, radarNc};
 }
 
 function renderMonitor(data){
@@ -9720,6 +9916,9 @@ function renderMonitor(data){
     if(radarLiveRain) liveSrcParts.push('radar');
     var liveSrcLabel = liveSrcParts.join(' + ') || 'live';
     var mins = (data && data.nowcast) || null;
+    var rncR = (data && data.radarNc) || null;
+    try{ if(rncR && rncR.ok) mins = mergeRadarNowcast(mins, rncR) || mins; }catch(_e){}
+    try{ var sm = rncSummary(rncR); var e1 = byId('monRadarNcEta'), e2 = byId('monRadarNcStat'); if(e1) e1.textContent = sm.eta; if(e2) e2.textContent = sm.stat; rncDrawMap(byId('monRadarNcMap'), rncR); }catch(_e){}
     checkNowcastRainAlert(mins);
     checkRainingNowAlert(liveRainNow, liveSrcLabel, (omCurrent && (omCurrent.rain != null ? omCurrent.rain : omCurrent.precipitation)) || 0);
     if(ncEl){
@@ -14476,7 +14675,7 @@ function renderStationsAverage(){
   var g = function(id){ return document.getElementById(id); };
   // Temp chip
   var tEl=g('monStavgTemp'); if(tEl) tEl.textContent = avgTemp!==null ? avgTemp.toFixed(1)+'\u00b0C' : '\u2014';
-  var hiEl=g('monStavgHeat'); if(hiEl) hiEl.textContent = avgHeat!==null ? 'Feels '+avgHeat.toFixed(0)+'\u00b0' : '';
+  var hiEl=g('monStavgHeat'); if(hiEl) hiEl.textContent = avgHeat!==null ? 'Feels like '+avgHeat.toFixed(0)+'\u00b0C' : '';
   var tChip=g('monStavgTempChip'); if(tChip){ tChip.className='chip '+(avgTemp>=33?'cred':avgTemp>=30?'cwrn':''); }
   // Wind chip
   var wEl=g('monStavgWind'); if(wEl) wEl.textContent = spd!==null ? spd+' kt' : '\u2014';
