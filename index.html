@@ -3327,9 +3327,13 @@ html,body{max-width:100%;overflow-x:hidden;}
             <span class="mon-rain-lbl">Nowcast &middot; next 1h</span>
             <div class="mon-rain-nc-bars" id="monRainNowcast"></div>
             <div class="mon-rain-nc-note" id="monRainNcNote"></div>
-            <div id="monRadarNcEta" style="font-family:var(--cond);font-size:17px;font-weight:700;color:#cce4ff;margin-top:4px;"></div>
-            <canvas id="monRadarNcMap" width="192" height="192" style="width:100%;max-width:192px;border-radius:10px;margin-top:4px;display:block;"></canvas>
-            <div id="monRadarNcStat" style="font-family:var(--cond);font-size:13px;color:var(--muted);margin-top:3px;"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:3px;">
+              <canvas id="monRadarNcMap" width="192" height="192" style="width:84px;height:84px;flex:none;border-radius:8px;display:block;"></canvas>
+              <div style="min-width:0;">
+                <div id="monRadarNcEta" style="font-family:var(--cond);font-size:15px;font-weight:700;color:#cce4ff;line-height:1.2;"></div>
+                <div id="monRadarNcStat" style="font-family:var(--cond);font-size:12px;color:var(--muted);margin-top:2px;line-height:1.25;"></div>
+              </div>
+            </div>
           </div>
           <div class="mon-rain-sec">
             <span class="mon-rain-lbl">SYNOP 78988 &middot; Precip</span>
@@ -6976,7 +6980,7 @@ function rncSummary(rn){
   else if(rn.motion) eta = '✓ No rain expected in the next 90 min (radar)';
   else if(rn.echoes === 0) eta = '✓ No radar echoes in the area';
   else eta = 'Echoes nearby but motion unclear';
-  var bits = [rn.frames + ' frames', Math.max(0, Math.round((Date.now()-rn.ts)/60000)) + ' min old', rn.echoes + ' echo cells'];
+  var bits = [Math.max(0, Math.round((Date.now()-rn.ts)/60000)) + ' min old', rn.echoes + ' cells'];
   if(rn.motion) bits.push('moving ' + rncCompass(rn.motion.toDeg) + ' ' + Math.round(rn.motion.kmh) + ' km/h (conf ' + rn.motion.conf.toFixed(2) + ')');
   if(rn.near && rn.now < 0.12) bits.push('nearest rain ' + Math.round(rn.near.km) + ' km ' + rncCompass(rn.near.brg));
   return {eta:eta, stat:'Radar nowcast · ' + bits.join(' · ')};
@@ -6993,7 +6997,7 @@ function rncDrawMap(cv, rn){
     if(c >= 0.12){ g.fillStyle = c > 0.4 ? 'rgba(255,79,79,.9)' : c > 0.22 ? 'rgba(255,170,60,.9)' : 'rgba(77,184,255,.85)'; g.fillRect(x*sc, y*sc, sc, sc); }
   }
   g.fillStyle = '#fff'; g.beginPath(); g.arc(cv.width/2, cv.height/2, 3.5, 0, 6.2832); g.fill();
-  g.fillStyle = 'rgba(200,220,240,.8)'; g.font = '10px sans-serif'; g.fillText('50 / 100 km', 4, cv.height-4);
+  g.fillStyle = 'rgba(200,220,240,.8)'; g.font = '10px sans-serif'; 
 }
 
 /* ── NOAA tgftp raw SYNOP for Curaçao 78988 (replaces Ogimet for this station) ──
